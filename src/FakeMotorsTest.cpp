@@ -4,9 +4,11 @@
 #include "differential_drive/KeyEvent.h"
 #include <differential_drive/PWM.h>
 #include <differential_drive/Encoders.h>
+#include <differential_drive/Speed.h>
 
 #include <visualization_msgs/Marker.h>
 #include "MovementControl.h"
+#include "motors/polarcoord.h"
 
 #include <string.h>
 #include <math.h>
@@ -15,6 +17,7 @@
 using namespace differential_drive;
 ros::Subscriber enc_sub;
 ros::Subscriber key_sub;
+ros::Subscriber hand_sub;
 ros::Publisher pwm_pub;
 ros::Publisher marker_pub;
 // Movement data
@@ -100,12 +103,12 @@ void receive_key(const KeyEvent::ConstPtr &msg) //Taken from KeyboardControl.cpp
 		break;
 	case SDLK_LEFT:
 		if (msg->pressed) {
-			movementController.setTargetRelative(Coord(0, -100));
+			movementController.setTargetRelative(Coord(0, 100));
 		}
 		break;
 	case SDLK_RIGHT:
 		if (msg->pressed) {
-			movementController.setTargetRelative(Coord(0, 100));
+			movementController.setTargetRelative(Coord(0, -100));
 		}
 		break;
 	case SDLK_SPACE:
@@ -116,32 +119,57 @@ void receive_key(const KeyEvent::ConstPtr &msg) //Taken from KeyboardControl.cpp
 	}
 }
 
-//Callback function for the "/encoder" topic. Prints the enconder value and changes the speed accordingly.
-void receive_encoder(const Encoders::ConstPtr &msg) {
+void run(float deltaY, float deltaX) {
+	printf("Y: %f, X: %f\n", deltaY, deltaX);
 	static ros::Time t_start = ros::Time::now();
 	//int timestamp = msg->timestamp;
 	//printf("%d:got encoder L:%d , false R:%d\n", timestamp, left, right);
 
 	Coord encoderInfo = movementController.moveTowardsTarget(
-			Coord(msg->delta_encoder1, msg->delta_encoder2));
-	PWM pwm;
-	pwm.PWM1 = encoderInfo.y;
-	pwm.PWM2 = encoderInfo.x;
-	pwm.header.stamp = ros::Time::now();
-	pwm_pub.publish(pwm);
+			Coord(deltaY, deltaX));
+	Speed speed;
+	speed.W1 = (float) encoderInfo.y;
+	speed.W2 = (float) encoderInfo.x;
+	/*PWM pwm;
+	 pwm.PWM1 = encoderInfo.y;
+	 pwm.PWM2 = encoderInfo.x;
+	 pwm.header.stamp = ros::Time::now();*/
+	pwm_pub.publish(speed);
 	publish_marker_data();
 }
 
+//Callback function for the "/encoder" topic. Prints the enconder value and changes the speed accordingly.
+void receive_encoder(const Encoders::ConstPtr &msg) {
+	//run(msg->delta_encoder1, msg->delta_encoder2);
+}
+
+void receive_hand(const motors::polarcoord &hand) {
+	float alpha = -hand.angle;
+
+	if (hand.distance > 1) {
+		printf("Received angle %f, modified to %f\n", hand.angle, alpha);
+		Coord encoderInfo = movementController.moveTowardsTarget(alpha,
+				hand.distance);
+		Speed speed;
+		speed.W1 = (float) encoderInfo.y;
+		speed.W2 = (float) encoderInfo.x;
+		printf("Speed left %f, right %f\n", speed.W1, speed.W2);
+		pwm_pub.publish(speed);
+		publish_marker_data();
+	}
+}
+
 void init() {
-	movementController = MovementControl(0.1,100,100);
+	movementController = MovementControl(0.05, 0.2, 360);
 }
 
 int main(int argc, char **argv) {
 	ros::init(argc, argv, "FakeMotorsTest"); //Creates a node named "FakeMotorsTest"
 	ros::NodeHandle n;
-	enc_sub = n.subscribe("/motors/encoders", 1000, receive_encoder); //when "/encoder" topic is revieved call recive_encoder function
-	pwm_pub = n.advertise<PWM>("/motors/pwm", 100000); //used to publish a topic that changes the motorspeed
-	key_sub = n.subscribe("/human/keyboard", 1000, receive_key); //when "/keyboard" topic is received, call back receive_key function
+	enc_sub = n.subscribe("/motion/Encoders", 1000, receive_encoder); //when "/encoder" topic is revieved call recive_encoder function
+	pwm_pub = n.advertise<Speed>("/motion/Speed", 1); //used to publish a topic that changes the motorspeed
+	key_sub = n.subscribe("/human/keyboard", 1, receive_key); //when "/keyboard" topic is received, call back receive_key function
+	hand_sub = n.subscribe("/hand/location", 1, receive_hand);
 
 	// Settings for publishing to visualization
 	marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker",
@@ -149,7 +177,6 @@ int main(int argc, char **argv) {
 	uint32_t shape = visualization_msgs::Marker::CUBE;
 
 	ros::Rate loop_rate(100);
-	//The loop randomly changes the intervall with wich the "/encoder" topic is published.
 
 	init();
 
@@ -159,6 +186,7 @@ int main(int argc, char **argv) {
 
 		// Good old looping motor stuff
 		loop_rate.sleep();
+		//run(0, 0);
 		ros::spinOnce();
 
 	}

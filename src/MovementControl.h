@@ -18,6 +18,7 @@ public:
 			int encoderResolution);
 	virtual ~MovementControl();
 	// Public functions
+	Coord moveTowardsTarget(double angle, double distance);
 	Coord moveTowardsTarget(Coord movement);
 	double getRobotDirection() {
 		return robotDirection;

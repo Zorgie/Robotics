@@ -6,6 +6,7 @@
  */
 
 #include "MovementControl.h"
+#include <stdio.h>
 
 MovementControl::MovementControl() {
 	wheelRadius = 1;
@@ -22,15 +23,33 @@ MovementControl::MovementControl(double wheelRadius, double movementSpeed,
 	this->wheelRadius = wheelRadius;
 	this->movementSpeed = movementSpeed;
 	this->encoderResolution = encoderResolution;
-	angleSensitivity = 5;
+	angleSensitivity = 15;
 }
 
 MovementControl::~MovementControl() {
 }
 
+Coord MovementControl::moveTowardsTarget(double angle, double distance) {
+	alignDegree(&angle);
+	double speed = movementSpeed / wheelRadius;
+	if (distance < 10)
+		return Coord(0, 0);
+	if (angle < -angleSensitivity) {
+		return Coord(speed, -speed);
+	} else if (angle > angleSensitivity) {
+		return Coord(-speed, speed);
+	}
+	if (angle > 0)
+		return Coord(speed, speed);
+	//if (angle <= 0)
+	return Coord(speed, speed);
+}
+
 Coord MovementControl::moveTowardsTarget(Coord movement) {
 	double left = movement.y;
 	double right = movement.x;
+
+	double speed = movementSpeed / wheelRadius;
 
 	robotDirection += (right - left);
 
@@ -39,22 +58,22 @@ Coord MovementControl::moveTowardsTarget(Coord movement) {
 
 	calculateDirections();
 
-	if (directionDifference < -45) {
-		return Coord(movementSpeed, -movementSpeed);
-	} else if (directionDifference > 45) {
-		return Coord(-movementSpeed, movementSpeed);
+	printf("Direction diff: %f\n", directionDifference);
+
+	if (directionDifference < -5) {
+		return Coord(speed, -speed);
+	} else if (directionDifference > 5) {
+		return Coord(-speed, speed);
 	}
 
-	Coord posDelta = targetPos-robotPos;
-	double distanceToTarget = sqrt(pow(posDelta.y,2) + pow(posDelta.x,2));
-	if(distanceToTarget < 10)
-		return Coord(0,0);
+	Coord posDelta = targetPos - robotPos;
+	double distanceToTarget = sqrt(pow(posDelta.y, 2) + pow(posDelta.x, 2));
+	if (distanceToTarget < 10)
+		return Coord(0, 0);
 	if (directionDifference > 0)
-		return Coord(movementSpeed * (45 - directionDifference) / 45,
-				movementSpeed);
+		return Coord(speed * (45 - directionDifference) / 45, speed);
 	if (directionDifference <= 0)
-		return Coord(movementSpeed,
-				movementSpeed * (45 + directionDifference) / 45);
+		return Coord(speed, speed * (45 + directionDifference) / 45);
 	return Coord();
 }
 
