@@ -8,6 +8,9 @@
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/irsensors</url>
+  <depend package="std_msgs"/>
+  <depend package="roscpp"/>
+  <depend package="differential_drive"/>
 
 </package>
 
