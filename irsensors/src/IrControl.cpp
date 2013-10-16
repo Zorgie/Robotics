@@ -27,7 +27,7 @@ void ir_transformation(const differential_drive::AnalogC &input){
 	output.ch[6] = 0.01*voltageToRange(input.ch7);
 	output.ch[7] = 0.01*voltageToRange(input.ch8);
 	for(int i=0; i<8; i++){
-		if(output.ch[i] < 0.04 || output.ch[i] > 0.30){
+		if(output.ch[i] < 0.04 || output.ch[i] > 0.40){
 			output.ch[i] = 0.0/0.0;
 		}
 	}
