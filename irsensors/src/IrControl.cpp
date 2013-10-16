@@ -10,21 +10,27 @@ double M = 0.0003846;
 double B = -0.000758;
 double K = 0.42;
 
-double voltageToRange(double V){
-	double range = (1/(M*V+B))-K;
+float voltageToRange(double V){
+	float range = (1/(M*V+B))-K;
 	return range;
 }
 
 void ir_transformation(const differential_drive::AnalogC &input){
 	irsensors::floatarray output;
-	output.ch[0] = voltageToRange(input.ch1);
-	output.ch[1] = voltageToRange(input.ch2);
-	output.ch[2] = voltageToRange(input.ch3);
-	output.ch[3] = voltageToRange(input.ch4);
-	output.ch[4] = voltageToRange(input.ch5);
-	output.ch[5] = voltageToRange(input.ch6);
-	output.ch[6] = voltageToRange(input.ch7);
-	output.ch[7] = voltageToRange(input.ch8);
+	// Multiplying by 0.01 to transform centimeters into meters.
+	output.ch[0] = 0.01*voltageToRange(input.ch1);
+	output.ch[1] = 0.01*voltageToRange(input.ch2);
+	output.ch[2] = 0.01*voltageToRange(input.ch3);
+	output.ch[3] = 0.01*voltageToRange(input.ch4);
+	output.ch[4] = 0.01*voltageToRange(input.ch5);
+	output.ch[5] = 0.01*voltageToRange(input.ch6);
+	output.ch[6] = 0.01*voltageToRange(input.ch7);
+	output.ch[7] = 0.01*voltageToRange(input.ch8);
+	for(int i=0; i<8; i++){
+		if(output.ch[i] < 0.04 || output.ch[i] > 0.30){
+			output.ch[i] = 0.0/0.0;
+		}
+	}
 	ir_pub.publish(output);
 }
 

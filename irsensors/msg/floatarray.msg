@@ -1,1 +1,1 @@
-float32[] ch
+float32[8] ch
