@@ -1,0 +1,5 @@
+<launch>
+  <node name="qwer" pkg="motors" type="controller"/>
+  <node name="asdf" pkg="motors" type="fake_motors"/>
+  <node name="zxcv" pkg="motors" type="key_controller"/>
+</launch>
