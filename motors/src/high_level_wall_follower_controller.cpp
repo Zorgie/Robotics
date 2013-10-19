@@ -11,11 +11,12 @@ using namespace differential_drive;
 const int UPDATE_RATE = 100; // maybe this value can be changed for the high level control, kanske 10?  ARE WE GOING TO HAVE PROBLEMS WITH HAVING THIS VARIABLE DECLARED IN SEVERAL PROGRAMS?
 
 //constants
-// Front right, back right, front left, back left.
-int SENSORS[] = { 0, 1, 6, 5 };
+// Front right, back right, front left, back left, front middle.
+int SENSORS[] = { 0, 1, 6, 5, 7 };
 const static float WALL_DISTANCE = 0.2;
 const static float WALL_ERROR_MARGIN = 0.08;
 const static float SENSOR_DISTANCE = 0.09;
+const static float FRONT_DISTANCE = 0.06;
 
 // 0 = right, 1 = left;
 int SIDE = 0;
@@ -31,7 +32,7 @@ void ir_readings_update(const irsensors::floatarray &msg) { // motors::wheel_spe
 }
 
 int main(int argc, char **argv) {
-	ros::init(argc, argv, "MotorController"); // Name of the node is MotorController
+	ros::init(argc, argv, "WallFollowerController"); // Name of the node is WallFollowerController
 	ros::NodeHandle n;
 
 	motors::wheel_speed desired_wheel_speed; // This variable stores the desired wheel speeds;
@@ -49,8 +50,8 @@ int main(int argc, char **argv) {
 	double integral_error_theta = 0;
 	double proportional_error_theta = 0;
 	double fixed_speed = 0.5;
-	float pGain = 50;
-	float iGain = 100;
+	float pGain = 5;
+	float iGain = 10;
 	float theta_command;
 
 	while (ros::ok()) {
@@ -58,9 +59,23 @@ int main(int argc, char **argv) {
 		loop_rate.sleep();
 
 		// Computing the error: Error=Angle of the robot. Ideally it should be zero.
-		float wheel_one = ir_readings_processed_global.ch[SENSORS[2 * SIDE]];
-		float wheel_two = ir_readings_processed_global.ch[SENSORS[2 * SIDE + 1]];
-		if (isnan(wheel_one) || isnan(wheel_two)) {
+		// Sensor one = front, Sensor two = back.
+		float sensor_one = ir_readings_processed_global.ch[SENSORS[2 * SIDE]];
+		float sensor_two =
+				ir_readings_processed_global.ch[SENSORS[2 * SIDE + 1]];
+		float front = ir_readings_processed_global.ch[SENSORS[4]];
+		// If we're about to collide to our front, just rotate.
+		/*if (!isnan(front) && front > 0.01 && front < FRONT_DISTANCE) {
+		 // Desired speeds for the wheels;
+		 desired_wheel_speed.W1 = fixed_speed; // Right wheel
+		 desired_wheel_speed.W2 = -fixed_speed; // Left wheel
+
+		 // Publish the desired Speed to the low level controller;
+		 desired_speed_pub.publish(desired_wheel_speed);
+		 continue;
+		 }*/
+		// If the sensor readings are broken, just go forwards.
+		if (isnan(sensor_one) || isnan(sensor_two)) {
 
 			// Desired speeds for the wheels;
 			desired_wheel_speed.W1 = fixed_speed; // Right wheel
@@ -71,9 +86,9 @@ int main(int argc, char **argv) {
 			continue;
 		}
 		if (SIDE == 0) {
-			error_theta = atan2(wheel_two - wheel_one, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
+			error_theta = atan2(sensor_two - sensor_one, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
 		} else if (SIDE == 1) {
-			error_theta = atan2(wheel_one - wheel_two, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
+			error_theta = atan2(sensor_one - sensor_two, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
 		}
 		//printf("back: %.2f, front: %.2f, error_theta: %.1f\n", back, front, error_theta * 180/M_PI);
 		// Debugging stuff
@@ -82,33 +97,38 @@ int main(int argc, char **argv) {
 //						wheel_speed_global.W1,
 //						(encoders_global.delta_encoder1*UPDATE_RATE)/360.0);
 
-		// Distance management
-		float cur_dist = std::min(wheel_two, wheel_one);
-		if (cur_dist > WALL_DISTANCE + WALL_ERROR_MARGIN) {
-			error_theta -= (0.075 * (SIDE ? -1 : 1));
-		} else if (cur_dist < WALL_DISTANCE - WALL_ERROR_MARGIN) {
-			error_theta += (0.075 * (SIDE ? -1 : 1));
-		}
+		// Distance management (will handle this later)
+//		float cur_dist = std::min(sensor_two, sensor_one);
+//		if (cur_dist > WALL_DISTANCE + WALL_ERROR_MARGIN) {
+//			error_theta -= (0.075 * (SIDE ? -1 : 1));
+//		} else if (cur_dist < WALL_DISTANCE - WALL_ERROR_MARGIN) {
+//			error_theta += (0.075 * (SIDE ? -1 : 1));
+//		}
 
 		// Proportional error (redundant but intuitive)
 		proportional_error_theta = error_theta;
-		desired_wheel_speed.W1 = fixed_speed + (0.5 * error_theta);
-		desired_wheel_speed.W2 = fixed_speed - (0.5 * error_theta);
+		desired_wheel_speed.W1 = fixed_speed + (0.5 * 3*error_theta);
+		desired_wheel_speed.W2 = fixed_speed - (0.5 * 3*error_theta);
 
 //		// Integral error
-//		integral_error_theta = integral_error_theta
-//				+ (error_theta / UPDATE_RATE);
+		integral_error_theta = integral_error_theta
+				+ (error_theta / UPDATE_RATE);
+
+		if (integral_error_theta > 1.0) {
+			// Anti-Windup strategy;
+			integral_error_theta = 1.0;
+		}
 //
 //		// Gain Values
-//		theta_command = (pGain * proportional_error_theta
-//				+ iGain * integral_error_theta);
+		theta_command = (pGain * proportional_error_theta
+				+ iGain * integral_error_theta);
 //
-//		if (theta_command > 2.0) {
-//			theta_command = 2.0;
-//		}
-//		if (theta_command < -2.0) {
-//			theta_command = -2.0;
-//		}
+		if (theta_command > 1.0) {
+			theta_command = 1.0;
+		}
+		if (theta_command < -1.0) {
+			theta_command = -1.0;
+		}
 //
 //		// Desired speeds for the wheels;
 //		desired_wheel_speed.W1 = fixed_speed - (0.5 * theta_command);
