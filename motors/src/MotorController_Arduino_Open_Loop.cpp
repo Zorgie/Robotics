@@ -6,7 +6,7 @@
 using namespace differential_drive;
 
 //defines the speed of the Control Loop (in Hz)
-const int UPDATE_RATE = 100;
+const int UPDATE_RATE = 50; //10-OK,20-OK,50-OK
 
 ros::Subscriber enc_sub; // Subscriber to the encoder readings;
 ros::Subscriber desired_speed_sub; // Subscriber to the desired speed;
@@ -35,6 +35,10 @@ int main(int argc, char **argv) {
 	ros::init(argc, argv, "MotorController"); // Name of the node is MotorController
 	ros::NodeHandle n;
 
+	//n.setParam("/PGain", 50);
+	//n.setParam("/IGain", 100);
+	//n.setParam("/Speed", 0);
+
 
 	PWM pwm_command; // Creates the variable with the PWM command which is published at 100 Hz.
 
@@ -54,26 +58,44 @@ int main(int argc, char **argv) {
 
 	ros::Rate loop_rate(UPDATE_RATE);
 
-	double error_1=0; // Our variables for the Controller Error
-	double error_2=0;
-	double integral_error_1 = 0;
-	double integral_error_2 = 0;
-	double proportional_error_1=0;
-	double proportional_error_2=0;
+	double error_1=0.0; // Our variables for the Controller Error
+	double error_2=0.0;
+	double integral_error_1 = 0.0;
+	double integral_error_2 = 0.0;
+	double proportional_error_1=0.0;
+	double proportional_error_2=0.0;
+	double pGain = 50;
+	double iGain = 100;
+	//double Speed = 0; // For parameter tuning.
 
 	while(ros::ok()){
 		ros::spinOnce();
 		loop_rate.sleep();
 
+		//n.getParam("/PGain", pGain);
+		//n.getParam("/IGain", iGain);
+		//n.getParam("/Speed", Speed);
+
+		//wheel_speed_global.W1 = -0.5; // Debugging
+		//wheel_speed_global.W2 = 0.5; // Debugging
+
 		// Computing the error: Error=Desired_Speed-Real_Speed
 		error_1=wheel_speed_global.W1-((encoders_global.delta_encoder1*UPDATE_RATE)/360.0);
 		error_2=wheel_speed_global.W2-((encoders_global.delta_encoder2*UPDATE_RATE)/360.0);
+		//error_1=Speed-((encoders_global.delta_encoder1*UPDATE_RATE)/360.0);
+		//error_2=Speed-((encoders_global.delta_encoder2*UPDATE_RATE)/360.0);
+
 
 		// Debugging stuff
-//		printf("error1: %f \t desired1: %f read1: %f\n",
-//						error_1,
-//						wheel_speed_global.W1,
-//						(encoders_global.delta_encoder1*UPDATE_RATE)/360.0);
+		printf("\n\n\nerror1: %f \t desired1: %f read1: %f\n",
+						error_1,
+						wheel_speed_global.W1,
+						(encoders_global.delta_encoder1*UPDATE_RATE)/360.0);
+		printf("error2: %f \t desired2: %f read2: %f\n",
+								error_2,
+								wheel_speed_global.W2,
+								(encoders_global.delta_encoder2*UPDATE_RATE)/360.0);
+		printf("P: %f \t I: %f \n",pGain,iGain);
 
 
 		// Proportional error (redundant but intuitive)
@@ -84,11 +106,23 @@ int main(int argc, char **argv) {
 		integral_error_1=integral_error_1+(error_1/UPDATE_RATE);
 		integral_error_2=integral_error_2+(error_2/UPDATE_RATE);
 
+		/*if (integral_error_1 > 10)
+			integral_error_1 = 10.0;
+		if (integral_error_2 > 10)
+			integral_error_2 = 10.0;
+		if (integral_error_1 < -10)
+			integral_error_1 = -10.0;
+		if (integral_error_2 < -10)
+			integral_error_2 = -10.0;*/
+
 		// Gain Values
-		float pGain = 50;
-		float iGain = 100;
+
 		pwm_command.PWM1=(int)(pGain*proportional_error_1+iGain*integral_error_1);
 		pwm_command.PWM2=(int)(pGain*proportional_error_2+iGain*integral_error_2);
+
+		printf("P_error: %f \t I_error: %f \n",proportional_error_1,integral_error_1);
+
+		//printf("PWM1: %d \t PWM2: %d \n",pwm_command.PWM1,pwm_command.PWM2);
 
 		// The deadband for the motors is as follows:
 		//pwm_command.PWM1=40; // left wheel (below 40 there is no movement)
@@ -105,6 +139,11 @@ int main(int argc, char **argv) {
 		if (pwm_command.PWM2>255) pwm_command.PWM2=255;
 		if (pwm_command.PWM1<-255) pwm_command.PWM1=-255;
 		if (pwm_command.PWM2<-255) pwm_command.PWM2=-255;
+
+		//pwm_command.PWM1=0;
+		//pwm_command.PWM2=pGain;
+
+		printf("PWM1: %d \t PWM2: %d \n",pwm_command.PWM1,pwm_command.PWM2);
 
 		// Publish the PWM Commands.
 		pwm_pub.publish(pwm_command);
