@@ -37,15 +37,13 @@ void ir_readings_update(const irsensors::floatarray &msg) { // motors::wheel_spe
 int main(int argc, char **argv) {
 
 
-	//TODO: Should we think about introducing some "undefined" state ?
-	//or is it of no use?
-
 	//make the robot follow the right wall at the beginning of the algorithm
 
 	ros::init(argc, argv, "WallFollowerController"); // Name of the node is WallFollowerController
 	ros::NodeHandle n;
 
-	n.setParam("/tuning_gain", 1.0);
+	n.setParam("/angle_gain", 1.0);
+	n.setParam("/distance_gain", 1.0);
 
 	motors::wheel_speed desired_wheel_speed; // This variable stores the desired wheel speeds;
 
@@ -66,6 +64,7 @@ int main(int argc, char **argv) {
 	float iGain = 0.25;
 	float theta_command;
 	double distance_gain=1.0;
+	double angle_gain=1.0;
 
 	double param_gain = 15.0;
 
@@ -73,11 +72,8 @@ int main(int argc, char **argv) {
 		ros::spinOnce();
 		loop_rate.sleep();
 
-		if (n.getParam("/tuning_gain", distance_gain))
-				{
-				  //printf("CHANGE\n");
-				}
-
+		n.getParam("/angle_gain", angle_gain);
+		n.getParam("/distance_gain", distance_gain);
 		//printf("current_gain: %f \n",param_gain);
 
 		float front_right = ir_readings_processed_global.ch[SENSORS[0]];
@@ -94,6 +90,8 @@ int main(int argc, char **argv) {
 		//float sensor_two = ir_readings_processed_global.ch[7];
 		float front = ir_readings_processed_global.ch[SENSORS[4]];
 
+		printf("sensor_one: %f,   sensor_two: %f\n",sensor_one,sensor_two);
+
 		if (SIDE == 0) {
 			error_theta = atan2(sensor_two - sensor_one, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
 		} else if (SIDE == 1) {
@@ -104,13 +102,13 @@ int main(int argc, char **argv) {
 
 
 		if (isnan(error_theta)) {
-			//printf("Deu NAN \n");
+			//printf("Gave a NAN \n");
 			// Desired speeds for the wheels;
 			desired_wheel_speed.W1 = fixed_speed; // Right wheel
 			desired_wheel_speed.W2 = fixed_speed; // Left wheel
 			printf("NaN values\n");
 			// Publish the desired Speed to the low level controller;
-			printf("W1: %f \t W2: %f \n",desired_wheel_speed.W1,desired_wheel_speed.W2);
+			printf("W1: %f \t W2: %f \n\n\n",desired_wheel_speed.W1,desired_wheel_speed.W2);
 			desired_speed_pub.publish(desired_wheel_speed);
 			continue;
 		}
@@ -123,16 +121,17 @@ int main(int argc, char **argv) {
 			error_distance = 0;
 		}
 		printf("Error distance: %f \n",error_distance);
+		printf("Error angle: %f \n",error_theta);
 
 		// Proportional error (redundant but intuitive)
 		proportional_error_theta = error_theta;
-		desired_wheel_speed.W1 = fixed_speed + (0.25 * error_theta)
+		desired_wheel_speed.W1 = fixed_speed + (angle_gain * error_theta)
 				+ (distance_gain * error_distance); // Right
-		desired_wheel_speed.W2 = fixed_speed - (0.25 * error_theta)
+		desired_wheel_speed.W2 = fixed_speed - (angle_gain * error_theta)
 				- (distance_gain * error_distance); // Left
 
 		// Publish the desired Speed to the low level controller;
-		printf("W1: %f \t W2: %f \n",desired_wheel_speed.W1,desired_wheel_speed.W2);
+		printf("W1: %f \t W2: %f \n\n\n",desired_wheel_speed.W1,desired_wheel_speed.W2);
 		desired_speed_pub.publish(desired_wheel_speed);
 
 	}
