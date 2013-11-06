@@ -17,7 +17,7 @@ const int UPDATE_RATE = 100; // maybe this value can be changed for the high lev
 int SENSORS[] = { 0, 1, 6, 5, 7 };
 const static float WALL_DISTANCE = 0.2;
 const static float WALL_ERROR_MARGIN = 0.08;
-const static float SENSOR_DISTANCE = 0.09;
+const static float SENSOR_DISTANCE = 0.08; //0.09
 const static float FRONT_DISTANCE = 0.06;
 
 // 0 = right, 1 = left;
@@ -49,7 +49,7 @@ enum state{
 
 //takes the current state of the robot and the probability vector and
 //updates it according to the sensor measurements
-state find_state(state current_state,std::vector<double> &state_probability){
+int find_state(state current_state,std::vector<double> &state_probability){
 
 	float front_sensor 		  =  ir_readings_processed_global.ch[SENSORS[4]];
 	float right_sensor_front  =  ir_readings_processed_global.ch[SENSORS[0]];
@@ -139,7 +139,7 @@ state find_state(state current_state,std::vector<double> &state_probability){
 	if(state_probability[HALF_MISSING_LEFT] < 0)	state_probability[HALF_MISSING_LEFT] = 0;
 	if(state_probability[MISSING_LEFT] < 0)			state_probability[MISSING_LEFT] = 0;
 
-	double normalize_sum = state_probability[FOLLOW_LEFT] + state_probability[HALF_MISSING_LEFT] + state_probability[MISSING_LEFT];
+	normalize_sum = state_probability[FOLLOW_LEFT] + state_probability[HALF_MISSING_LEFT] + state_probability[MISSING_LEFT];
 	state_probability[FOLLOW_LEFT] 			/= 		normalize_sum;
 	state_probability[HALF_MISSING_LEFT] 	/=		normalize_sum;
 	state_probability[MISSING_LEFT] 		/= 		normalize_sum;
@@ -164,6 +164,8 @@ int main(int argc, char **argv) {
 	ros::init(argc, argv, "WallFollowerController"); // Name of the node is WallFollowerController
 	ros::NodeHandle n;
 
+	n.setParam("/param_gain", 5.0);
+
 	motors::wheel_speed desired_wheel_speed; // This variable stores the desired wheel speeds;
 
 	desired_wheel_speed.W1 = 0.0; // We want to be stopped until our first command.
@@ -183,10 +185,21 @@ int main(int argc, char **argv) {
 	float iGain = 0.25;
 	float theta_command;
 
+	double param_gain = 15.0;
+
+
+
 	while (ros::ok()) {
 		ros::spinOnce();
 		loop_rate.sleep();
 
+		if (n.getParam("/param_gain", param_gain))
+				{
+				  //printf("CHANGE\n");
+				}
+
+		printf("current_gain: %f \n",param_gain);
+		/*
 		//now here we have to switch all the states and define
 		//what the robot is supposed to do!
 		switch(find_state(current_state,state_probability)){
@@ -205,14 +218,20 @@ int main(int argc, char **argv) {
 			//LEFT WALL FOLLOWING ALGORITHM
 			break;
 		}
+		*/
 
+		float front_right = ir_readings_processed_global.ch[SENSORS[0]];
+
+		//printf("FRONT RIGHT %f\n",front_right);
+		// Front right, back right, front left, back left, front middle.
+		//int SENSORS[] = { 0, 1, 6, 5, 7 };
 
 		// Computing the error: Error=Angle of the robot. Ideally it should be zero.
 		// Sensor one = front, Sensor two = back.
-		//float sensor_one = ir_readings_processed_global.ch[SENSORS[2 * SIDE]];
-		//float sensor_two = ir_readings_processed_global.ch[SENSORS[2 * SIDE + 1]];
-		float sensor_one = ir_readings_processed_global.ch[6];
-		float sensor_two = ir_readings_processed_global.ch[7];
+		float sensor_one = ir_readings_processed_global.ch[SENSORS[2 * SIDE]];
+		float sensor_two = ir_readings_processed_global.ch[SENSORS[2 * SIDE + 1]];
+		//float sensor_one = ir_readings_processed_global.ch[6];
+		//float sensor_two = ir_readings_processed_global.ch[7];
 		float front = ir_readings_processed_global.ch[SENSORS[4]];
 		// If we're about to collide to our front, just rotate.
 		/*if (!isnan(front) && front > 0.01 && front < FRONT_DISTANCE) {
@@ -235,10 +254,16 @@ int main(int argc, char **argv) {
 		//			desired_speed_pub.publish(desired_wheel_speed);
 		//			continue;
 		//		}
+
+		//printf("Sensor1: %f\t",sensor_one);
+		//printf("Sensor2: %f\n",sensor_two);
+		//printf("Difference of sensors %f\n ", sensor_one-sensor_two);
+
 		if (SIDE == 0) {
 			error_theta = atan2(sensor_two - sensor_one, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
 		} else if (SIDE == 1) {
-			error_theta = atan2((sensor_one - 0.035) - sensor_two, 0.15);
+			//error_theta = atan2((sensor_one - 0.035) - sensor_two, 0.15);
+			error_theta = atan2(sensor_one - sensor_two, SENSOR_DISTANCE); //0.15
 			//error_theta = atan2(sensor_one - sensor_two, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
 		}
 //		printf("one: %f , two: %f \n", sensor_one,sensor_one-0.035);
@@ -249,7 +274,7 @@ int main(int argc, char **argv) {
 			// Desired speeds for the wheels;
 			desired_wheel_speed.W1 = fixed_speed; // Right wheel
 			desired_wheel_speed.W2 = fixed_speed; // Left wheel
-
+			printf("NaN values\n");
 			// Publish the desired Speed to the low level controller;
 			desired_speed_pub.publish(desired_wheel_speed);
 			continue;
@@ -272,21 +297,26 @@ int main(int argc, char **argv) {
 		//		}
 
 		float distance = 0.5 * ((sensor_one - 0.035) + sensor_two);
-		float error_distance = distance - 0.20;
+		float error_distance = distance - 0.15;
+
+		//printf("Error distance: %f\n",error_distance);
+		//printf("Error theta: %f\n",error_theta);
 
 		if (error_distance < 0.025 && error_distance > -0.025) {
 			error_distance = 0;
 		}
+		error_distance = 0;
 
 		// Proportional error (redundant but intuitive)
 		proportional_error_theta = error_theta;
-		desired_wheel_speed.W1 = fixed_speed + (0.5 * error_theta)
+		desired_wheel_speed.W1 = fixed_speed + (0.25 * error_theta)
 				+ (0.75 * error_distance); // Right
-		desired_wheel_speed.W2 = fixed_speed - (0.5 * error_theta)
+		desired_wheel_speed.W2 = fixed_speed - (0.25 * error_theta)
 				- (0.75 * error_distance); // Left
 
-		printf("error_angle: %f \t error_distance: %f \n", error_theta,
-				error_distance);
+		//printf("error_angle: %f \t error_distance: %f \n", error_theta,
+		//		error_distance);
+		//printf("Desired speed W1: %f , W2: %f\n",desired_wheel_speed.W1,desired_wheel_speed.W2);
 
 		//		// Integral error
 //		integral_error_theta = integral_error_theta
