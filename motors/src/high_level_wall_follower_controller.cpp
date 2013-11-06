@@ -27,17 +27,14 @@ ros::Subscriber ir_sub; // Subscriber to the ir post-processing readings;
 ros::Publisher desired_speed_pub; // Publisher of the desired speed to the Low Level Controller;
 
 irsensors::floatarray ir_readings_processed_global; // This variable stores the last read ir values;
+ros::NodeHandle n;
 
 void ir_readings_update(const irsensors::floatarray &msg) { // motors::wheel_speed
 	// Whenever we get a callback from the ir readings, we must update our current ir readings;
 	ir_readings_processed_global = msg; // Save the most recent values;
 }
 
-void follow_wall(){
-
-}
-
-enum state{
+enum state {
 	FOLLOW_RIGHT = 0,
 	HALF_MISSING_RIGHT = 1,
 	MISSING_RIGHT = 2,
@@ -49,106 +46,23 @@ enum state{
 
 //takes the current state of the robot and the probability vector and
 //updates it according to the sensor measurements
-int find_state(state current_state,std::vector<double> &state_probability){
-
-	float front_sensor 		  =  ir_readings_processed_global.ch[SENSORS[4]];
-	float right_sensor_front  =  ir_readings_processed_global.ch[SENSORS[0]];
-	float right_sensor_back   =  ir_readings_processed_global.ch[SENSORS[1]];
-	float left_sensor_front   =  ir_readings_processed_global.ch[SENSORS[2]];
-	float left_sensor_back    =  ir_readings_processed_global.ch[SENSORS[3]];
-
-	state probable_state;
-
-    double some_thresh = 0.4;
-	//TODO: CALIBRATE THE RIGHT THRESHOLDS FOR THE SENSORS
-
-    //update the probability that there is a wall in front of the robot
-	if(!isnan(front_sensor) && front_sensor < some_thresh){
-		state_probability[COLLISION_FRONT] += 0.05;
-	}
-	else{
-		state_probability[COLLISION_FRONT] -= 0.025;
-	}
-
-	//update the probability that there is a right wall next to the robot
-	bool right_sensor_front_valid = !isnan(right_sensor_front) && right_sensor_front < some_thresh;
-	bool right_sensor_back_valid  = !isnan(right_sensor_back) && right_sensor_back < some_thresh;
-
-	if(right_sensor_front_valid && right_sensor_back_valid){
-		state_probability[FOLLOW_RIGHT] 		+= 0.05;
-		state_probability[HALF_MISSING_RIGHT] 	-= 0.025;
-		state_probability[MISSING_RIGHT] 		-= 0.025;
-	}
-	else if(!right_sensor_front_valid && right_sensor_back_valid){
-		state_probability[FOLLOW_RIGHT] 		-= 0.025;
-		state_probability[HALF_MISSING_RIGHT] 	+= 0.05;
-		state_probability[MISSING_RIGHT] 		-= 0.025;
-	}
-	else if(!right_sensor_front_valid && !right_sensor_back_valid){
-		state_probability[FOLLOW_RIGHT] 		-= 0.025;
-		state_probability[HALF_MISSING_RIGHT] 	-= 0.025;
-		state_probability[MISSING_RIGHT] 		+= 0.05;
-	}
-	else
-	{
-		//invalid readings => dont change anything at current estimate
-	}
-
-
-	bool left_sensor_front_valid = !isnan(right_sensor_front) && right_sensor_front < some_thresh;
-	bool left_sensor_back_valid = !isnan(right_sensor_back) && right_sensor_back < some_thresh;
-
-	if(left_sensor_front_valid && left_sensor_back_valid){
-		state_probability[FOLLOW_LEFT] 			+= 0.05;
-		state_probability[HALF_MISSING_LEFT] 	-= 0.025;
-		state_probability[MISSING_LEFT] 		-= 0.025;
-	}
-	else if(!left_sensor_front_valid && left_sensor_back_valid){
-		state_probability[FOLLOW_LEFT] 			-= 0.025;
-		state_probability[HALF_MISSING_LEFT] 	+= 0.05;
-		state_probability[MISSING_LEFT] 		-= 0.025;
-	}
-	else if(!left_sensor_front_valid && !left_sensor_back_valid){
-		state_probability[FOLLOW_LEFT] 			-= 0.025;
-		state_probability[HALF_MISSING_LEFT] 	-= 0.025;
-		state_probability[MISSING_LEFT] 		+= 0.05;
-	}
-	else
-	{
-		//invalid readings => dont change anything at current estimate
-	}
-
-
-	//fix out of bounds probabilities (<0) and normalize the vectors
-	//COLLISION_FRONT
-	if(state_probability[COLLISION_FRONT] < 0)		state_probability[COLLISION_FRONT] = 0;
-	if(state_probability[COLLISION_FRONT] > 1)		state_probability[COLLISION_FRONT] = 1;
-
-	//WALL_RIGHT
-	if(state_probability[FOLLOW_RIGHT] < 0)			state_probability[FOLLOW_RIGHT] = 0;
-	if(state_probability[HALF_MISSING_RIGHT] < 0)	state_probability[HALF_MISSING_RIGHT] = 0;
-	if(state_probability[MISSING_RIGHT] < 0)		state_probability[MISSING_RIGHT] = 0;
-
-	double normalize_sum = state_probability[FOLLOW_RIGHT] + state_probability[HALF_MISSING_RIGHT] + state_probability[MISSING_RIGHT];
-	state_probability[FOLLOW_RIGHT] 		/= 		normalize_sum;
-	state_probability[HALF_MISSING_RIGHT] 	/=		normalize_sum;
-	state_probability[MISSING_RIGHT] 		/= 		normalize_sum;
-
-	//WALL_LEFT
-	if(state_probability[FOLLOW_LEFT] < 0)			state_probability[FOLLOW_LEFT] = 0;
-	if(state_probability[HALF_MISSING_LEFT] < 0)	state_probability[HALF_MISSING_LEFT] = 0;
-	if(state_probability[MISSING_LEFT] < 0)			state_probability[MISSING_LEFT] = 0;
-
-	normalize_sum = state_probability[FOLLOW_LEFT] + state_probability[HALF_MISSING_LEFT] + state_probability[MISSING_LEFT];
-	state_probability[FOLLOW_LEFT] 			/= 		normalize_sum;
-	state_probability[HALF_MISSING_LEFT] 	/=		normalize_sum;
-	state_probability[MISSING_LEFT] 		/= 		normalize_sum;
-
-	//@TODO: THINK ABOUT STATE HANDLING AND REFORMULATE ENUMERATION!
-	//THIS RETURN DOES NOT MAKE SENSE AT THE MOMENT!!
-	return 0;
-}
-
+int find_state(state current_state, std::vector<double> &state_probability);
+class WallFollower {
+private:
+	double error_theta; // Our variables for the Controller Error
+	double integral_error_theta;
+	double proportional_error_theta;
+	double fixed_speed;
+	float pGain;
+	float iGain;
+	float theta_command;
+	double param_gain;
+	motors::wheel_speed desired_wheel_speed;
+public:
+	WallFollower(){}
+	void init();
+	void step();
+};
 int main(int argc, char **argv) {
 
 	std::vector<double> state_probability(7, 0.0);
@@ -160,193 +74,195 @@ int main(int argc, char **argv) {
 	state current_state = FOLLOW_RIGHT;
 	state_probability[current_state] = 1.0;
 
-
 	ros::init(argc, argv, "WallFollowerController"); // Name of the node is WallFollowerController
-	ros::NodeHandle n;
 
 	n.setParam("/param_gain", 5.0);
 
-	motors::wheel_speed desired_wheel_speed; // This variable stores the desired wheel speeds;
-
-	desired_wheel_speed.W1 = 0.0; // We want to be stopped until our first command.
-	desired_wheel_speed.W2 = 0.0;
-
 	ir_sub = n.subscribe("/sensors/transformed/ADC", 1, ir_readings_update); // Subscribing to the processed ir values topic.
-
-	desired_speed_pub = n.advertise<motors::wheel_speed>("/desired_speed", 1); // We are Publishing a topic that changes the desired wheel speeds.
 
 	ros::Rate loop_rate(UPDATE_RATE);
 
-	double error_theta = 0; // Our variables for the Controller Error
-	double integral_error_theta = 0;
-	double proportional_error_theta = 0;
-	double fixed_speed = 0.3;
-	float pGain = 0.5;
-	float iGain = 0.25;
-	float theta_command;
-
-	double param_gain = 15.0;
-
-
+	// Creates a WallFollower object.
+	WallFollower wf;
+	// Runs the initiation method (initializes the variable) on the WallFollower object.
+	wf.init();
 
 	while (ros::ok()) {
 		ros::spinOnce();
 		loop_rate.sleep();
+		// Runs the step method of the wallfollower object, which remembers the state through fields (variables).
+		wf.step();
+	}
+}
 
-		if (n.getParam("/param_gain", param_gain))
-				{
-				  //printf("CHANGE\n");
-				}
+void WallFollower::init() {
+	error_theta = 0; // Our variables for the Controller Error
+	integral_error_theta = 0;
+	proportional_error_theta = 0;
+	fixed_speed = 0.3;
+	pGain = 0.5;
+	iGain = 0.25;
+	param_gain = 15.0;
 
-		printf("current_gain: %f \n",param_gain);
-		/*
-		//now here we have to switch all the states and define
-		//what the robot is supposed to do!
-		switch(find_state(current_state,state_probability)){
-		case COLLISION_FRONT:
-			//Rotate until there is no collision anymore
-			//This has to be handled more elegantly in the future as we
-			//want to combine stuff such as COLLISION_FRONT and FOLLOW_RIGHT => Turn Left
-			break;
-		case FOLLOW_RIGHT:
-			//RIGHT WALL FOLLOWING ALGORITHM
-			break;
-		case HALF_MISSING_RIGHT || HALF_MISSING_LEFT:
-			//Just go straight
-			break;
-		case FOLLOW_LEFT:
-			//LEFT WALL FOLLOWING ALGORITHM
-			break;
-		}
-		*/
+	desired_wheel_speed.W1 = 0.0;
+	desired_wheel_speed.W2 = 0.0;
+	desired_speed_pub = n.advertise<motors::wheel_speed>("/desired_speed", 1); // We are Publishing a topic that changes the desired wheel speeds.
+}
 
-		float front_right = ir_readings_processed_global.ch[SENSORS[0]];
+void WallFollower::step() {
+	if (n.getParam("/param_gain", param_gain)) {
+		//printf("CHANGE\n");
+	}
+	printf("current_gain: %f \n", param_gain);
 
-		//printf("FRONT RIGHT %f\n",front_right);
-		// Front right, back right, front left, back left, front middle.
-		//int SENSORS[] = { 0, 1, 6, 5, 7 };
+	float front_right = ir_readings_processed_global.ch[SENSORS[0]];
 
-		// Computing the error: Error=Angle of the robot. Ideally it should be zero.
-		// Sensor one = front, Sensor two = back.
-		float sensor_one = ir_readings_processed_global.ch[SENSORS[2 * SIDE]];
-		float sensor_two = ir_readings_processed_global.ch[SENSORS[2 * SIDE + 1]];
-		//float sensor_one = ir_readings_processed_global.ch[6];
-		//float sensor_two = ir_readings_processed_global.ch[7];
-		float front = ir_readings_processed_global.ch[SENSORS[4]];
-		// If we're about to collide to our front, just rotate.
-		/*if (!isnan(front) && front > 0.01 && front < FRONT_DISTANCE) {
-		 // Desired speeds for the wheels;
-		 desired_wheel_speed.W1 = fixed_speed; // Right wheel
-		 desired_wheel_speed.W2 = -fixed_speed; // Left wheel
-
-		 // Publish the desired Speed to the low level controller;
-		 desired_speed_pub.publish(desired_wheel_speed);
-		 continue;
-		 }*/
-		// If the sensor readings are broken, just go forwards.
-		//		if (isnan(sensor_one) || isnan(sensor_two)) {
-		//
-		//			// Desired speeds for the wheels;
-		//			desired_wheel_speed.W1 = fixed_speed; // Right wheel
-		//			desired_wheel_speed.W2 = fixed_speed; // Left wheel
-		//
-		//			// Publish the desired Speed to the low level controller;
-		//			desired_speed_pub.publish(desired_wheel_speed);
-		//			continue;
-		//		}
-
-		//printf("Sensor1: %f\t",sensor_one);
-		//printf("Sensor2: %f\n",sensor_two);
-		//printf("Difference of sensors %f\n ", sensor_one-sensor_two);
-
-		if (SIDE == 0) {
-			error_theta = atan2(sensor_two - sensor_one, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
-		} else if (SIDE == 1) {
-			//error_theta = atan2((sensor_one - 0.035) - sensor_two, 0.15);
-			error_theta = atan2(sensor_one - sensor_two, SENSOR_DISTANCE); //0.15
-			//error_theta = atan2(sensor_one - sensor_two, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
-		}
-//		printf("one: %f , two: %f \n", sensor_one,sensor_one-0.035);
-//		printf("Angle: %f \n",error_theta);
-
-		if (isnan(error_theta)) {
-			//printf("Deu NAN \n");
-			// Desired speeds for the wheels;
-			desired_wheel_speed.W1 = fixed_speed; // Right wheel
-			desired_wheel_speed.W2 = fixed_speed; // Left wheel
-			printf("NaN values\n");
-			// Publish the desired Speed to the low level controller;
-			desired_speed_pub.publish(desired_wheel_speed);
-			continue;
-		}
-
-		//printf("front: %f back: %f \n",sensor_one,sensor_two);
-		//printf("back: %.2f, front: %.2f, error_theta: %.1f\n", back, front, error_theta * 180/M_PI);
-		// Debugging stuff
-		//		printf("error1: %f \t desired1: %f read1: %f\n",
-		//						error_1,
-		//						wheel_speed_global.W1,
-		//						(encoders_global.delta_encoder1*UPDATE_RATE)/360.0);
-
-		// Distance management (will handle this later)
-		//		float cur_dist = std::min(sensor_two, sensor_one);
-		//		if (cur_dist > WALL_DISTANCE + WALL_ERROR_MARGIN) {
-		//			error_theta -= (0.075 * (SIDE ? -1 : 1));
-		//		} else if (cur_dist < WALL_DISTANCE - WALL_ERROR_MARGIN) {
-		//			error_theta += (0.075 * (SIDE ? -1 : 1));
-		//		}
-
-		float distance = 0.5 * ((sensor_one - 0.035) + sensor_two);
-		float error_distance = distance - 0.15;
-
-		//printf("Error distance: %f\n",error_distance);
-		//printf("Error theta: %f\n",error_theta);
-
-		if (error_distance < 0.025 && error_distance > -0.025) {
-			error_distance = 0;
-		}
-		error_distance = 0;
-
-		// Proportional error (redundant but intuitive)
-		proportional_error_theta = error_theta;
-		desired_wheel_speed.W1 = fixed_speed + (0.25 * error_theta)
-				+ (0.75 * error_distance); // Right
-		desired_wheel_speed.W2 = fixed_speed - (0.25 * error_theta)
-				- (0.75 * error_distance); // Left
-
-		//printf("error_angle: %f \t error_distance: %f \n", error_theta,
-		//		error_distance);
-		//printf("Desired speed W1: %f , W2: %f\n",desired_wheel_speed.W1,desired_wheel_speed.W2);
-
-		//		// Integral error
-//		integral_error_theta = integral_error_theta
-//				+ (error_theta / UPDATE_RATE);
-//
-//		if (integral_error_theta > 1.0) {
-//			// Anti-Windup strategy;
-//			integral_error_theta = 1.0;
-//		}
-//		//
-//		//		// Gain Values
-//		theta_command = (pGain * proportional_error_theta
-//				+ iGain * integral_error_theta);
-//		//
-//
-//		printf("P: %f , I: %f \n", proportional_error_theta,integral_error_theta);
-
-		if (theta_command > 1.0) {
-			theta_command = 1.0;
-		}
-		if (theta_command < -1.0) {
-			theta_command = -1.0;
-		}
-		//
-		//		// Desired speeds for the wheels;
-		//		desired_wheel_speed.W1 = fixed_speed - (0.5 * theta_command);
-		//		desired_wheel_speed.W2 = fixed_speed + (0.5 * theta_command);
-
+	float sensor_one = ir_readings_processed_global.ch[SENSORS[2 * SIDE]];
+	float sensor_two = ir_readings_processed_global.ch[SENSORS[2 * SIDE + 1]];
+	float front = ir_readings_processed_global.ch[SENSORS[4]];
+	if (SIDE == 0) {
+		error_theta = atan2(sensor_two - sensor_one, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
+	} else if (SIDE == 1) {
+		//error_theta = atan2((sensor_one - 0.035) - sensor_two, 0.15);
+		error_theta = atan2(sensor_one - sensor_two, SENSOR_DISTANCE); //0.15
+		//error_theta = atan2(sensor_one - sensor_two, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
+	}
+	//
+	if (isnan(error_theta)) {
+		// Desired speeds for the wheels;
+		desired_wheel_speed.W1 = fixed_speed; // Right wheel
+		desired_wheel_speed.W2 = fixed_speed; // Left wheel
+		printf("NaN values\n");
 		// Publish the desired Speed to the low level controller;
 		desired_speed_pub.publish(desired_wheel_speed);
-
+		return;
 	}
+
+	float distance = 0.5 * ((sensor_one - 0.035) + sensor_two);
+	float error_distance = distance - 0.15;
+	if (error_distance < 0.025 && error_distance > -0.025) {
+		error_distance = 0;
+	}
+	error_distance = 0;
+
+	// Proportional error (redundant but intuitive)
+	proportional_error_theta = error_theta;
+	desired_wheel_speed.W1 = fixed_speed + (0.25 * error_theta)
+			+ (0.75 * error_distance); // Right
+	desired_wheel_speed.W2 = fixed_speed - (0.25 * error_theta)
+			- (0.75 * error_distance); // Left
+
+	if (theta_command > 1.0) {
+		theta_command = 1.0;
+	}
+	if (theta_command < -1.0) {
+		theta_command = -1.0;
+	}
+	// Publish the desired Speed to the low level controller;
+	desired_speed_pub.publish(desired_wheel_speed);
+}
+
+int find_state(state current_state, std::vector<double> &state_probability) {
+
+	float front_sensor = ir_readings_processed_global.ch[SENSORS[4]];
+	float right_sensor_front = ir_readings_processed_global.ch[SENSORS[0]];
+	float right_sensor_back = ir_readings_processed_global.ch[SENSORS[1]];
+	float left_sensor_front = ir_readings_processed_global.ch[SENSORS[2]];
+	float left_sensor_back = ir_readings_processed_global.ch[SENSORS[3]];
+
+	state probable_state;
+
+	double some_thresh = 0.4;
+	//TODO: CALIBRATE THE RIGHT THRESHOLDS FOR THE SENSORS
+
+	//update the probability that there is a wall in front of the robot
+	if (!isnan(front_sensor) && front_sensor < some_thresh) {
+		state_probability[COLLISION_FRONT] += 0.05;
+	} else {
+		state_probability[COLLISION_FRONT] -= 0.025;
+	}
+
+	//update the probability that there is a right wall next to the robot
+	bool right_sensor_front_valid = !isnan(right_sensor_front)
+			&& right_sensor_front < some_thresh;
+	bool right_sensor_back_valid = !isnan(right_sensor_back)
+			&& right_sensor_back < some_thresh;
+
+	if (right_sensor_front_valid && right_sensor_back_valid) {
+		state_probability[FOLLOW_RIGHT] += 0.05;
+		state_probability[HALF_MISSING_RIGHT] -= 0.025;
+		state_probability[MISSING_RIGHT] -= 0.025;
+	} else if (!right_sensor_front_valid && right_sensor_back_valid) {
+		state_probability[FOLLOW_RIGHT] -= 0.025;
+		state_probability[HALF_MISSING_RIGHT] += 0.05;
+		state_probability[MISSING_RIGHT] -= 0.025;
+	} else if (!right_sensor_front_valid && !right_sensor_back_valid) {
+		state_probability[FOLLOW_RIGHT] -= 0.025;
+		state_probability[HALF_MISSING_RIGHT] -= 0.025;
+		state_probability[MISSING_RIGHT] += 0.05;
+	} else {
+		//invalid readings => dont change anything at current estimate
+	}
+
+	bool left_sensor_front_valid = !isnan(right_sensor_front)
+			&& right_sensor_front < some_thresh;
+	bool left_sensor_back_valid = !isnan(right_sensor_back)
+			&& right_sensor_back < some_thresh;
+
+	if (left_sensor_front_valid && left_sensor_back_valid) {
+		state_probability[FOLLOW_LEFT] += 0.05;
+		state_probability[HALF_MISSING_LEFT] -= 0.025;
+		state_probability[MISSING_LEFT] -= 0.025;
+	} else if (!left_sensor_front_valid && left_sensor_back_valid) {
+		state_probability[FOLLOW_LEFT] -= 0.025;
+		state_probability[HALF_MISSING_LEFT] += 0.05;
+		state_probability[MISSING_LEFT] -= 0.025;
+	} else if (!left_sensor_front_valid && !left_sensor_back_valid) {
+		state_probability[FOLLOW_LEFT] -= 0.025;
+		state_probability[HALF_MISSING_LEFT] -= 0.025;
+		state_probability[MISSING_LEFT] += 0.05;
+	} else {
+		//invalid readings => dont change anything at current estimate
+	}
+
+	//fix out of bounds probabilities (<0) and normalize the vectors
+	//COLLISION_FRONT
+	if (state_probability[COLLISION_FRONT] < 0)
+		state_probability[COLLISION_FRONT] = 0;
+	if (state_probability[COLLISION_FRONT] > 1)
+		state_probability[COLLISION_FRONT] = 1;
+
+	//WALL_RIGHT
+	if (state_probability[FOLLOW_RIGHT] < 0)
+		state_probability[FOLLOW_RIGHT] = 0;
+	if (state_probability[HALF_MISSING_RIGHT] < 0)
+		state_probability[HALF_MISSING_RIGHT] = 0;
+	if (state_probability[MISSING_RIGHT] < 0)
+		state_probability[MISSING_RIGHT] = 0;
+
+	double normalize_sum = state_probability[FOLLOW_RIGHT]
+			+ state_probability[HALF_MISSING_RIGHT]
+			+ state_probability[MISSING_RIGHT];
+	state_probability[FOLLOW_RIGHT] /= normalize_sum;
+	state_probability[HALF_MISSING_RIGHT] /= normalize_sum;
+	state_probability[MISSING_RIGHT] /= normalize_sum;
+
+	//WALL_LEFT
+	if (state_probability[FOLLOW_LEFT] < 0)
+		state_probability[FOLLOW_LEFT] = 0;
+	if (state_probability[HALF_MISSING_LEFT] < 0)
+		state_probability[HALF_MISSING_LEFT] = 0;
+	if (state_probability[MISSING_LEFT] < 0)
+		state_probability[MISSING_LEFT] = 0;
+
+	normalize_sum = state_probability[FOLLOW_LEFT]
+			+ state_probability[HALF_MISSING_LEFT]
+			+ state_probability[MISSING_LEFT];
+	state_probability[FOLLOW_LEFT] /= normalize_sum;
+	state_probability[HALF_MISSING_LEFT] /= normalize_sum;
+	state_probability[MISSING_LEFT] /= normalize_sum;
+
+	//@TODO: THINK ABOUT STATE HANDLING AND REFORMULATE ENUMERATION!
+	//THIS RETURN DOES NOT MAKE SENSE AT THE MOMENT!!
+	return 0;
 }
