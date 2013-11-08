@@ -9,13 +9,15 @@
 
 using namespace differential_drive;
 
+#define PI 3.14159265358979323
+
 //defines the speed of the Control Loop (in Hz)
 const int UPDATE_RATE = 100; // maybe this value can be changed for the high level control, kanske 10?  ARE WE GOING TO HAVE PROBLEMS WITH HAVING THIS VARIABLE DECLARED IN SEVERAL PROGRAMS?
 
 //constants
 // Front right, back right, front left, back left, front middle.
 int SENSORS[] = { 0, 1, 6, 5, 7 };
-const static float SENSOR_DISTANCE = 0.08; //0.09
+const static float SENSOR_DISTANCE = 0.15;//0.08; //0.09
 
 // 0 = right, 1 = left;
 int SIDE = 1;
@@ -39,8 +41,8 @@ int main(int argc, char **argv) {
 	ros::init(argc, argv, "WallFollowerController"); // Name of the node is WallFollowerController
 	ros::NodeHandle n;
 
-	n.setParam("/angle_gain", 1.0);
-	n.setParam("/distance_gain", 1.0);
+	//n.setParam("/angle_gain", 1.0);
+	//n.setParam("/distance_gain", 1.0);
 
 	movement::wheel_speed desired_wheel_speed; // This variable stores the desired wheel speeds;
 
@@ -60,8 +62,8 @@ int main(int argc, char **argv) {
 	float pGain = 0.5;
 	float iGain = 0.25;
 	float theta_command;
-	double distance_gain=1.0;
-	double angle_gain=1.0;
+	double distance_gain= 0.75;
+	double angle_gain= 0.25;
 
 	double param_gain = 15.0;
 
@@ -69,8 +71,8 @@ int main(int argc, char **argv) {
 		ros::spinOnce();
 		loop_rate.sleep();
 
-		n.getParam("/angle_gain", angle_gain);
-		n.getParam("/distance_gain", distance_gain);
+		//n.getParam("/angle_gain", angle_gain);
+		//n.getParam("/distance_gain", distance_gain);
 		//printf("current_gain: %f \n",param_gain);
 
 		float front_right = ir_readings_processed_global.ch[SENSORS[0]];
@@ -118,7 +120,7 @@ int main(int argc, char **argv) {
 			error_distance = 0;
 		}
 		printf("Error distance: %f \n",error_distance);
-		printf("Error angle: %f \n",error_theta);
+		printf("Error angle (degrees): %f \n",error_theta*(180.0/PI));
 
 		// Proportional error (redundant but intuitive)
 		proportional_error_theta = error_theta;

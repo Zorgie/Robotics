@@ -21,6 +21,8 @@ static ros::Subscriber ir_sub; // Subscriber to the ir post-processing readings;
 static ros::Subscriber nav_sub;
 static ros::Publisher nav_pub;
 static ros::Publisher desired_speed_pub; // Publisher of the desired speed to the Low Level Controller;
+static ros::Publisher requested_action_performed_pub; //Tells Navigation.cpp that the requested action such as a left turn has been performed
+
 
 static irsensors::floatarray ir_readings_processed_global; // This variable stores the last read ir values;
 
@@ -33,6 +35,13 @@ void ir_readings_update(const irsensors::floatarray &msg) { // movement::wheel_s
 	ir_readings_processed_global = msg; // Save the most recent values;
 }
 
+//send a request to change the state to the navigation system - change that later
+void send_inturrupt(){
+			navigation::movement_state test;
+			test.movement_state = 0;
+			requested_action_performed_pub.publish(test);
+}
+
 void movement_state_update(const navigation::movement_state &mvs) {
 	switch(mvs.movement_state){
 	case GO_STRAIGHT_INF:
@@ -40,12 +49,18 @@ void movement_state_update(const navigation::movement_state &mvs) {
 		break;
 	case GO_STRAIGHT_X:
 		printf("GO_STRAIGHT_X\n");
+		printf("TURN PERFORMED VIRTUALLY\n");
+		send_inturrupt();
 		break;
 	case TURN_LEFT_90:
 		printf("TURN_LEFT_90\n");
+		printf("TURN PERFORMED VIRTUALLY\n");
+		send_inturrupt();
 		break;
 	case TURN_RIGHT_90:
 		printf("TURN_RIGHT_90\n");
+		printf("TURN PERFORMED VIRTUALLY\n");
+		send_inturrupt();
 		break;
 	case FOLLOW_LEFT_WALL:
 		printf("FOLLOW_LEFT_WALL\n");
@@ -67,6 +82,8 @@ void movement_state_update(const navigation::movement_state &mvs) {
 	//}
 }
 
+
+
 int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "WallFollowerController"); // Name of the node is WallFollowerController
@@ -82,6 +99,8 @@ int main(int argc, char **argv) {
 	// Runs the initiation method (initializes the variable) on the WallFoldlower object.
 	wf.init();
 	desired_speed_pub = n.advertise<movement::wheel_speed>("/desired_speed", 1); // We are Publishing a topic that changes the desired wheel speeds.
+	requested_action_performed_pub = n.advertise<navigation::movement_state>("/movement/requested_action_performed",1);
+
 
 	while (ros::ok()) {
 		ros::spinOnce();
