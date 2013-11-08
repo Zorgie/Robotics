@@ -24,17 +24,18 @@ void WallFollow::init() {
 	desired_wheel_speed.W2 = 0.0;
 }
 
-movement::wheel_speed WallFollow::step(double gain, irsensors::floatarray ir_readings) {
+//side: 0 = right,1 = left
+movement::wheel_speed WallFollow::step(double gain, irsensors::floatarray ir_readings,int side) {
 	printf("current_gain: %f \n", param_gain);
 
 	float front_right = ir_readings.ch[SENSORS[0]];
 
-	float sensor_one = ir_readings.ch[SENSORS[2 * SIDE]];
-	float sensor_two = ir_readings.ch[SENSORS[2 * SIDE + 1]];
+	float sensor_one = ir_readings.ch[SENSORS[2 * side]];
+	float sensor_two = ir_readings.ch[SENSORS[2 * side + 1]];
 	float front = ir_readings.ch[SENSORS[4]];
-	if (SIDE == 0) {
+	if (side == 0) {
 		error_theta = atan2(sensor_two - sensor_one, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
-	} else if (SIDE == 1) {
+	} else if (side == 1) {
 		//error_theta = atan2((sensor_one - 0.035) - sensor_two, 0.15);
 		error_theta = atan2(sensor_one - sensor_two, SENSOR_DISTANCE); //0.15
 		//error_theta = atan2(sensor_one - sensor_two, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors

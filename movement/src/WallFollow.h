@@ -25,14 +25,12 @@ private:
 	movement::wheel_speed desired_wheel_speed;
 	// Front right, back right, front left, back left, front middle.
 	const static int SENSORS[];
-	// 0 = right, 1 = left;
-	const static int SIDE = 1;
 	const static float SENSOR_DISTANCE = 0.08; //0.09
 public:
 	WallFollow() {
 	}
 	void init();
-	movement::wheel_speed step(double gain, irsensors::floatarray);
+	movement::wheel_speed step(double gain, irsensors::floatarray,int side);
 	virtual ~WallFollow(){}
 };
 
