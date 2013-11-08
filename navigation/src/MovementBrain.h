@@ -9,17 +9,9 @@
 
 #include <iostream>
 #include <vector>
-#include "lib/navigation/RobotStates.h"
+#include "export/navigation/RobotStates.h"
+#include "export/navigation/RobotActions.h"
 
-/*enum robot_movement_state{
-    GO_STRAIGHT,
-    FOLLOW_RIGHT,
-    FOLLOW_LEFT,
-    TURN_LEFT,
-    TURN_RIGHT,
-    CHECK_RIGHT_PATH,
-    CHECK_LEFT_PATH
-};*/
 
 enum sensor_states{
     FRONT_WALL      = 0,
@@ -46,6 +38,8 @@ public:
     
     void set_current_movement_state(robot_movement_state);
     robot_movement_state get_current_movement_state();
+    void requested_action_performed();
+    robot_action get_action_to_perform();
     
     
 //private:
@@ -54,6 +48,8 @@ public:
     robot_movement_state make_state_decision_straight();
     robot_movement_state make_state_decision_follow_left();
     robot_movement_state make_state_decision_follow_right();
+    robot_movement_state make_state_decision_check_right_path_0();
+    robot_movement_state make_state_decision_check_left_path_0();
     
     int  evaluate_front();
     int  evaluate_left();

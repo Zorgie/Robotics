@@ -10,7 +10,7 @@
 
 MovementBrain::MovementBrain(){
 	state_probability = *new std::vector<double>(7,0.0);
-	current_movement_state = GO_STRAIGHT;
+	current_movement_state = IDLE;
 
 }
 
@@ -88,6 +88,78 @@ void MovementBrain::process_irsensor_readings(float s_front,
     state_probability[LEFT_INVALID]    /= normalize_sum_left;
 }
 
+
+
+//observe: robot is not able to detect 180° corners at the moment
+//must be implemented later!
+void MovementBrain::requested_action_performed(){
+    switch(current_movement_state){
+        case CHECK_RIGHT_PATH_1_TURN_RIGHT:
+            current_movement_state = CHECK_RIGHT_PATH_2_GO_FORWARD;
+            break;
+        case CHECK_RIGHT_PATH_2_GO_FORWARD:
+            current_movement_state = GO_STRAIGHT;
+            break;
+        case CHECK_LEFT_PATH_1_TURN_LEFT:
+            current_movement_state = CHECK_LEFT_PATH_2_GO_FORWARD;
+            break;
+        case CHECK_LEFT_PATH_2_GO_FORWARD:
+            current_movement_state = GO_STRAIGHT;
+            break;
+        case TURN_LEFT:
+            current_movement_state = GO_STRAIGHT;
+            break;
+        case TURN_RIGHT:
+            current_movement_state = GO_STRAIGHT;
+            break;
+        default:
+            break;
+    }
+}
+
+//based on the current movement state this methods decide what action the robot should perform now
+robot_action MovementBrain::get_action_to_perform(){
+    switch(current_movement_state){
+        case GO_STRAIGHT:
+            return GO_STRAIGHT_INF;
+            break;
+        case TURN_LEFT:
+            return TURN_LEFT_90;
+            break;
+        case TURN_RIGHT:
+            return TURN_RIGHT_90;
+            break;
+        case FOLLOW_RIGHT:
+            return FOLLOW_RIGHT_WALL;
+            break;
+        case FOLLOW_LEFT:
+            return FOLLOW_LEFT_WALL;
+            break;
+        case CHECK_RIGHT_PATH_0_GO_FORWARD:
+            return GO_STRAIGHT_INF;
+            break;
+        case CHECK_RIGHT_PATH_1_TURN_RIGHT:
+            return TURN_RIGHT_90;
+            break;
+        case CHECK_RIGHT_PATH_2_GO_FORWARD:
+            return GO_STRAIGHT_X;
+            break;
+        case CHECK_LEFT_PATH_0_GO_FORWARD:
+            return GO_STRAIGHT_INF;
+            break;
+        case CHECK_LEFT_PATH_1_TURN_LEFT:
+            return TURN_LEFT_90;
+            break;
+        case CHECK_LEFT_PATH_2_GO_FORWARD:
+            return GO_STRAIGHT_X;
+            break;
+        default:
+            return IDLE_STATE;
+            break;
+    }
+}
+
+
 //based on the current state_probability: what is the best thing to do for the robot at the moment?
 bool MovementBrain::make_state_decision(){
 	robot_movement_state old_state = current_movement_state;
@@ -103,6 +175,14 @@ bool MovementBrain::make_state_decision(){
         case FOLLOW_RIGHT:
         	current_movement_state = make_state_decision_follow_right();
             break;
+            
+        case CHECK_RIGHT_PATH_0_GO_FORWARD:
+            current_movement_state = make_state_decision_check_right_path_0();
+            break;
+            
+        case CHECK_LEFT_PATH_0_GO_FORWARD:
+            current_movement_state = make_state_decision_check_left_path_0();
+            break;
 
         //for states such as TURN_LEFT: wait for manual reset signal
         default:
@@ -110,6 +190,47 @@ bool MovementBrain::make_state_decision(){
     }
 
 	return old_state != current_movement_state;
+}
+
+//let the robot drive to the front until we find an entrance or we find the wall again or we hit a front wall
+robot_movement_state MovementBrain::make_state_decision_check_right_path_0()
+{
+    int right_eval = evaluate_right();
+    int front_eval = evaluate_front();
+    
+    if(front_eval == 1)
+        return TURN_LEFT;
+    
+    //found a path => turn
+    if(right_eval == 0)
+        return CHECK_RIGHT_PATH_1_TURN_RIGHT;
+    
+    //found wall again
+    if(right_eval == 2)
+        return FOLLOW_RIGHT;
+    
+    return CHECK_RIGHT_PATH_0_GO_FORWARD;
+}
+
+//let the robot drive to the front until we find an entrance or we find the wall again or we hit a front wall
+robot_movement_state MovementBrain::make_state_decision_check_left_path_0()
+{
+    int left_eval = evaluate_right();
+    int front_eval = evaluate_front();
+    
+    if(front_eval == 1)
+        return TURN_RIGHT;
+    
+    //found a path => turn
+    if(left_eval == 0)
+        return CHECK_LEFT_PATH_1_TURN_LEFT;
+    
+    //found wall again
+    if(left_eval == 2)
+        return FOLLOW_LEFT;
+    
+    //otherwise continue going forward
+    return CHECK_LEFT_PATH_0_GO_FORWARD;
 }
 
 robot_movement_state MovementBrain::make_state_decision_straight()
@@ -150,7 +271,7 @@ robot_movement_state MovementBrain::make_state_decision_straight()
 robot_movement_state MovementBrain::make_state_decision_follow_right()
 {
     int front_eval = evaluate_front();
-    int left_eval = evaluate_left();
+    int left_eval  = evaluate_left();
     int right_eval = evaluate_right();
 
     //F02,F12,F22
@@ -168,7 +289,7 @@ robot_movement_state MovementBrain::make_state_decision_follow_right()
     if(stay_following)
         return FOLLOW_RIGHT;
     if(wall_lost)
-        return CHECK_RIGHT_PATH;
+        return CHECK_RIGHT_PATH_0_GO_FORWARD;
     if(wall_in_front)
         return TURN_LEFT;
 
@@ -197,7 +318,7 @@ robot_movement_state MovementBrain::make_state_decision_follow_left()
     if(stay_following)
         return FOLLOW_LEFT;
     if(wall_lost)
-        return CHECK_LEFT_PATH;
+        return CHECK_LEFT_PATH_0_GO_FORWARD;
     if(wall_in_front)
         return TURN_LEFT;
     
