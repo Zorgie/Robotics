@@ -73,8 +73,6 @@ int main(int argc, char **argv) {
 	ros::init(argc, argv, "WallFollowerController"); // Name of the node is WallFollowerController
 	ros::NodeHandle n;
 
-	n.setParam("/param_gain", 5.0);
-
 	ir_sub = n.subscribe("/sensors/transformed/ADC", 1, ir_readings_update); // Subscribing to the processed ir values topic.
 	nav_sub = n.subscribe("/navigation/movement_state", 1, movement_state_update);
 
@@ -90,14 +88,9 @@ int main(int argc, char **argv) {
 		ros::spinOnce();
 		loop_rate.sleep();
 		// Runs the step method of the wallfollower object, which remembers the state through fields (variables).
-		double param_gain;
-		if (n.getParam("/param_gain", param_gain)) {
-			//printf("CHANGE\n");
-		}
 		movement::wheel_speed desired_speed;
 		if(CURRENT_STATE == FOLLOW_RIGHT){
-			desired_speed = wf.step(param_gain,
-				ir_readings_processed_global, 1);
+			desired_speed = wf.step(ir_readings_processed_global, 1);
 		}else if(CURRENT_STATE == TURN_RIGHT){
 			differential_drive::Encoders enc;
 			enc.delta_encoder1 = 0;

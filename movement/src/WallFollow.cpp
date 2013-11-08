@@ -18,16 +18,14 @@ void WallFollow::init() {
 	fixed_speed = 0.3;
 	pGain = 0.5;
 	iGain = 0.25;
-	param_gain = 15.0;
-
+	
 	desired_wheel_speed.W1 = 0.0;
 	desired_wheel_speed.W2 = 0.0;
 }
 
 //side: 0 = right,1 = left
-movement::wheel_speed WallFollow::step(double gain, irsensors::floatarray ir_readings,int side) {
-	printf("current_gain: %f \n", param_gain);
-
+movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,int side) {
+	
 	float front_right = ir_readings.ch[SENSORS[0]];
 
 	float sensor_one = ir_readings.ch[SENSORS[2 * side]];
