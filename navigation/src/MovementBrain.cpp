@@ -154,9 +154,9 @@ robot_action MovementBrain::get_action_to_perform(){
             return GO_STRAIGHT_X;
             break;
         default:
-            return IDLE_STATE;
             break;
     }
+    return IDLE_STATE;
 }
 
 

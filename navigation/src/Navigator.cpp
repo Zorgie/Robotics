@@ -30,9 +30,9 @@ void update_movement_state(const irsensors::floatarray &processed_ir_readings) {
 	if (movement_brain.make_state_decision()) {
 
 		//TODO:now broadcast a new message with the updated robot state to the movement
-		int current_state = movement_brain.get_current_movement_state();
+		int action_to_perform = movement_brain.get_action_to_perform();
 		navigation::movement_state state_msg;
-		state_msg.movement_state = current_state;
+		state_msg.movement_state = action_to_perform;
 		movement_state_pub.publish(state_msg);
 	}
 

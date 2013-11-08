@@ -5,7 +5,9 @@
  *      Author: Rui
  */
 
+#define PI 3.14159265358979323
 #include "Go_straight.h"
+
 
 Go_straight::Go_straight() {
 }
@@ -13,7 +15,7 @@ Go_straight::Go_straight() {
 Go_straight::~Go_straight() {
 }
 
-void Go_straight::initiate_movement(float distance, bool go_front) {
+void Go_straight::initiate_go_straight(float distance, bool go_front) {
 	distance_moved = 0;
 	distance_target = distance;
 	direction_front = go_front;
@@ -30,26 +32,26 @@ movement::wheel_speed Go_straight::step(differential_drive::Encoders &enc){
 	distance_moved=distance_moved+((right_wheel_movement+left_wheel_movement)/2.0);
 
 	if(abs(distance_moved - distance_target) > 0.1){
-		if (go_front){
+		/*if (go_front){
 		speed.W1=SPEED;
 		speed.W2=-SPEED;
 		}else{
 		speed.W1=-SPEED;
 		speed.W2=SPEED;
-		}
+		}*/
 	}
 	else{
 		if(abs(distance_moved - distance_target) <= 0.1){ // Smoothen the braking
-			if (go_front){
+			/*if (go_front){
 				speed.W1=SPEED*(abs((distance_moved - distance_target)/0.1));
 				speed.W2=-SPEED*(abs((distance_moved - distance_target)/0.1));
 			}else{
 				speed.W1=-SPEED*(abs((distance_moved - distance_target)/0.1));
 				speed.W2=SPEED*(abs((distance_moved - distance_target)/0.1));
-			}			
+			}	*/
 		}
 		else{
-			prinft("Unexpected behaviour \n");
+			printf("Unexpected behaviour \n");
 		}
 	}
 

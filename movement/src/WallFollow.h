@@ -30,7 +30,7 @@ public:
 	WallFollow() {
 	}
 	void init();
-	movement::wheel_speed step(double gain, irsensors::floatarray,int side);
+	movement::wheel_speed step(irsensors::floatarray,int side);
 	virtual ~WallFollow(){}
 };
 

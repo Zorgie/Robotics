@@ -7,7 +7,7 @@
 #include <vector>
 #include <irsensors/floatarray.h>
 #include <navigation/movement_state.h>
-#include <navigation/RobotStates.h>
+#include <navigation/RobotActions.h>
 #include "Rotation.h"
 
 #include "WallFollow.h"
@@ -24,7 +24,7 @@ static ros::Publisher desired_speed_pub; // Publisher of the desired speed to th
 
 static irsensors::floatarray ir_readings_processed_global; // This variable stores the last read ir values;
 
-static robot_movement_state CURRENT_STATE = IDLE;
+static robot_action CURRENT_STATE = IDLE_STATE;
 
 static Rotation rotation;
 
@@ -35,36 +35,35 @@ void ir_readings_update(const irsensors::floatarray &msg) { // movement::wheel_s
 
 void movement_state_update(const navigation::movement_state &mvs) {
 	switch(mvs.movement_state){
-	case GO_STRAIGHT:
-		printf("GO_STRAIGHT\n");
+	case GO_STRAIGHT_INF:
+		printf("GO_STRAIGHT_INF\n");
 		break;
-	case FOLLOW_RIGHT:
-		printf("FOLLOW_RIGHT\n");
+	case GO_STRAIGHT_X:
+		printf("GO_STRAIGHT_X\n");
 		break;
-	case FOLLOW_LEFT:
-		printf("FOLLOW_LEFT\n");
+	case TURN_LEFT_90:
+		printf("TURN_LEFT_90\n");
 		break;
-	case TURN_LEFT:
-		printf("TURN_LEFT\n");
+	case TURN_RIGHT_90:
+		printf("TURN_RIGHT_90\n");
 		break;
-	case TURN_RIGHT:
-		printf("TURN_RIGHT\n");
+	case FOLLOW_LEFT_WALL:
+		printf("FOLLOW_LEFT_WALL\n");
 		break;
-	case CHECK_RIGHT_PATH:
-		printf("CHECK_RIGHT_PATH\n");
+	case FOLLOW_RIGHT_WALL:
+		printf("FOLLOW_RIGHT_WALL\n");
 		break;
-	case CHECK_LEFT_PATH:
-		printf("CHECK_LEFT_PATH\n");
-		break;
-	case IDLE:
-		printf("IDLE\n");
+	case IDLE_STATE:
+		printf("IDLE_STATE\n");
 		break;
 	}
+	/*
 	//if(CURRENT_STATE == FOLLOW_RIGHT){
-	if (mvs.movement_state == TURN_RIGHT) {
+	if (mvs.movement_state == TURN_RIGHT_90) {
 		rotation.initiate_rotation(90, true);
-		CURRENT_STATE = TURN_RIGHT;
+		CURRENT_STATE = TURN_RIGHT_90;
 	}
+	*/
 	//}
 }
 
@@ -89,9 +88,9 @@ int main(int argc, char **argv) {
 		loop_rate.sleep();
 		// Runs the step method of the wallfollower object, which remembers the state through fields (variables).
 		movement::wheel_speed desired_speed;
-		if(CURRENT_STATE == FOLLOW_RIGHT){
+		if(CURRENT_STATE == FOLLOW_RIGHT_WALL){
 			desired_speed = wf.step(ir_readings_processed_global, 1);
-		}else if(CURRENT_STATE == TURN_RIGHT){
+		}else if(CURRENT_STATE == TURN_RIGHT_90){
 			differential_drive::Encoders enc;
 			enc.delta_encoder1 = 0;
 			enc.delta_encoder2 = 0;

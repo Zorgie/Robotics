@@ -38,7 +38,7 @@ movement::wheel_speed Rotation::step(differential_drive::Encoders &enc){
 			speed.W2=-SPEED*(abs((degrees_turned - degrees_target)/20.0));
 		}
 		else{
-			prinft("Unexpected behaviour \n");
+			printf("Unexpected behaviour \n");
 		}
 	}
 
