@@ -2,7 +2,7 @@
  * Coord.cpp
  *
  *  Created on: Oct 5, 2013
- *      Author: robo
+ *      Author: Lucas
  */
 
 #include "Coord.h"

@@ -1,0 +1,6 @@
+<launch>
+  <node name="serial_node" pkg="rosserial_python" type="serial_node.py" args="/dev/ttyACM0" /> 
+  <node name="open_loop_control" pkg="motors" type="open_loop_control"/>
+  <node name="wall_follow" pkg="motors" type="wall_follower_tuning"/>
+  <node name="ir_sensor" pkg="irsensors" type="irsensor_main"/>
+</launch>

@@ -1,8 +1,8 @@
 /*
  * Coord.h
  *
- *  Creadoubleed on: Ocdouble 5, 2013
- *      Audoublehor: robo
+ *  Created on: Oct 5, 2013
+ *      Author: Lucas
  */
 
 #ifndef COORD_H_
