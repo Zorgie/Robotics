@@ -9,8 +9,9 @@
 
 #include <iostream>
 #include <vector>
+#include "lib/navigation/RobotStates.h"
 
-enum robot_movement_state{
+/*enum robot_movement_state{
     GO_STRAIGHT,
     FOLLOW_RIGHT,
     FOLLOW_LEFT,
@@ -18,7 +19,7 @@ enum robot_movement_state{
     TURN_RIGHT,
     CHECK_RIGHT_PATH,
     CHECK_LEFT_PATH
-};
+};*/
 
 enum sensor_states{
     FRONT_WALL      = 0,
@@ -41,7 +42,7 @@ public:
     ~MovementBrain();
     
     void process_irsensor_readings(float s_front,float s_right_f,float s_right_b,float s_left_f,float s_left_b);
-    robot_movement_state make_state_decision();
+    bool make_state_decision();
     
     void set_current_movement_state(robot_movement_state);
     robot_movement_state get_current_movement_state();

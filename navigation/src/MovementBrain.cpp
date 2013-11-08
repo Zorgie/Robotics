@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <vector>
 #include "MovementBrain.h"
-#include <math.h>
+#include <cmath>
 
 MovementBrain::MovementBrain(){
 	state_probability = *new std::vector<double>(7,0.0);
@@ -51,7 +51,7 @@ void MovementBrain::process_irsensor_readings(float s_front,
 	}
     else {
 		//invalid readings
-        state_probability[RIGHT_INVALID] += 0.05;broadcast
+        state_probability[RIGHT_INVALID] += 0.05;
 	}
     
     //LEFT UPDATE: Update probability that there is a left wall next to the robot
@@ -68,46 +68,48 @@ void MovementBrain::process_irsensor_readings(float s_front,
 		//invalid readings
         state_probability[LEFT_INVALID] += 0.05;
 	}
-    
+
     //NORMALIZE left and right sensor probability values so they sum up to 1
-    
+
     double normalize_sum_right = state_probability[RIGHT_WALL]
                             + state_probability[NO_RIGHT_WALL]
                             + state_probability[RIGHT_INVALID];
-    
+
     state_probability[RIGHT_WALL]       /= normalize_sum_right;
     state_probability[NO_RIGHT_WALL]    /= normalize_sum_right;
     state_probability[RIGHT_INVALID]    /= normalize_sum_right;
-    
+
     double normalize_sum_left =  state_probability[LEFT_WALL]
                             + state_probability[NO_LEFT_WALL]
                             + state_probability[LEFT_INVALID];
-    
+
     state_probability[LEFT_WALL]       /= normalize_sum_left;
     state_probability[NO_LEFT_WALL]    /= normalize_sum_left;
     state_probability[LEFT_INVALID]    /= normalize_sum_left;
 }
 
 //based on the current state_probability: what is the best thing to do for the robot at the moment?
-robot_movement_state MovementBrain::make_state_decision(){
-    switch (current_movement_state) {
+bool MovementBrain::make_state_decision(){
+	robot_movement_state old_state = current_movement_state;
+	switch (current_movement_state) {
         case GO_STRAIGHT:
-            return make_state_decision_straight();
+        	current_movement_state = make_state_decision_straight();
             break;
-        
+
         case FOLLOW_LEFT:
-            return FOLLOW_RIGHT;
+        	current_movement_state = make_state_decision_follow_left();
             break;
-            
+
         case FOLLOW_RIGHT:
-            return FOLLOW_RIGHT;
+        	current_movement_state = make_state_decision_follow_right();
             break;
 
         //for states such as TURN_LEFT: wait for manual reset signal
         default:
             break;
     }
-    return current_movement_state;
+
+	return old_state != current_movement_state;
 }
 
 robot_movement_state MovementBrain::make_state_decision_straight()
@@ -115,7 +117,7 @@ robot_movement_state MovementBrain::make_state_decision_straight()
     int front_eval = evaluate_front();
     int left_eval = evaluate_left();
     int right_eval = evaluate_right();
-    
+
     //F00,F10,F01,F11
     bool stay_straight = (front_eval == 0 && left_eval == 0 && right_eval == 0)
                      ||  (front_eval == 0 && left_eval == 1 && right_eval == 0)
@@ -150,26 +152,26 @@ robot_movement_state MovementBrain::make_state_decision_follow_right()
     int front_eval = evaluate_front();
     int left_eval = evaluate_left();
     int right_eval = evaluate_right();
-    
+
     //F02,F12,F22
     bool stay_following =   (front_eval == 0 && left_eval == 0 && right_eval == 2)
                         ||  (front_eval == 0 && left_eval == 1 && right_eval == 2)
                         ||  (front_eval == 0 && left_eval == 2 && right_eval == 2);
-    
+
     //F01,F11,F21
     bool wall_lost =        (front_eval == 0 && left_eval == 0 && right_eval == 1)
                         ||  (front_eval == 0 && left_eval == 1 && right_eval == 1)
                         ||  (front_eval == 0 && left_eval == 2 && right_eval == 1);
-    
+
     bool wall_in_front = (front_eval == 1);
-    
+
     if(stay_following)
         return FOLLOW_RIGHT;
     if(wall_lost)
         return CHECK_RIGHT_PATH;
     if(wall_in_front)
         return TURN_LEFT;
-    
+
     //invalid state transition: reset to GO_STRAIGHT (maybe do something else here later)
     return GO_STRAIGHT;
 }
@@ -179,7 +181,7 @@ robot_movement_state MovementBrain::make_state_decision_follow_left()
     int front_eval = evaluate_front();
     int left_eval = evaluate_left();
     int right_eval = evaluate_right();
-    
+
     //F02,F12,F22
     bool stay_following =   (front_eval == 0 && left_eval == 2 && right_eval == 0)
                         ||  (front_eval == 0 && left_eval == 2 && right_eval == 1)
