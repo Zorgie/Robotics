@@ -6,12 +6,20 @@
 MovementBrain movement_brain;
 
 ros::Subscriber ir_sub; //subscribe to ir-readings
+
+ros::Subscriber action_performed_sub; //subscribes to Movement.cpp telling if a certain action (left turn or sth) has been performed
 ros::Publisher movement_state_pub; //publishes the movement state
+
+
 const int UPDATE_RATE = 50;
 
 enum sensor {
 	FRONT_RIGHT = 0, BACK_RIGHT = 1, BACK_LEFT = 5, FRONT_LEFT = 6, FRONT = 7
 };
+
+void tell_action_performed(const navigation::movement_state &mvs){
+	movement_brain.requested_action_performed();
+}
 
 void update_movement_state(const irsensors::floatarray &processed_ir_readings) {
 
@@ -21,6 +29,12 @@ void update_movement_state(const irsensors::floatarray &processed_ir_readings) {
 	float back_right = processed_ir_readings.ch[BACK_RIGHT];
 	float front_left = processed_ir_readings.ch[FRONT_LEFT];
 	float back_left = processed_ir_readings.ch[BACK_LEFT];
+
+	printf("front: %f\n",front);
+	printf("front_right: %f\n",front_right);
+	printf("front_left: %f\n",front_left);
+	printf("back_right: %f\n",back_right);
+	printf("back_left: %f\n",back_left);
 
 	//update probabilistic array
 	movement_brain.process_irsensor_readings(front, front_right, back_right,
@@ -52,6 +66,8 @@ int main(int argc, char **argv) {
 	ros::NodeHandle n;
 
 	ir_sub = n.subscribe("/sensors/transformed/ADC", 1, update_movement_state); // Subscribing to the processed ir values topic.
+	action_performed_sub = n.subscribe("/movement/requested_action_performed",1,tell_action_performed);
+
 	movement_state_pub = n.advertise<navigation::movement_state>(
 			"navigation/movement_state", 1);
 

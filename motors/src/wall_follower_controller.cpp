@@ -125,13 +125,16 @@ int main(int argc, char **argv) {
 
 		// Proportional error (redundant but intuitive)
 		proportional_error_theta = error_theta;
-		desired_wheel_speed.W1 = fixed_speed + (angle_gain * error_theta)
-				+ (distance_gain * error_distance); // Right
-		desired_wheel_speed.W2 = fixed_speed - (angle_gain * error_theta)
-				- (distance_gain * error_distance); // Left
+		desired_wheel_speed.W1 = 0.5*(fixed_speed + (angle_gain * error_theta)
+				+ (distance_gain * error_distance)); // Right
+		desired_wheel_speed.W2 = 0.5*(fixed_speed - (angle_gain * error_theta)
+				- (distance_gain * error_distance)); // Left
+
+		printf("Distance change: %f \n",distance_gain * error_distance);
+				printf("Angle change: %f \n",angle_gain * error_theta);
 
 		// Publish the desired Speed to the low level controller;
-		printf("W1: %f \t W2: %f \n\n\n",desired_wheel_speed.W1,desired_wheel_speed.W2);
+		printf("WR: %f \t WL: %f \n\n\n",desired_wheel_speed.W1,desired_wheel_speed.W2);
 		desired_speed_pub.publish(desired_wheel_speed);
 
 	}

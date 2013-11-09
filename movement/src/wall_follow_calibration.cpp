@@ -41,8 +41,19 @@ int main(int argc, char **argv) {
 	ros::init(argc, argv, "WallFollowerController"); // Name of the node is WallFollowerController
 	ros::NodeHandle n;
 
-	//n.setParam("/angle_gain", 1.0);
-	//n.setParam("/distance_gain", 1.0);
+	n.setParam("/SIDE", 1);
+	n.setParam("/rf_offset", 0.005);
+	n.setParam("/rb_offset", 0.01);
+	n.setParam("/lf_offset", 0.01);
+	n.setParam("/lb_offset", 0.005);
+	//rosparam set /rb_offset 0.01
+	//rosparam set /rf_offset 0.005
+	//rosparam set /lf_offset 0.01
+	//rosparam set /lb_offset 0.005
+
+
+	n.setParam("/angle_gain", 0.25);
+	n.setParam("/distance_gain", 0.75);
 
 	movement::wheel_speed desired_wheel_speed; // This variable stores the desired wheel speeds;
 
@@ -64,6 +75,10 @@ int main(int argc, char **argv) {
 	float theta_command;
 	double distance_gain= 0.75;
 	double angle_gain= 0.25;
+	double rf_offset= 0.0;
+	double rb_offset= 0.0;
+	double lf_offset= 0.0;
+	double lb_offset= 0.0;
 
 	double param_gain = 15.0;
 
@@ -71,8 +86,13 @@ int main(int argc, char **argv) {
 		ros::spinOnce();
 		loop_rate.sleep();
 
-		//n.getParam("/angle_gain", angle_gain);
-		//n.getParam("/distance_gain", distance_gain);
+		n.getParam("/angle_gain", angle_gain);
+		n.getParam("/distance_gain", distance_gain);
+		n.getParam("/SIDE", SIDE);
+		n.getParam("/rf_offset", rf_offset);
+		n.getParam("/rb_offset", rb_offset);
+		n.getParam("/lf_offset", lf_offset);
+		n.getParam("/lb_offset", lb_offset);
 		//printf("current_gain: %f \n",param_gain);
 
 		float front_right = ir_readings_processed_global.ch[SENSORS[0]];
@@ -89,16 +109,30 @@ int main(int argc, char **argv) {
 		//float sensor_two = ir_readings_processed_global.ch[7];
 		float front = ir_readings_processed_global.ch[SENSORS[4]];
 
-		printf("sensor_one: %f,   sensor_two: %f\n",sensor_one,sensor_two);
-
-		if (SIDE == 0) {
+		//printf("sensor_one: %f,   sensor_two: %f\n",sensor_one,sensor_two);
+		float distance;
+		float error_distance;
+		if (SIDE == 0) { //Right Side
+			sensor_two=sensor_two+rb_offset;
+			sensor_one=sensor_one+rf_offset;
 			error_theta = atan2(sensor_two - sensor_one, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
+			distance = 0.5 * (sensor_one + sensor_two);
+			error_distance = distance - 0.15;
+			error_distance=-error_distance;
+
 		} else if (SIDE == 1) {
 			//error_theta = atan2((sensor_one - 0.035) - sensor_two, 0.15);
-			error_theta = atan2(sensor_one - sensor_two, SENSOR_DISTANCE); //0.15
+			sensor_two=sensor_two+lb_offset;
+			sensor_one=sensor_one+lf_offset;
+			error_theta = -atan2(sensor_two - sensor_one, SENSOR_DISTANCE); //0.15
 			//error_theta = atan2(sensor_one - sensor_two, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
+			distance = 0.5 * (sensor_one + sensor_two);
+			error_distance = distance - 0.15;
 		}
+		if(error_distance>0.5){error_distance=0.5;}
+		if(error_distance<-0.5){error_distance=-0.5;}
 
+		printf("sensor_one: %f,   sensor_two: %f\n",sensor_one,sensor_two);
 
 		if (isnan(error_theta)) {
 			//printf("Gave a NAN \n");
@@ -112,25 +146,25 @@ int main(int argc, char **argv) {
 			continue;
 		}
 
-		float distance = 0.5 * (sensor_one + sensor_two);
-		float error_distance = distance - 0.125;
 
 
-		if (error_distance < 0.005 && error_distance > -0.005) {
-			error_distance = 0;
+		if (error_distance < 0.01 && error_distance > -0.01) {
+			error_distance = 0.0;
 		}
+		//error_distance = 0.0; // Tuning
 		printf("Error distance: %f \n",error_distance);
 		printf("Error angle (degrees): %f \n",error_theta*(180.0/PI));
 
 		// Proportional error (redundant but intuitive)
 		proportional_error_theta = error_theta;
-		desired_wheel_speed.W1 = fixed_speed + (angle_gain * error_theta)
-				+ (distance_gain * error_distance); // Right
-		desired_wheel_speed.W2 = fixed_speed - (angle_gain * error_theta)
-				- (distance_gain * error_distance); // Left
-
+		desired_wheel_speed.W1 = fixed_speed + 1.0*((angle_gain * error_theta)
+				+ (distance_gain * error_distance)); // Right
+		desired_wheel_speed.W2 = fixed_speed + 1.0*((-angle_gain * error_theta)
+				- (distance_gain * error_distance)); // Left
+		printf("Angle difference: %f \n",angle_gain*error_theta);
+		printf("Distance difference: %f \n",distance_gain*error_distance);
 		// Publish the desired Speed to the low level controller;
-		printf("W1: %f \t W2: %f \n\n\n",desired_wheel_speed.W1,desired_wheel_speed.W2);
+		printf("WR: %f \t WL: %f \n\n\n",desired_wheel_speed.W1,desired_wheel_speed.W2);
 		desired_speed_pub.publish(desired_wheel_speed);
 
 	}
