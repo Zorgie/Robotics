@@ -12,6 +12,7 @@
 #include "Rotation.h"
 #include "WallFollow.h"
 #include "Go_straight.h"
+#include "Stop.h"
 
 using namespace differential_drive;
 
@@ -33,6 +34,7 @@ static robot_action CURRENT_STATE = GO_STRAIGHT_INF;
 static WallFollow wall_follow;
 static Rotation rotation;
 static Go_straight go_straight;
+static Stop stop;
 
 void ir_readings_update(const irsensors::floatarray &msg) { // movement::wheel_speed
 	// Whenever we get a callback from the ir readings, we must update our current ir readings;
@@ -161,7 +163,8 @@ int main(int argc, char **argv) {
 
 	wall_follow = WallFollow();
 	rotation = Rotation();
-	//go_straight = Go_straight();
+	go_straight = Go_straight();
+	stop = Stop();
 
 	// Creates a WallFollower object.
 	WallFollow wf;
@@ -177,7 +180,7 @@ int main(int argc, char **argv) {
 	n.setParam("/SIDE",1);
 
 	rotation.initiate_rotation(180.0);
-	go_straight.initiate_go_straight(0.20, 1);
+	go_straight.initiate_go_straight(2.20, 1);
 
 	while (ros::ok()) {
 		ros::spinOnce();
@@ -185,22 +188,26 @@ int main(int argc, char **argv) {
 		n.getParam("/CURRENT_STATE",CURRENT_STATE);
 		n.getParam("/SIDE",SIDE);
 
-		/*
+
 		// Runs the step method of the wallfollower object, which remembers the state through fields (variables).
 		movement::wheel_speed desired_speed;
 		if(CURRENT_STATE==1){//(CURRENT_STATE == FOLLOW_RIGHT_WALL){
-			desired_speed = wf.step(ir_readings_processed_global, SIDE);
+			//desired_speed = wf.step(ir_readings_processed_global, SIDE);
+			desired_speed=go_straight.step(wheel_distance_traveled_global);
 		}else if(CURRENT_STATE==0){//(CURRENT_STATE == TURN_RIGHT_90){
+			desired_speed=stop.step();
+			//desired_speed = wf.step(ir_readings_processed_global, SIDE);
 			//desired_speed = rotation.step(wheel_distance_traveled_global);
-			desired_speed = go_straight.step(wheel_distance_traveled_global);
+			//desired_speed = go_straight.step(wheel_distance_traveled_global);
 		}
 		//desired_speed.W1=0.27778;
 		//desired_speed.W2=0.27778;
 		desired_speed_pub.publish(desired_speed);
-		*/
+
 
 		//let the robot act according to its current movement state
-		act();
+
+		//act();
 
 	}
 }
