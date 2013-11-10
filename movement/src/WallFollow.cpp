@@ -12,7 +12,7 @@
 #define PI 3.14159265358979323
 
 int const WallFollow::SENSORS[] = { 0, 1, 6, 5, 7 };
-const static float SENSOR_DISTANCE = 0.15;
+// const static float SENSOR_DISTANCE = 0.15; This variable must be defined in the WallFollow.h file!
 
 void WallFollow::init() {
 	error_theta = 0; // Our variables for the Controller Error
@@ -35,8 +35,8 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 	float sensor_two = ir_readings.ch[SENSORS[2 * side + 1]];
 	float front = ir_readings.ch[SENSORS[4]];
 	float distance, error_distance, error_theta;
-	float rf_offset = 0.005;
-	float rb_offset = 0.01;
+	float rf_offset = -0.00;
+	float rb_offset = 0.00;
 	float lf_offset = 0.01;
 	float lb_offset = 0.005;
 	double distance_gain= 0.75;
@@ -45,7 +45,12 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 	if (side == 0) { //Right Side
 		sensor_two = sensor_two + rb_offset;
 		sensor_one = sensor_one + rf_offset;
+		printf("\n\n\nATAN CHECK:\n");
+		printf("sensor_two: %f \t-sensor_one: %f",sensor_two,sensor_one);
+		printf("\n sensor_distance: %f",SENSOR_DISTANCE);
 		error_theta = atan2(sensor_two - sensor_one, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
+		printf("\n theta: %f",error_theta);
+		printf("\n theta (degrees): %f \n\n",error_theta* (180.0 / PI));
 		distance = 0.5 * (sensor_one + sensor_two);
 		error_distance = distance - 0.15;
 		error_distance = -error_distance;
@@ -59,6 +64,8 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 		distance = 0.5 * (sensor_one + sensor_two);
 		error_distance = distance - 0.15;
 	}
+	printf("\n Sensor displacement: %f \n",sensor_two-sensor_one);
+
 	if (error_distance > 0.5) {
 		error_distance = 0.5;
 	}
@@ -88,7 +95,9 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 	error_distance = 0.0;
 	//error_distance = 0.0; // Tuning
 	printf("Error distance: %f \n", error_distance);
+	printf("Error angle (radians): %f \n", error_theta);
 	printf("Error angle (degrees): %f \n", error_theta * (180.0 / PI));
+
 
 	// Proportional error (redundant but intuitive)
 	proportional_error_theta = error_theta;

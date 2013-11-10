@@ -25,7 +25,7 @@ private:
 	movement::wheel_speed desired_wheel_speed;
 	// Front right, back right, front left, back left, front middle.
 	const static int SENSORS[];
-	const static float SENSOR_DISTANCE = 0.08; //0.09
+	const static float SENSOR_DISTANCE = 0.15;//0.08; //0.09
 public:
 	WallFollow() {
 	}

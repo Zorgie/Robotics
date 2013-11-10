@@ -41,6 +41,6 @@ movement::wheel_speed Rotation::step(differential_drive::Encoders &enc){
 			printf("Unexpected behaviour \n");
 		}
 	}
-
+	printf("WR: %f \t WL: %f \n\n\n",speed.W1,speed.W2);
 	return speed;
 }

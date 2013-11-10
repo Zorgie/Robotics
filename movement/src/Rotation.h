@@ -15,7 +15,7 @@
 
 class Rotation {
 private:
-	const static float SPEED = 0.3;
+	const static float SPEED = 0.277778;
 	float degrees_turned;
 	float degrees_target;
 	bool direction_right;

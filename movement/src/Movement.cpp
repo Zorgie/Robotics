@@ -86,7 +86,7 @@ void movement_state_update(const navigation::movement_state &mvs) {
 
 int main(int argc, char **argv) {
 
-	ros::init(argc, argv, "WallFollowerController"); // Name of the node is WallFollowerController
+	ros::init(argc, argv, "Movement"); // Name of the node is WallFollowerController
 	ros::NodeHandle n;
 
 	ir_sub = n.subscribe("/sensors/transformed/ADC", 1, ir_readings_update); // Subscribing to the processed ir values topic.
