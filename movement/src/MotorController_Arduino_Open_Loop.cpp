@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
 		error_2=wheel_speed_global.W2-((encoders_global.delta_encoder2*UPDATE_RATE)/360.0);
 		//error_1=Speed-((encoders_global.delta_encoder1*UPDATE_RATE)/360.0);
 		//error_2=Speed-((encoders_global.delta_encoder2*UPDATE_RATE)/360.0);
-		wheel_distance_traveled.distance1=(encoders_global.delta_encoder1/360.0)*(PI*wheel_diameter);
+		wheel_distance_traveled.distance1=-(encoders_global.delta_encoder1/360.0)*(PI*wheel_diameter);
 		printf("\n\n DEBUGGING DISTANCE:");
 		printf("Encoder: %f \n",encoders_global.delta_encoder1);
 		printf("Encoder/360.0: %f \n",encoders_global.delta_encoder1/360.0);
