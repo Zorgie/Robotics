@@ -30,7 +30,9 @@ static movement::wheel_distance wheel_distance_traveled_global;
 
 static robot_action CURRENT_STATE = IDLE_STATE;
 
+static WallFollow wall_follow;
 static Rotation rotation;
+//static Go_straight go_straight;
 
 void ir_readings_update(const irsensors::floatarray &msg) { // movement::wheel_speed
 	// Whenever we get a callback from the ir readings, we must update our current ir readings;
@@ -51,32 +53,57 @@ void send_inturrupt(){
 
 void movement_state_update(const navigation::movement_state &mvs) {
 
+	CURRENT_STATE = (robot_action)mvs.movement_state;
 
-	switch(mvs.movement_state){
+	switch(CURRENT_STATE){
 	case GO_STRAIGHT_INF:
 		printf("GO_STRAIGHT_INF\n");
+
+
 		break;
 	case GO_STRAIGHT_X:
 		printf("GO_STRAIGHT_X\n");
+
+		//go_straight.initiate_go_straight(0.1,true);
+
 		printf("DISTANCE X WALKED VIRTUALLY\n");
+
+
 		send_inturrupt();
 		break;
 	case TURN_LEFT_90:
 		printf("TURN_LEFT_90\n");
+
+		rotation.initiate_rotation(-90);
+
 		printf("TURN PERFORMED VIRTUALLY\n");
 		send_inturrupt();
 		break;
 	case TURN_RIGHT_90:
 		printf("TURN_RIGHT_90\n");
+
+		rotation.initiate_rotation(90);
+
 		printf("TURN PERFORMED VIRTUALLY\n");
 		send_inturrupt();
+
 		break;
 	case FOLLOW_LEFT_WALL:
 		printf("FOLLOW_LEFT_WALL\n");
+
+		//init wall follower
+		wall_follow.init();
+
 		break;
+
 	case FOLLOW_RIGHT_WALL:
 		printf("FOLLOW_RIGHT_WALL\n");
+
+		//init wall follower
+		wall_follow.init();
+
 		break;
+
 	case IDLE_STATE:
 		printf("IDLE_STATE\n");
 		break;
@@ -104,6 +131,10 @@ int main(int argc, char **argv) {
 
 	ros::Rate loop_rate(UPDATE_RATE);
 
+	wall_follow = WallFollow();
+	rotation = Rotation();
+	//go_straight = Go_straight();
+
 	// Creates a WallFollower object.
 	WallFollow wf;
 	// Runs the initiation method (initializes the variable) on the WallFoldlower object.
@@ -117,7 +148,7 @@ int main(int argc, char **argv) {
 	n.setParam("/CURRENT_STATE",0);
 	n.setParam("/SIDE",1);
 
-	rotation.initiate_rotation(90.0, 1);
+	rotation.initiate_rotation(90.0);
 
 	while (ros::ok()) {
 		ros::spinOnce();

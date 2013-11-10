@@ -15,10 +15,9 @@ Rotation::Rotation() {
 Rotation::~Rotation() {
 }
 
-void Rotation::initiate_rotation(float degrees, bool turn_right) {
+void Rotation::initiate_rotation(float degrees) {
 	degrees_turned = 0;
 	degrees_target = degrees;
-	direction_right = turn_right;
 }
 
 movement::wheel_speed Rotation::step(movement::wheel_distance &distance_traveled) {

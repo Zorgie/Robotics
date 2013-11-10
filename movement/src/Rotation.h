@@ -20,11 +20,10 @@ private:
 	const static float SPEED = 0.277778;
 	float degrees_turned;
 	float degrees_target;
-	bool direction_right;
 public:
 	Rotation();
 	virtual ~Rotation();
-	void initiate_rotation(float degrees, bool turn_right);
+	void initiate_rotation(float degrees);
 	movement::wheel_speed step(movement::wheel_distance &distance_traveled);
 };
 
