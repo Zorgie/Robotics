@@ -102,7 +102,6 @@ void MovementBrain::requested_action_performed(robot_action action_performed){
             break;
         case CHECK_RIGHT_PATH_2_GO_FORWARD:
         	if(action_performed == GO_STRAIGHT_X){
-        		std::cout << "TRANSITIONED TO GO STRAIGHT AFTER RECEIVING GO STRAIGHT INTERRUPT\n" << std::endl;
         		current_movement_state = GO_STRAIGHT;
         	}
             break;
