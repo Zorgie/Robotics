@@ -13,6 +13,7 @@
 #include "WallFollow.h"
 #include "Go_straight.h"
 #include "Stop.h"
+#include "WallAlign.h"
 
 using namespace differential_drive;
 
@@ -35,6 +36,8 @@ static WallFollow wall_follow;
 static Rotation rotation;
 static Go_straight go_straight;
 static Stop stop;
+static WallAlign wall_align;
+
 
 void ir_readings_update(const irsensors::floatarray &msg) { // movement::wheel_speed
 	// Whenever we get a callback from the ir readings, we must update our current ir readings;
@@ -165,6 +168,7 @@ int main(int argc, char **argv) {
 	rotation = Rotation();
 	go_straight = Go_straight();
 	stop = Stop();
+	wall_align = WallAlign();
 
 	// Creates a WallFollower object.
 	WallFollow wf;
@@ -199,6 +203,9 @@ int main(int argc, char **argv) {
 			//desired_speed = wf.step(ir_readings_processed_global, SIDE);
 			//desired_speed = rotation.step(wheel_distance_traveled_global);
 			//desired_speed = go_straight.step(wheel_distance_traveled_global);
+		}else if(CURRENT_STATE==2){//(CURRENT_STATE == TURN_RIGHT_90){
+			desired_speed=wall_align.step(ir_readings_processed_global, SIDE);
+
 		}
 		//desired_speed.W1=0.27778;
 		//desired_speed.W2=0.27778;
