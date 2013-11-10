@@ -25,13 +25,13 @@ movement::wheel_speed Rotation::step(movement::wheel_distance &distance_traveled
 
 	movement::wheel_speed speed;
 
-	printf("Distance1: %f \t Distance2: %f \n",distance_traveled.distance1,distance_traveled.distance2);
+//	//printf("Distance1: %f \t Distance2: %f \n",distance_traveled.distance1,distance_traveled.distance2);
 
 	float average_wheel_distance=0.5*(fabs(distance_traveled.distance1)+fabs(distance_traveled.distance2));
 	average_wheel_distance=-distance_traveled.distance1;
 	distance_walked=distance_walked+distance_traveled.distance1;
 	degrees_turned = degrees_turned + (360.0*average_wheel_distance)/(PI*(0.213));
-	printf("All traveled1: %f \n",distance_walked);
+//	printf("All traveled1: %f \n",distance_walked);
 
 	float right_wheel_delta = distance_traveled.distance1;
 	float left_wheel_delta = distance_traveled.distance2;
@@ -61,10 +61,10 @@ movement::wheel_speed Rotation::step(movement::wheel_distance &distance_traveled
 	}
 
 
-	printf("angle_difference: %f \n", degrees_turned - degrees_target);
-	printf("Abs of angle_difference: %f \n",
-			fabs(degrees_turned - degrees_target));
-	printf("WR: %f \t WL: %f \n\n\n", speed.W1, speed.W2);
+//	printf("angle_difference: %f \n", degrees_turned - degrees_target);
+//	printf("Abs of angle_difference: %f \n",
+//			fabs(degrees_turned - degrees_target));
+//	printf("WR: %f \t WL: %f \n\n\n", speed.W1, speed.W2);
 
 	return speed;
 }

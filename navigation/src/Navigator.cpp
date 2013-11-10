@@ -18,6 +18,8 @@ enum sensor {
 };
 
 void tell_action_performed(const navigation::movement_state &mvs){
+	printf("STATE TRANSITION DUE TO INTERRUPT\n");
+
 	movement_brain.requested_action_performed();
 }
 
@@ -30,15 +32,17 @@ void update_movement_state(const irsensors::floatarray &processed_ir_readings) {
 	float front_left = processed_ir_readings.ch[FRONT_LEFT];
 	float back_left = processed_ir_readings.ch[BACK_LEFT];
 
-	printf("front: %f\n",front);
+	/*printf("front: %f\n",front);
 	printf("front_right: %f\n",front_right);
 	printf("front_left: %f\n",front_left);
 	printf("back_right: %f\n",back_right);
-	printf("back_left: %f\n",back_left);
+	printf("back_left: %f\n",back_left);*/
 
 	//update probabilistic array
 	movement_brain.process_irsensor_readings(front, front_right, back_right,
 			front_left, back_left);
+
+	printf("Current state: %d\n",movement_brain.get_current_movement_state());
 
 	//update the state of the robot according to probabilistic array and old state
 	if (movement_brain.make_state_decision()) {
@@ -51,13 +55,13 @@ void update_movement_state(const irsensors::floatarray &processed_ir_readings) {
 	}
 
 	//Sample output for left sensors
-	std::cout << "left: " << movement_brain.state_probability[LEFT_WALL]
+	/*std::cout << "left: " << movement_brain.state_probability[LEFT_WALL]
 			<< std::endl;
 	std::cout << "left invalid: "
 			<< movement_brain.state_probability[LEFT_INVALID] << std::endl;
 	std::cout << "no left: " << movement_brain.state_probability[NO_LEFT_WALL]
 			<< std::endl;
-	std::cout << movement_brain.evaluate_left() << std::endl;
+	std::cout << movement_brain.evaluate_left() << std::endl;*/
 
 }
 

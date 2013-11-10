@@ -55,5 +55,7 @@ public:
     int  evaluate_left();
     int  evaluate_right();
     
+    bool actionPerformedTrigger;
+
 };
 #endif /* defined(__MovementBrain__) */

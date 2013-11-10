@@ -21,7 +21,6 @@ static const int UPDATE_RATE = 50; // WE HAVE LOTS OF PROBLEMS OF DIFFERENT RATE
 static ros::Subscriber ir_sub; // Subscriber to the ir post-processing readings;
 static ros::Subscriber nav_sub;
 static ros::Subscriber wheel_distance_sub;
-static ros::Publisher nav_pub;
 static ros::Publisher desired_speed_pub; // Publisher of the desired speed to the Low Level Controller;
 static ros::Publisher requested_action_performed_pub; //Tells Navigation.cpp that the requested action such as a left turn has been performed
 
@@ -51,13 +50,15 @@ void send_inturrupt(){
 }
 
 void movement_state_update(const navigation::movement_state &mvs) {
+
+
 	switch(mvs.movement_state){
 	case GO_STRAIGHT_INF:
 		printf("GO_STRAIGHT_INF\n");
 		break;
 	case GO_STRAIGHT_X:
 		printf("GO_STRAIGHT_X\n");
-		printf("TURN PERFORMED VIRTUALLY\n");
+		printf("DISTANCE X WALKED VIRTUALLY\n");
 		send_inturrupt();
 		break;
 	case TURN_LEFT_90:

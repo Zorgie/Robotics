@@ -11,6 +11,7 @@
 MovementBrain::MovementBrain(){
 	state_probability = *new std::vector<double>(7,0.0);
 	current_movement_state = IDLE;
+	actionPerformedTrigger = false;
 
 }
 
@@ -24,9 +25,9 @@ void MovementBrain::process_irsensor_readings(float s_front,
 {
     //thresholds: when does the front sensor think there is a wall?
     //TODO: calibrate the thresholds
-    const double c_front_thresh = 0.4;
-    const double c_right_threshold = 0.4;
-    const double c_left_threshold = 0.4;
+    const double c_front_thresh = 0.20;
+    const double c_right_threshold = 0.25;
+    const double c_left_threshold = 0.25;
     
     //FRONT UPDATE:update probability that there is a wall in front of the robot
     
@@ -93,7 +94,10 @@ void MovementBrain::process_irsensor_readings(float s_front,
 //observe: robot is not able to detect 180° corners at the moment
 //must be implemented later!
 void MovementBrain::requested_action_performed(){
-    switch(current_movement_state){
+
+	actionPerformedTrigger = true;
+
+	switch(current_movement_state){
         case CHECK_RIGHT_PATH_1_TURN_RIGHT:
             current_movement_state = CHECK_RIGHT_PATH_2_GO_FORWARD;
             break;
@@ -162,6 +166,13 @@ robot_action MovementBrain::get_action_to_perform(){
 
 //based on the current state_probability: what is the best thing to do for the robot at the moment?
 bool MovementBrain::make_state_decision(){
+
+	//state transition due to requested action performed method!
+	if(actionPerformedTrigger){
+		actionPerformedTrigger = false;
+		return true;
+	}
+
 	robot_movement_state old_state = current_movement_state;
 	switch (current_movement_state) {
         case GO_STRAIGHT:
@@ -215,7 +226,7 @@ robot_movement_state MovementBrain::make_state_decision_check_right_path_0()
 //let the robot drive to the front until we find an entrance or we find the wall again or we hit a front wall
 robot_movement_state MovementBrain::make_state_decision_check_left_path_0()
 {
-    int left_eval = evaluate_right();
+    int left_eval = evaluate_left();
     int front_eval = evaluate_front();
     
     if(front_eval == 1)
