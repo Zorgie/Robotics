@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cmath>
 #include "export/navigation/RobotStates.h"
 #include "export/navigation/RobotActions.h"
 
@@ -38,7 +39,7 @@ public:
     
     void set_current_movement_state(robot_movement_state);
     robot_movement_state get_current_movement_state();
-    void requested_action_performed();
+    void requested_action_performed(robot_action action_performed);
     robot_action get_action_to_perform();
     
     

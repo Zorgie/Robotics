@@ -45,12 +45,13 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 	if (side == 0) { //Right Side
 		sensor_two = sensor_two + rb_offset;
 		sensor_one = sensor_one + rf_offset;
-		printf("\n\n\nATAN CHECK:\n");
+/*		printf("\n\n\nATAN CHECK:\n");
 		printf("sensor_two: %f \t-sensor_one: %f",sensor_two,sensor_one);
 		printf("\n sensor_distance: %f",SENSOR_DISTANCE);
+*/
 		error_theta = atan2(sensor_two - sensor_one, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
-		printf("\n theta: %f",error_theta);
-		printf("\n theta (degrees): %f \n\n",error_theta* (180.0 / PI));
+//		printf("\n theta: %f",error_theta);
+//		printf("\n theta (degrees): %f \n\n",error_theta* (180.0 / PI));
 		distance = 0.5 * (sensor_one + sensor_two);
 		error_distance = distance - 0.15;
 		error_distance = -error_distance;
@@ -64,7 +65,7 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 		distance = 0.5 * (sensor_one + sensor_two);
 		error_distance = distance - 0.15;
 	}
-	printf("\n Sensor displacement: %f \n",sensor_two-sensor_one);
+//	printf("\n Sensor displacement: %f \n",sensor_two-sensor_one);
 
 	if (error_distance > 0.5) {
 		error_distance = 0.5;
@@ -73,17 +74,17 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 		error_distance = -0.5;
 	}
 
-	printf("sensor_one: %f,   sensor_two: %f\n", sensor_one, sensor_two);
+//	printf("sensor_one: %f,   sensor_two: %f\n", sensor_one, sensor_two);
 
 	if (isnan(error_theta)) {
 		//printf("Gave a NAN \n");
 		// Desired speeds for the wheels;
 		desired_wheel_speed.W1 = fixed_speed; // Right wheel
 		desired_wheel_speed.W2 = fixed_speed; // Left wheel
-		printf("NaN values\n");
+//		printf("NaN values\n");
 		// Publish the desired Speed to the low level controller;
-		printf("W1: %f \t W2: %f \n\n\n", desired_wheel_speed.W1,
-				desired_wheel_speed.W2);
+//		printf("W1: %f \t W2: %f \n\n\n", desired_wheel_speed.W1,
+	//			desired_wheel_speed.W2);
 
 		return desired_wheel_speed;
 
@@ -94,9 +95,9 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 	}
 	error_distance = 0.0;
 	//error_distance = 0.0; // Tuning
-	printf("Error distance: %f \n", error_distance);
-	printf("Error angle (radians): %f \n", error_theta);
-	printf("Error angle (degrees): %f \n", error_theta * (180.0 / PI));
+//	printf("Error distance: %f \n", error_distance);
+//	printf("Error angle (radians): %f \n", error_theta);
+//	printf("Error angle (degrees): %f \n", error_theta * (180.0 / PI));
 
 
 	// Proportional error (redundant but intuitive)
@@ -105,11 +106,11 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 							+ (distance_gain * error_distance)); // Right
 	desired_wheel_speed.W2 = fixed_speed+ 1.0* ((-angle_gain * error_theta)
 							- (distance_gain * error_distance)); // Left
-	printf("Angle difference: %f \n", angle_gain * error_theta);
-	printf("Distance difference: %f \n", distance_gain * error_distance);
+//	printf("Angle difference: %f \n", angle_gain * error_theta);
+//	printf("Distance difference: %f \n", distance_gain * error_distance);
 	// Publish the desired Speed to the low level controller;
-	printf("WR: %f \t WL: %f \n\n\n", desired_wheel_speed.W1,
-			desired_wheel_speed.W2);
+//	printf("WR: %f \t WL: %f \n\n\n", desired_wheel_speed.W1,
+//			desired_wheel_speed.W2);
 
 	return desired_wheel_speed;
 }

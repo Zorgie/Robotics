@@ -28,7 +28,7 @@ static ros::Publisher requested_action_performed_pub; //Tells Navigation.cpp tha
 static irsensors::floatarray ir_readings_processed_global; // This variable stores the last read ir values;
 static movement::wheel_distance wheel_distance_traveled_global;
 
-static robot_action CURRENT_STATE = IDLE_STATE;
+static robot_action CURRENT_STATE = GO_STRAIGHT_INF;
 
 static WallFollow wall_follow;
 static Rotation rotation;
@@ -45,10 +45,50 @@ void wheel_distance_update(const movement::wheel_distance &msg) { // movement::w
 }
 
 //send a request to change the state to the navigation system - change that later
-void send_inturrupt(){
+void send_inturrupt(robot_action action_completed){
 			navigation::movement_state test;
-			test.movement_state = 0;
+			test.movement_state = action_completed;
 			requested_action_performed_pub.publish(test);
+}
+
+void act(){
+
+	movement::wheel_speed desired_speed;
+
+	switch(CURRENT_STATE){
+	case GO_STRAIGHT_INF:
+			desired_speed = go_straight.step(wheel_distance_traveled_global);
+			break;
+		case GO_STRAIGHT_X:
+			desired_speed = go_straight.step(wheel_distance_traveled_global);
+			if(go_straight.isFinished()){send_inturrupt(GO_STRAIGHT_X);}
+			break;
+		case TURN_LEFT_90:
+			desired_speed = rotation.step(wheel_distance_traveled_global);
+			if(rotation.isFinished()){printf("TURN LEFT 90 INTERRUPT SENT\n");send_inturrupt(TURN_LEFT_90);}
+			//interrupt
+			break;
+		case TURN_RIGHT_90:
+			desired_speed = rotation.step(wheel_distance_traveled_global);
+			if(rotation.isFinished()){send_inturrupt(TURN_RIGHT_90);}
+			//interrupt
+			break;
+		case FOLLOW_LEFT_WALL:
+			desired_speed = wall_follow.step(ir_readings_processed_global,1);
+			break;
+
+		case FOLLOW_RIGHT_WALL:
+			desired_speed = wall_follow.step(ir_readings_processed_global,0);
+			break;
+
+		case IDLE_STATE:
+			desired_speed.W1 = 0.0;
+			desired_speed.W2 = 0.0;
+			break;
+	}
+
+	desired_speed_pub.publish(desired_speed);
+
 }
 
 void movement_state_update(const navigation::movement_state &mvs) {
@@ -58,34 +98,23 @@ void movement_state_update(const navigation::movement_state &mvs) {
 	switch(CURRENT_STATE){
 	case GO_STRAIGHT_INF:
 		printf("GO_STRAIGHT_INF\n");
-
-
+		go_straight.initiate_go_straight(10,true);
 		break;
 	case GO_STRAIGHT_X:
 		printf("GO_STRAIGHT_X\n");
-
-		//go_straight.initiate_go_straight(0.1,true);
-
-		printf("DISTANCE X WALKED VIRTUALLY\n");
-
-
-		send_inturrupt();
+		go_straight.initiate_go_straight(0.20,true);
 		break;
 	case TURN_LEFT_90:
 		printf("TURN_LEFT_90\n");
 
-		rotation.initiate_rotation(-90);
+		rotation.initiate_rotation(90);
 
-		printf("TURN PERFORMED VIRTUALLY\n");
-		send_inturrupt();
 		break;
 	case TURN_RIGHT_90:
 		printf("TURN_RIGHT_90\n");
 
-		rotation.initiate_rotation(90);
+		rotation.initiate_rotation(-90);
 
-		printf("TURN PERFORMED VIRTUALLY\n");
-		send_inturrupt();
 
 		break;
 	case FOLLOW_LEFT_WALL:
@@ -98,7 +127,6 @@ void movement_state_update(const navigation::movement_state &mvs) {
 
 	case FOLLOW_RIGHT_WALL:
 		printf("FOLLOW_RIGHT_WALL\n");
-
 		//init wall follower
 		wall_follow.init();
 
@@ -157,6 +185,7 @@ int main(int argc, char **argv) {
 		n.getParam("/CURRENT_STATE",CURRENT_STATE);
 		n.getParam("/SIDE",SIDE);
 
+		/*
 		// Runs the step method of the wallfollower object, which remembers the state through fields (variables).
 		movement::wheel_speed desired_speed;
 		if(CURRENT_STATE==1){//(CURRENT_STATE == FOLLOW_RIGHT_WALL){
@@ -168,5 +197,10 @@ int main(int argc, char **argv) {
 		//desired_speed.W1=0.27778;
 		//desired_speed.W2=0.27778;
 		desired_speed_pub.publish(desired_speed);
+		*/
+
+		//let the robot act according to its current movement state
+		act();
+
 	}
 }

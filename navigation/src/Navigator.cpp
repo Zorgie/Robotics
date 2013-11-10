@@ -20,7 +20,7 @@ enum sensor {
 void tell_action_performed(const navigation::movement_state &mvs){
 	printf("STATE TRANSITION DUE TO INTERRUPT\n");
 
-	movement_brain.requested_action_performed();
+	movement_brain.requested_action_performed((robot_action)mvs.movement_state);
 }
 
 void update_movement_state(const irsensors::floatarray &processed_ir_readings) {

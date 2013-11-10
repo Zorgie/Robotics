@@ -3,10 +3,8 @@
 //  Created by Paul Bergmann on 07.11.13.
 //
 
-#include <stdlib.h>
-#include <vector>
 #include "MovementBrain.h"
-#include <cmath>
+
 
 MovementBrain::MovementBrain(){
 	state_probability = *new std::vector<double>(7,0.0);
@@ -93,28 +91,36 @@ void MovementBrain::process_irsensor_readings(float s_front,
 
 //observe: robot is not able to detect 180° corners at the moment
 //must be implemented later!
-void MovementBrain::requested_action_performed(){
+void MovementBrain::requested_action_performed(robot_action action_performed){
 
 	actionPerformedTrigger = true;
 
 	switch(current_movement_state){
         case CHECK_RIGHT_PATH_1_TURN_RIGHT:
-            current_movement_state = CHECK_RIGHT_PATH_2_GO_FORWARD;
+        	if(action_performed == TURN_RIGHT_90)
+        		current_movement_state = CHECK_RIGHT_PATH_2_GO_FORWARD;
             break;
         case CHECK_RIGHT_PATH_2_GO_FORWARD:
-            current_movement_state = GO_STRAIGHT;
+        	if(action_performed == GO_STRAIGHT_X){
+        		std::cout << "TRANSITIONED TO GO STRAIGHT AFTER RECEIVING GO STRAIGHT INTERRUPT\n" << std::endl;
+        		current_movement_state = GO_STRAIGHT;
+        	}
             break;
         case CHECK_LEFT_PATH_1_TURN_LEFT:
-            current_movement_state = CHECK_LEFT_PATH_2_GO_FORWARD;
+        	if(action_performed == TURN_LEFT_90)
+        		current_movement_state = CHECK_LEFT_PATH_2_GO_FORWARD;
             break;
         case CHECK_LEFT_PATH_2_GO_FORWARD:
-            current_movement_state = GO_STRAIGHT;
+        	if(action_performed == GO_STRAIGHT_X)
+        		current_movement_state = GO_STRAIGHT;
             break;
         case TURN_LEFT:
-            current_movement_state = GO_STRAIGHT;
+        	if(action_performed == TURN_LEFT_90)
+        		current_movement_state = GO_STRAIGHT;
             break;
         case TURN_RIGHT:
-            current_movement_state = GO_STRAIGHT;
+        	if(action_performed == TURN_RIGHT_90)
+        		current_movement_state = GO_STRAIGHT;
             break;
         default:
             break;

@@ -20,18 +20,24 @@ void Rotation::initiate_rotation(float degrees) {
 	degrees_target = degrees;
 }
 
+bool Rotation::isFinished(){
+	return fabs(degrees_turned - degrees_target) < 6;
+}
+
+
+
 movement::wheel_speed Rotation::step(movement::wheel_distance &distance_traveled) {
 
 	movement::wheel_speed speed;
 
-	printf("Distance1: %f \t Distance2: %f \n",distance_traveled.distance1,distance_traveled.distance2);
+//printf("Distance1: %f \t Distance2: %f \n",distance_traveled.distance1,distance_traveled.distance2);
 
 	//float average_wheel_distance=0.5*(distance_traveled.distance1-distance_traveled.distance2);
 	//float average_wheel_distance=0.5*(fabs(distance_traveled.distance1)+fabs(distance_traveled.distance2));
 	float average_wheel_distance=0.5*(distance_traveled.distance1-distance_traveled.distance2);
 	degrees_turned = degrees_turned + (360.0*average_wheel_distance)/(PI*(0.213));
 	//distance_walked=distance_walked+distance_traveled.distance1;
-	printf("All traveled1: %f \n",distance_walked);
+//printf("All traveled1: %f \n",distance_walked);
 
 	/*if(abs(degrees_turned - degrees_target) > 10){
 	 speed.W1 = SPEED;
@@ -42,7 +48,7 @@ movement::wheel_speed Rotation::step(movement::wheel_distance &distance_traveled
 	direction= fabs(degrees_target)/degrees_target;
 	if (direction>0){
 		if (degrees_target - degrees_turned > 5.0 ) {
-			printf("Want to move left\n");
+			//printf("Want to move left\n");
 
 			if (fabs(degrees_turned - degrees_target) > 20) {
 				//speed.W1 = SPEED*((degrees_turned - degrees_target)/fabs(degrees_turned - degrees_target));
@@ -69,7 +75,7 @@ movement::wheel_speed Rotation::step(movement::wheel_distance &distance_traveled
 	}
 	if (direction<0){
 			if (degrees_target - degrees_turned < -5.0 ) {
-				printf("Want to move right\n");
+//				printf("Want to move right\n");
 
 				if (fabs(degrees_turned - degrees_target) > 20) {
 					//speed.W1 = SPEED*((degrees_turned - degrees_target)/fabs(degrees_turned - degrees_target));
@@ -96,10 +102,10 @@ movement::wheel_speed Rotation::step(movement::wheel_distance &distance_traveled
 		}
 
 
-	printf("angle_difference: %f \n", degrees_turned - degrees_target);
-	printf("Abs of angle_difference: %f \n",
-			fabs(degrees_turned - degrees_target));
-	printf("WR: %f \t WL: %f \n\n\n", speed.W1, speed.W2);
+//	printf("angle_difference: %f \n", degrees_turned - degrees_target);
+//	printf("Abs of angle_difference: %f \n",
+//			fabs(degrees_turned - degrees_target));
+//	printf("WR: %f \t WL: %f \n\n\n", speed.W1, speed.W2);
 
 	return speed;
 }

@@ -25,6 +25,7 @@ public:
 	virtual ~Go_straight();
 	void initiate_go_straight(float distance, bool go_front);
 	movement::wheel_speed step(movement::wheel_distance &distance_traveled);
+	bool isFinished();
 };
 
 #endif /* GO_STRAIGHT_H_ */
