@@ -24,7 +24,7 @@ private:
 public:
 	Rotation();
 	virtual ~Rotation();
-	void initiate_rotation(float degrees, bool turn_right);
+	void initiate_rotation(float degrees);
 	movement::wheel_speed step(movement::wheel_distance &distance_traveled);
 };
 
