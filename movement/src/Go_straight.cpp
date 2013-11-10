@@ -10,6 +10,7 @@
 
 
 Go_straight::Go_straight() {
+	distance_target=0;
 }
 
 Go_straight::~Go_straight() {
@@ -21,39 +22,65 @@ void Go_straight::initiate_go_straight(float distance, bool go_front) {
 	direction_front = go_front;
 }
 
-movement::wheel_speed Go_straight::step(differential_drive::Encoders &enc){
+movement::wheel_speed Go_straight::step(movement::wheel_distance &distance_traveled){
+
 	movement::wheel_speed speed;
-	float right_wheel_delta = enc.delta_encoder1;
-	float left_wheel_delta = enc.delta_encoder2;
-	float right_wheel_movement=(PI*0.1)*(right_wheel_delta/360.0);
-	float left_wheel_movement=(PI*0.1)*(right_wheel_delta/360.0);
+
+	float average_wheel_distance = 0.5*(distance_traveled.distance1+distance_traveled.distance2);
 	//(PI*diameter)*(percentage of wheel turned)
 
-	distance_moved=distance_moved+((right_wheel_movement+left_wheel_movement)/2.0);
+	distance_moved=distance_moved+average_wheel_distance;
 
-	if(abs(distance_moved - distance_target) > 0.1){
-		/*if (go_front){
-		speed.W1=SPEED;
-		speed.W2=-SPEED;
-		}else{
-		speed.W1=-SPEED;
-		speed.W2=SPEED;
-		}*/
-	}
-	else{
-		if(abs(distance_moved - distance_target) <= 0.1){ // Smoothen the braking
-			/*if (go_front){
-				speed.W1=SPEED*(abs((distance_moved - distance_target)/0.1));
-				speed.W2=-SPEED*(abs((distance_moved - distance_target)/0.1));
-			}else{
-				speed.W1=-SPEED*(abs((distance_moved - distance_target)/0.1));
-				speed.W2=SPEED*(abs((distance_moved - distance_target)/0.1));
-			}	*/
+	float direction = 0;
+	direction= fabs(distance_target)/distance_target;
+	if(direction>0.0){
+		if(fabs(distance_moved - distance_target) > 0.05){
+			speed.W1=SPEED;
+			speed.W2=SPEED;
 		}
 		else{
-			printf("Unexpected behaviour \n");
+			if(fabs(distance_moved - distance_target) <= 0.05){ // Smoothen the braking
+				/*if (go_front){
+					speed.W1=SPEED*(abs((distance_moved - distance_target)/0.1));
+					speed.W2=-SPEED*(abs((distance_moved - distance_target)/0.1));
+				}else{
+					speed.W1=-SPEED*(abs((distance_moved - distance_target)/0.1));
+					speed.W2=SPEED*(abs((distance_moved - distance_target)/0.1));
+				}	*/
+				speed.W1=0;
+				speed.W2=0;
+			}
+			else{
+				printf("Unexpected behaviour \n");
+			}
 		}
 	}
+	if(direction<0.0){
+			if(fabs(distance_moved - distance_target) > 0.05){
+				speed.W1=-SPEED;
+				speed.W2=-SPEED;
+			}
+			else{
+				if(fabs(distance_moved - distance_target) <= 0.05){ // Smoothen the braking
+					/*if (go_front){
+						speed.W1=SPEED*(abs((distance_moved - distance_target)/0.1));
+						speed.W2=-SPEED*(abs((distance_moved - distance_target)/0.1));
+					}else{
+						speed.W1=-SPEED*(abs((distance_moved - distance_target)/0.1));
+						speed.W2=SPEED*(abs((distance_moved - distance_target)/0.1));
+					}	*/
+					speed.W1=0;
+					speed.W2=0;
+				}
+				else{
+					printf("Unexpected behaviour \n");
+				}
+			}
+		}
+
+	printf("Desired_distance %f \n",distance_target);
+	printf("Distance1: %f \t Distance2: %f \n",distance_traveled.distance1,distance_traveled.distance2);
+	printf("WR: %f \t WL: %f \n\n\n", speed.W1, speed.W2);
 
 	return speed;
 }
