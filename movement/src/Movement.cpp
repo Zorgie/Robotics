@@ -101,15 +101,24 @@ int main(int argc, char **argv) {
 	desired_speed_pub = n.advertise<movement::wheel_speed>("/desired_speed", 1); // We are Publishing a topic that changes the desired wheel speeds.
 	requested_action_performed_pub = n.advertise<navigation::movement_state>("/movement/requested_action_performed",1);
 
+	int CURRENT_STATE = 0;
+	int SIDE = 1;
+
+	n.setParam("/CURRENT_STATE",0);
+	n.setParam("/SIDE",1);
+
+
 
 	while (ros::ok()) {
 		ros::spinOnce();
 		loop_rate.sleep();
+		n.getParam("/CURRENT_STATE",CURRENT_STATE);
+		n.getParam("/SIDE",SIDE);
 		// Runs the step method of the wallfollower object, which remembers the state through fields (variables).
 		movement::wheel_speed desired_speed;
-		if(CURRENT_STATE == FOLLOW_RIGHT_WALL){
-			desired_speed = wf.step(ir_readings_processed_global, 1);
-		}else if(CURRENT_STATE == TURN_RIGHT_90){
+		if(CURRENT_STATE==1){//(CURRENT_STATE == FOLLOW_RIGHT_WALL){
+			desired_speed = wf.step(ir_readings_processed_global, SIDE);
+		}else if(CURRENT_STATE==0){//(CURRENT_STATE == TURN_RIGHT_90){
 			differential_drive::Encoders enc;
 			enc.delta_encoder1 = 0;
 			enc.delta_encoder2 = 0;
