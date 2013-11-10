@@ -9,9 +9,11 @@
 #define ROTATION_H_
 
 #include <movement/wheel_speed.h>
+#include <movement/wheel_distance.h>
 #include <differential_drive/Encoders.h>
 #include <cmath>
 
+#define PI 3.14159265
 
 class Rotation {
 private:
@@ -23,7 +25,7 @@ public:
 	Rotation();
 	virtual ~Rotation();
 	void initiate_rotation(float degrees, bool turn_right);
-	movement::wheel_speed step(differential_drive::Encoders &enc);
+	movement::wheel_speed step(movement::wheel_distance &distance_traveled);
 };
 
 #endif /* ROTATION_H_ */

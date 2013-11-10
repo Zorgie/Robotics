@@ -1,0 +1,2 @@
+float32 distance1
+float32 distance2

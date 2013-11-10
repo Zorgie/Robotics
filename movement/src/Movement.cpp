@@ -2,6 +2,7 @@
 #include <differential_drive/Encoders.h>
 #include <differential_drive/PWM.h>
 #include "movement/wheel_speed.h"
+#include "movement/wheel_distance.h"
 #include <math.h>
 #include <stdlib.h>
 #include <vector>
@@ -15,16 +16,18 @@
 using namespace differential_drive;
 
 //defines the speed of the Control Loop (in Hz)
-static const int UPDATE_RATE = 100; // maybe this value can be changed for the high level control, kanske 10?  ARE WE GOING TO HAVE PROBLEMS WITH HAVING THIS VARIABLE DECLARED IN SEVERAL PROGRAMS?
+static const int UPDATE_RATE = 50; // WE HAVE LOTS OF PROBLEMS OF DIFFERENT RATES IN NODES, NEED SMARTER CODE
 
 static ros::Subscriber ir_sub; // Subscriber to the ir post-processing readings;
 static ros::Subscriber nav_sub;
+static ros::Subscriber wheel_distance_sub;
 static ros::Publisher nav_pub;
 static ros::Publisher desired_speed_pub; // Publisher of the desired speed to the Low Level Controller;
 static ros::Publisher requested_action_performed_pub; //Tells Navigation.cpp that the requested action such as a left turn has been performed
 
 
 static irsensors::floatarray ir_readings_processed_global; // This variable stores the last read ir values;
+static movement::wheel_distance wheel_distance_traveled_global;
 
 static robot_action CURRENT_STATE = IDLE_STATE;
 
@@ -33,6 +36,11 @@ static Rotation rotation;
 void ir_readings_update(const irsensors::floatarray &msg) { // movement::wheel_speed
 	// Whenever we get a callback from the ir readings, we must update our current ir readings;
 	ir_readings_processed_global = msg; // Save the most recent values;
+}
+
+void wheel_distance_update(const movement::wheel_distance &msg) { // movement::wheel_speed
+	// Whenever we get a callback from the ir readings, we must update our current ir readings;
+	wheel_distance_traveled_global = msg; // Save the most recent values;
 }
 
 //send a request to change the state to the navigation system - change that later
@@ -90,6 +98,7 @@ int main(int argc, char **argv) {
 	ros::NodeHandle n;
 
 	ir_sub = n.subscribe("/sensors/transformed/ADC", 1, ir_readings_update); // Subscribing to the processed ir values topic.
+	wheel_distance_sub = n.subscribe("/wheel_distance", 1, wheel_distance_update); // Subscribing to the wheel distance traveled topic.
 	nav_sub = n.subscribe("/navigation/movement_state", 1, movement_state_update);
 
 	ros::Rate loop_rate(UPDATE_RATE);
@@ -107,7 +116,7 @@ int main(int argc, char **argv) {
 	n.setParam("/CURRENT_STATE",0);
 	n.setParam("/SIDE",1);
 
-
+	rotation.initiate_rotation(90.0, 1);
 
 	while (ros::ok()) {
 		ros::spinOnce();
@@ -119,11 +128,10 @@ int main(int argc, char **argv) {
 		if(CURRENT_STATE==1){//(CURRENT_STATE == FOLLOW_RIGHT_WALL){
 			desired_speed = wf.step(ir_readings_processed_global, SIDE);
 		}else if(CURRENT_STATE==0){//(CURRENT_STATE == TURN_RIGHT_90){
-			differential_drive::Encoders enc;
-			enc.delta_encoder1 = 0;
-			enc.delta_encoder2 = 0;
-			desired_speed = rotation.step(enc);
+			desired_speed = rotation.step(wheel_distance_traveled_global);
 		}
+		//desired_speed.W1=0.27778;
+		//desired_speed.W2=0.27778;
 		desired_speed_pub.publish(desired_speed);
 	}
 }

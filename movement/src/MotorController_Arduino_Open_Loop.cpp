@@ -2,15 +2,19 @@
 #include <differential_drive/Encoders.h>
 #include <differential_drive/PWM.h>
 #include "movement/wheel_speed.h"
+#include "movement/wheel_distance.h"
 
 using namespace differential_drive;
 
 //defines the speed of the Control Loop (in Hz)
 const int UPDATE_RATE = 50; //10-OK,20-OK,50-OK
+#define PI 3.14159265
+const double wheel_diameter = 0.1;
 
 ros::Subscriber enc_sub; // Subscriber to the encoder readings;
 ros::Subscriber desired_speed_sub; // Subscriber to the desired speed;
 ros::Publisher pwm_pub; // Publisher of the PWM command signals;
+ros::Publisher wheel_distance_pub; // Publisher of the travelled wheel distance;
 
 Encoders encoders_global; // This variable stores the last read encoder values;
 movement::wheel_speed wheel_speed_global; // This variable stores the desired wheel speed;
@@ -41,6 +45,7 @@ int main(int argc, char **argv) {
 
 
 	PWM pwm_command; // Creates the variable with the PWM command which is published at 100 Hz.
+	movement::wheel_distance wheel_distance_traveled; // Creates the distance traveled variable to be published.
 
 	wheel_speed_global.W1 = 0.0; // We want to be stopped until our first command.
 	wheel_speed_global.W2 = 0.0;
@@ -55,6 +60,7 @@ int main(int argc, char **argv) {
 	desired_speed_sub = n.subscribe("/desired_speed", 1, desired_speed_update); // Subscribing to the Desired Speed topic.
 
 	pwm_pub = n.advertise<PWM>("/motion/PWM", 1); // We are Publishing a topic that changes the PWM commands.
+	wheel_distance_pub = n.advertise<movement::wheel_distance>("/wheel_distance", 100);
 
 	ros::Rate loop_rate(UPDATE_RATE);
 
@@ -84,7 +90,17 @@ int main(int argc, char **argv) {
 		error_2=wheel_speed_global.W2-((encoders_global.delta_encoder2*UPDATE_RATE)/360.0);
 		//error_1=Speed-((encoders_global.delta_encoder1*UPDATE_RATE)/360.0);
 		//error_2=Speed-((encoders_global.delta_encoder2*UPDATE_RATE)/360.0);
+		wheel_distance_traveled.distance1=(encoders_global.delta_encoder1/360.0)*(PI*wheel_diameter);
+		printf("\n\n DEBUGGING DISTANCE:");
+		printf("Encoder: %f \n",encoders_global.delta_encoder1);
+		printf("Encoder/360.0: %f \n",encoders_global.delta_encoder1/360.0);
+		printf("Pi: %f \n",PI);
+		printf("diameter: %f \n",wheel_diameter);
+		printf("Pi*diameter: %f \n",PI*wheel_diameter);
+		wheel_distance_traveled.distance2=(encoders_global.delta_encoder2/360.0)*(PI*wheel_diameter);
+		printf("Distance1: %f \t Distance2: %f \n",wheel_distance_traveled.distance1,wheel_distance_traveled.distance2);
 
+		wheel_distance_pub.publish(wheel_distance_traveled);
 
 		// Debugging stuff
 		printf("\n\n\nerror1: %f \t desired1: %f read1: %f\n",
