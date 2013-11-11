@@ -24,6 +24,8 @@ enum robot_movement_state {
     CHECK_LEFT_PATH_1_TURN_LEFT,
     CHECK_LEFT_PATH_2_GO_FORWARD,
 	
-    IDLE
+    IDLE,
+    
+    TRANSITION
 };
 #endif /* defined(__RobotStates__) */

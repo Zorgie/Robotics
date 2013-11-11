@@ -52,6 +52,10 @@ public:
     robot_movement_state make_state_decision_check_right_path_0();
     robot_movement_state make_state_decision_check_left_path_0();
     
+    robot_movement_state state_after_transition;
+    
+    int timeCounter; //used for measuring how often the decision function has been called since the last change to TRANSITION state
+    
     int  evaluate_front();
     int  evaluate_left();
     int  evaluate_right();

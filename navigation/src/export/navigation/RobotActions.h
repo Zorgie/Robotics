@@ -17,6 +17,7 @@ enum robot_action{
     FOLLOW_LEFT_WALL,
     FOLLOW_RIGHT_WALL,
 	
-    IDLE_STATE
+    IDLE_STATE,
+    WAIT_X
 };
 #endif /* defined(__RobotStates__) */

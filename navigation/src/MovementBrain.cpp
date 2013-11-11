@@ -162,6 +162,8 @@ robot_action MovementBrain::get_action_to_perform(){
         case CHECK_LEFT_PATH_2_GO_FORWARD:
             return GO_STRAIGHT_X;
             break;
+        case TRANSITION:
+            return WAIT_X;
         default:
             break;
     }
@@ -175,6 +177,11 @@ bool MovementBrain::make_state_decision(){
 	//state transition due to requested action performed method!
 	if(actionPerformedTrigger){
 		actionPerformedTrigger = false;
+        
+        //change to transition state
+        state_after_transition = current_movement_state;
+        current_movement_state = TRANSITION;
+        
 		return true;
 	}
 
@@ -199,10 +206,27 @@ bool MovementBrain::make_state_decision(){
         case CHECK_LEFT_PATH_0_GO_FORWARD:
             current_movement_state = make_state_decision_check_left_path_0();
             break;
+            
+        case TRANSITION:
+            timeCounter++;
+            if(timeCounter > 100){
+                std::cout << "RESET" << std::endl;
+                current_movement_state = state_after_transition;
+                timeCounter = 0;
+            }
+            break;
 
         //for states such as TURN_LEFT: wait for manual reset signal
         default:
             break;
+    }
+    
+    //now just wait after every transition
+    if(old_state != current_movement_state && old_state != TRANSITION)
+    {
+            //change to transition state
+        state_after_transition = current_movement_state;
+        current_movement_state = TRANSITION;
     }
 
 	return old_state != current_movement_state;
