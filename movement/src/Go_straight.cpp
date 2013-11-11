@@ -39,12 +39,12 @@ movement::wheel_speed Go_straight::step(movement::wheel_distance &distance_trave
 	float direction = 0;
 	direction= fabs(distance_target)/distance_target;
 	if(direction>0.0){
-		if(fabs(distance_moved - distance_target) > 0.05){
+		if(fabs(distance_moved - distance_target) > 0.01){
 			speed.W1=SPEED;
 			speed.W2=SPEED;
 		}
 		else{
-			if(fabs(distance_moved - distance_target) <= 0.05){ // Smoothen the braking
+			if(fabs(distance_moved - distance_target) <= 0.01){ // Smoothen the braking
 				/*if (go_front){
 					speed.W1=SPEED*(abs((distance_moved - distance_target)/0.1));
 					speed.W2=-SPEED*(abs((distance_moved - distance_target)/0.1));
@@ -61,12 +61,12 @@ movement::wheel_speed Go_straight::step(movement::wheel_distance &distance_trave
 		}
 	}
 	if(direction<0.0){
-			if(fabs(distance_moved - distance_target) > 0.05){
+			if(fabs(distance_moved - distance_target) > 0.001){
 				speed.W1=-SPEED;
 				speed.W2=-SPEED;
 			}
 			else{
-				if(fabs(distance_moved - distance_target) <= 0.05){ // Smoothen the braking
+				if(fabs(distance_moved - distance_target) <= 0.01){ // Smoothen the braking
 					/*if (go_front){
 						speed.W1=SPEED*(abs((distance_moved - distance_target)/0.1));
 						speed.W2=-SPEED*(abs((distance_moved - distance_target)/0.1));

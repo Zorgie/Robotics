@@ -197,8 +197,9 @@ int main(int argc, char **argv) {
 //		movement::wheel_speed desired_speed;
 //		if(CURRENT_STATE==1){//(CURRENT_STATE == FOLLOW_RIGHT_WALL){
 //			//desired_speed = wf.step(ir_readings_processed_global, SIDE);
-//			printf("Go Straight mode\n");
-//			desired_speed=go_straight.step(wheel_distance_traveled_global);
+//			desired_speed = wf.step(ir_readings_processed_global, SIDE);
+//			printf("Wall follow mode\n");
+//			//desired_speed=go_straight.step(wheel_distance_traveled_global);
 //		}else if(CURRENT_STATE==0){//(CURRENT_STATE == TURN_RIGHT_90){
 //			desired_speed=stop.step();
 //			printf("Stop mode\n");
@@ -213,9 +214,9 @@ int main(int argc, char **argv) {
 //		//desired_speed.W1=0.27778;
 //		//desired_speed.W2=0.27778;
 //		desired_speed_pub.publish(desired_speed);
-//
-//
-//		//let the robot act according to its current movement state
+
+
+		//let the robot act according to its current movement state
 
 		act();
 
