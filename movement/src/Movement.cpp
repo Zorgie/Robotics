@@ -183,8 +183,8 @@ int main(int argc, char **argv) {
 	n.setParam("/CURRENT_STATE",0);
 	n.setParam("/SIDE",1);
 
-	rotation.initiate_rotation(180.0);
-	go_straight.initiate_go_straight(2.20, 1);
+	rotation.initiate_rotation(90.0);
+	go_straight.initiate_go_straight(0.31, 1);
 
 	while (ros::ok()) {
 		ros::spinOnce();
@@ -193,28 +193,31 @@ int main(int argc, char **argv) {
 		n.getParam("/SIDE",SIDE);
 
 
-		// Runs the step method of the wallfollower object, which remembers the state through fields (variables).
-		movement::wheel_speed desired_speed;
-		if(CURRENT_STATE==1){//(CURRENT_STATE == FOLLOW_RIGHT_WALL){
-			//desired_speed = wf.step(ir_readings_processed_global, SIDE);
-			desired_speed=go_straight.step(wheel_distance_traveled_global);
-		}else if(CURRENT_STATE==0){//(CURRENT_STATE == TURN_RIGHT_90){
-			desired_speed=stop.step();
-			//desired_speed = wf.step(ir_readings_processed_global, SIDE);
-			//desired_speed = rotation.step(wheel_distance_traveled_global);
-			//desired_speed = go_straight.step(wheel_distance_traveled_global);
-		}else if(CURRENT_STATE==2){//(CURRENT_STATE == TURN_RIGHT_90){
-			desired_speed=wall_align.step(ir_readings_processed_global, SIDE);
+//		// Runs the step method of the wallfollower object, which remembers the state through fields (variables).
+//		movement::wheel_speed desired_speed;
+//		if(CURRENT_STATE==1){//(CURRENT_STATE == FOLLOW_RIGHT_WALL){
+//			//desired_speed = wf.step(ir_readings_processed_global, SIDE);
+//			printf("Go Straight mode\n");
+//			desired_speed=go_straight.step(wheel_distance_traveled_global);
+//		}else if(CURRENT_STATE==0){//(CURRENT_STATE == TURN_RIGHT_90){
+//			desired_speed=stop.step();
+//			printf("Stop mode\n");
+//			//desired_speed = wf.step(ir_readings_processed_global, SIDE);
+//			//desired_speed = rotation.step(wheel_distance_traveled_global);
+//			//desired_speed = go_straight.step(wheel_distance_traveled_global);
+//		}else if(CURRENT_STATE==2){//(CURRENT_STATE == TURN_RIGHT_90){
+//			printf("Rotate mode\n");
+//			desired_speed = rotation.step(wheel_distance_traveled_global);
+//
+//		}
+//		//desired_speed.W1=0.27778;
+//		//desired_speed.W2=0.27778;
+//		desired_speed_pub.publish(desired_speed);
+//
+//
+//		//let the robot act according to its current movement state
 
-		}
-		//desired_speed.W1=0.27778;
-		//desired_speed.W2=0.27778;
-		desired_speed_pub.publish(desired_speed);
-
-
-		//let the robot act according to its current movement state
-
-		//act();
+		act();
 
 	}
 }

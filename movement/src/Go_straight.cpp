@@ -34,6 +34,7 @@ movement::wheel_speed Go_straight::step(movement::wheel_distance &distance_trave
 	//(PI*diameter)*(percentage of wheel turned)
 
 	distance_moved=distance_moved+average_wheel_distance;
+	printf("Distance moved: %f \n", distance_moved);
 
 	float direction = 0;
 	direction= fabs(distance_target)/distance_target;
