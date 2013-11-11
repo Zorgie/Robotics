@@ -133,8 +133,19 @@ int main(int argc, char **argv) {
 
 		// Gain Values
 
+
+
 		pwm_command.PWM1=(int)(pGain*proportional_error_1+iGain*integral_error_1);
 		pwm_command.PWM2=(int)(pGain*proportional_error_2+iGain*integral_error_2);
+
+		if(wheel_speed_global.W1==0.0 && wheel_speed_global.W1==0.0){
+					pwm_command.PWM1=0;
+					pwm_command.PWM2=0;
+					integral_error_1=0;
+					integral_error_2=0;
+					proportional_error_1=0;
+					proportional_error_2=0;
+				}
 
 		printf("P_error: %f \t I_error: %f \n",proportional_error_1,integral_error_1);
 
