@@ -107,7 +107,7 @@ void movement_state_update(const navigation::movement_state &mvs) {
 		break;
 	case GO_STRAIGHT_X:
 		printf("GO_STRAIGHT_X\n");
-		go_straight.initiate_go_straight(0.20,true);
+		go_straight.initiate_go_straight(0.10,true);
 		break;
 	case TURN_LEFT_90:
 		printf("TURN_LEFT_90\n");
