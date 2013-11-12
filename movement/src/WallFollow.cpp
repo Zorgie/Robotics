@@ -43,7 +43,7 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 	float rb_offset = 0.00;
 	float lf_offset = 0.00;
 	float lb_offset = 0.00;
-	double distance_gain= 0.25;
+	double distance_gain= 0.5;
 	double angle_gain= 0.25;
 
 	if (side == 0) { //Right Side
@@ -97,6 +97,9 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 	}
 	if (fabs(error_distance) > 0.10) {
 			error_distance = (error_distance/fabs(error_distance))*0.10;
+	}
+	if (error_distance > 0.0) {
+		error_distance = 0.0; // Only interested on not being very close to the wall
 	}
 
 //	if (fabs(error_distance)>0.05){
