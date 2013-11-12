@@ -103,7 +103,7 @@ void movement_state_update(const navigation::movement_state &mvs) {
 	switch(CURRENT_STATE){
 	case GO_STRAIGHT_INF:
 		printf("GO_STRAIGHT_INF\n");
-		go_straight.initiate_go_straight(10,true);
+		go_straight.initiate_go_straight(10.0,true);
 		break;
 	case GO_STRAIGHT_X:
 		printf("GO_STRAIGHT_X\n");
@@ -179,48 +179,48 @@ int main(int argc, char **argv) {
 
 	movement::wheel_speed desired_speed;
 
-	int CURRENT_STATE = 0;
-	int SIDE = 1;
-	n.setParam("/CURRENT_STATE",0);
-	n.setParam("/SIDE",1);
-	rotation.initiate_rotation(90.0); // Initializes the movement to rotate
-	go_straight.initiate_go_straight(0.31, 1); // Initializes the movement to walk forward
+//	int CURRENT_STATE = 0;
+//	int SIDE = 1;
+//	n.setParam("/CURRENT_STATE",0);
+//	n.setParam("/SIDE",1);
+//	rotation.initiate_rotation(90.0); // Initializes the movement to rotate
+//	go_straight.initiate_go_straight(0.31, 1); // Initializes the movement to walk forward
 
 	while (ros::ok()) {
 		ros::spinOnce();
 		loop_rate.sleep();
-		n.getParam("/CURRENT_STATE",CURRENT_STATE);
-		n.getParam("/SIDE",SIDE);
+//		n.getParam("/CURRENT_STATE",CURRENT_STATE);
+//		n.getParam("/SIDE",SIDE);
 
 
 
 
-//		 Runs the step method of the wallfollower object, which remembers the state through fields (variables).
-//		movement::wheel_speed desired_speed;
-		if(CURRENT_STATE==1){//(CURRENT_STATE == FOLLOW_RIGHT_WALL){
-			//desired_speed = wf.step(ir_readings_processed_global, SIDE);
-			desired_speed = wf.step(ir_readings_processed_global, SIDE);
-			printf("Wall follow mode\n");
-			//desired_speed=go_straight.step(wheel_distance_traveled_global);
-		}else if(CURRENT_STATE==0){//(CURRENT_STATE == TURN_RIGHT_90){
-			desired_speed=stop.step();
-			printf("Stop mode\n");
-			//desired_speed = wf.step(ir_readings_processed_global, SIDE);
-			//desired_speed = rotation.step(wheel_distance_traveled_global);
-			//desired_speed = go_straight.step(wheel_distance_traveled_global);
-		}else if(CURRENT_STATE==2){//(CURRENT_STATE == TURN_RIGHT_90){
-			printf("Align mode\n");
-			//desired_speed = rotation.step(wheel_distance_traveled_global);
-			desired_speed = wall_align.step(ir_readings_processed_global,SIDE);
-
-		}
-		//desired_speed.W1=0.27778;
-		//desired_speed.W2=0.27778;
-		desired_speed_pub.publish(desired_speed);
+////		 Runs the step method of the wallfollower object, which remembers the state through fields (variables).
+////		movement::wheel_speed desired_speed;
+//		if(CURRENT_STATE==1){//(CURRENT_STATE == FOLLOW_RIGHT_WALL){
+//			//desired_speed = wf.step(ir_readings_processed_global, SIDE);
+//			desired_speed = wf.step(ir_readings_processed_global, SIDE);
+//			printf("Wall follow mode\n");
+//			//desired_speed=go_straight.step(wheel_distance_traveled_global);
+//		}else if(CURRENT_STATE==0){//(CURRENT_STATE == TURN_RIGHT_90){
+//			desired_speed=stop.step();
+//			printf("Stop mode\n");
+//			//desired_speed = wf.step(ir_readings_processed_global, SIDE);
+//			//desired_speed = rotation.step(wheel_distance_traveled_global);
+//			//desired_speed = go_straight.step(wheel_distance_traveled_global);
+//		}else if(CURRENT_STATE==2){//(CURRENT_STATE == TURN_RIGHT_90){
+//			printf("Align mode\n");
+//			//desired_speed = rotation.step(wheel_distance_traveled_global);
+//			desired_speed = wall_align.step(ir_readings_processed_global,SIDE);
+//
+//		}
+//		//desired_speed.W1=0.27778;
+//		//desired_speed.W2=0.27778;
+//		desired_speed_pub.publish(desired_speed);
 
 
 //		let the robot act according to its current movement state
-//		act();
+		act();
 
 	}
 }

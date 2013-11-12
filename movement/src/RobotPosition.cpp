@@ -37,7 +37,7 @@ movement::robot_pose RobotPosition::step(differential_drive::Encoders &delta_enc
 
 	x=x+cos(theta)*V;
 	y=y+sin(theta)*V;
-	theta=theta+(-wheel_distance_traveled1-wheel_distance_traveled2)/(0.213/2.0);
+	theta=theta+(-wheel_distance_traveled1-wheel_distance_traveled2)/(0.213/1.0);
 
 	robot_pose.x=x;
 	robot_pose.y=y;
