@@ -27,12 +27,16 @@ movement::wheel_speed WallAlign::step(irsensors::floatarray ir_readings,
 	float sensor_two = ir_readings.ch[SENSORS[2 * side + 1]];
 	//float front = ir_readings.ch[SENSORS[4]];
 	float distance, error_distance =0, error_theta = 0;
-	float rf_offset = -0.00;
+//	float rf_offset = -0.00;
+//	float rb_offset = 0.00;
+//	float lf_offset = 0.01;
+//	float lb_offset = 0.005;
+	float rf_offset = 0.00;
 	float rb_offset = 0.00;
-	float lf_offset = 0.01;
-	float lb_offset = 0.005;
+	float lf_offset = 0.00;
+	float lb_offset = 0.00;
 	double distance_gain= 0.25;
-	double angle_gain= 0.25;
+	double angle_gain= 2.5;
 
 	printf("Wall aligning\n");
 
@@ -78,8 +82,12 @@ movement::wheel_speed WallAlign::step(irsensors::floatarray ir_readings,
 
 	}
 
-
-	integral_error=integral_error+(error_theta/50.0); // 50 is the update rate;
+	std::cout << error_theta << std::endl;
+	//integral_error=integral_error+(error_theta/50.0); // 50 is the update rate;
+	integral_error=0.0;
+	if (fabs(error_theta) <0.05){
+		error_theta=0.0;
+	}
 
 	desired_wheel_speed.W1 = SPEED*(angle_gain * error_theta + integral_error); // Right
 	desired_wheel_speed.W2 = SPEED*(-angle_gain * error_theta - integral_error); // Left
