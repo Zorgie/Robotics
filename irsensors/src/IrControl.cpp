@@ -9,7 +9,8 @@ ros::Publisher ir_pub;
 
 irsensors::floatarray output_average;
 
-//int average=0; //Rui is calibrating
+int average1=0; //Rui is calibrating
+int average2=0; //Rui is calibrating
 
 float voltageToRange(float V){
 	float M = 0.0003846;
@@ -116,10 +117,12 @@ void ir_transformation(const differential_drive::AnalogC &input){
 	//printf("Sensor6: %f \t Sensor7: %f \n",output_average.ch[5],output_average.ch[6]);
 
 	//Rui is calibrating:
-	//average=(int)(((9.0/10.0)*average)+((1.0/10.0)*((float)input.ch8)));
-	//printf("Average\n%d \n", average);
-	//printf("Current\n%d \n\n\n", input.ch8);
+	average1=(int)(((9.0/10.0)*average1)+((1.0/10.0)*((float)input.ch6)));
+	average2=(int)(((9.0/10.0)*average2)+((1.0/10.0)*((float)input.ch7)));
+	printf("Average1 %d \t Average2 %d \n", average1,average2);
+	printf("Current1 %d \t Current2 %d \n\n\n", input.ch6,input.ch7);
 	//printf("Range\n%f \n",output.ch[7]);
+
 
 	ir_pub.publish(output_average);
 	//ir_pub.publish(output);

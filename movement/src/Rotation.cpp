@@ -34,6 +34,7 @@ movement::wheel_speed Rotation::step(movement::wheel_distance &distance_traveled
 	//float average_wheel_distance=0.5*(fabs(distance_traveled.distance1)+fabs(distance_traveled.distance2));
 	float average_wheel_distance=0.5*(distance_traveled.distance1-distance_traveled.distance2);
 	degrees_turned = degrees_turned + (360.0*average_wheel_distance)/(PI*(0.213)); // 0.213 Wheel axis length
+	printf("Degrees turned: %f \n",degrees_turned);
 	//distance_walked=distance_walked+distance_traveled.distance1;
 //printf("All traveled1: %f \n",distance_walked);
 

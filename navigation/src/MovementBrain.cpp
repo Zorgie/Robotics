@@ -26,15 +26,16 @@ void MovementBrain::process_irsensor_readings(float s_front,
     const double c_front_thresh = 0.20;
     const double c_right_threshold = 0.25;
     const double c_left_threshold = 0.25;
+    const double c_update_prob = 0.15;
     
     //FRONT UPDATE:update probability that there is a wall in front of the robot
     
     if(!isnan(s_front) && s_front < c_front_thresh){
-        state_probability[FRONT_WALL] += 0.05;
+        state_probability[FRONT_WALL] += c_update_prob;
         if(state_probability[FRONT_WALL] > 1){state_probability[FRONT_WALL] = 1;}
     }
     else{
-        state_probability[FRONT_WALL] -= 0.025;
+        state_probability[FRONT_WALL] -= 2*c_update_prob;
         if(state_probability[FRONT_WALL] < 0){state_probability[FRONT_WALL] = 0;}
     }
     
@@ -43,14 +44,14 @@ void MovementBrain::process_irsensor_readings(float s_front,
 	bool s_right_b_valid = !isnan(s_right_b) && s_right_b < c_right_threshold;
     
 	if (s_right_f_valid && s_right_b_valid) {
-		state_probability[RIGHT_WALL] += 0.05;
+		state_probability[RIGHT_WALL] += c_update_prob;
 	}
     else if (!s_right_f_valid && !s_right_b_valid) {
-		state_probability[NO_RIGHT_WALL] += 0.05;
+		state_probability[NO_RIGHT_WALL] += c_update_prob;
 	}
     else {
 		//invalid readings
-        state_probability[RIGHT_INVALID] += 0.05;
+        state_probability[RIGHT_INVALID] += c_update_prob;
 	}
     
     //LEFT UPDATE: Update probability that there is a left wall next to the robot
@@ -58,14 +59,14 @@ void MovementBrain::process_irsensor_readings(float s_front,
 	bool s_left_b_valid = !isnan(s_left_b) && s_left_b < c_left_threshold;
     
 	if (s_left_f_valid && s_left_b_valid) {
-		state_probability[LEFT_WALL] += 0.05;
+		state_probability[LEFT_WALL] += c_update_prob;
 	}
     else if (!s_left_f_valid && !s_left_b_valid) {
-		state_probability[NO_LEFT_WALL] += 0.05;
+		state_probability[NO_LEFT_WALL] += c_update_prob;
 	}
     else {
 		//invalid readings
-        state_probability[LEFT_INVALID] += 0.05;
+        state_probability[LEFT_INVALID] += c_update_prob;
 	}
 
     //NORMALIZE left and right sensor probability values so they sum up to 1
@@ -209,7 +210,7 @@ bool MovementBrain::make_state_decision(){
             
         case TRANSITION:
             timeCounter++;
-            if(timeCounter > 100){
+            if(timeCounter > 10){
                 std::cout << "RESET" << std::endl;
                 current_movement_state = state_after_transition;
                 timeCounter = 0;
