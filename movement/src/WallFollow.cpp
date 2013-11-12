@@ -35,10 +35,14 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 	float sensor_two = ir_readings.ch[SENSORS[2 * side + 1]];
 	//float front = ir_readings.ch[SENSORS[4]];
 	float distance, error_distance =0, error_theta = 0;
-	float rf_offset = -0.00;
+//	float rf_offset = -0.00;
+//	float rb_offset = 0.00;
+//	float lf_offset = 0.01;
+//	float lb_offset = 0.005;
+	float rf_offset = 0.00;
 	float rb_offset = 0.00;
-	float lf_offset = 0.01;
-	float lb_offset = 0.005;
+	float lf_offset = 0.00;
+	float lb_offset = 0.00;
 	double distance_gain= 0.25;
 	double angle_gain= 0.25;
 

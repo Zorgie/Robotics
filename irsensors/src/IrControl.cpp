@@ -117,8 +117,8 @@ void ir_transformation(const differential_drive::AnalogC &input){
 	//printf("Sensor6: %f \t Sensor7: %f \n",output_average.ch[5],output_average.ch[6]);
 
 	//Rui is calibrating:
-	average1=(int)(((9.0/10.0)*average1)+((1.0/10.0)*((float)input.ch6)));
-	average2=(int)(((9.0/10.0)*average2)+((1.0/10.0)*((float)input.ch7)));
+	average1=(int)((((tau-1)/tau)*average1)+((1.0/tau)*((float)input.ch6)));
+	average2=(int)((((tau-1)/tau)*average2)+((1.0/tau)*((float)input.ch7)));
 	printf("Average1 %d \t Average2 %d \n", average1,average2);
 	printf("Current1 %d \t Current2 %d \n\n\n", input.ch6,input.ch7);
 	//printf("Range\n%f \n",output.ch[7]);

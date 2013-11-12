@@ -42,7 +42,48 @@ void update_movement_state(const irsensors::floatarray &processed_ir_readings) {
 	movement_brain.process_irsensor_readings(front, front_right, back_right,
 			front_left, back_left);
 
-	printf("Current state: %d\n",movement_brain.get_current_movement_state());
+	//printf("Current state: %d\n",movement_brain.get_current_movement_state());
+		switch(movement_brain.get_current_movement_state()){
+		case GO_STRAIGHT:
+			printf("Go straigh \n");
+			break;
+		case FOLLOW_RIGHT:
+			printf("FOLLOW_RIGHT \n");
+			break;
+		case FOLLOW_LEFT:
+			printf("FOLLOW_LEFT \n");
+			break;
+		case TURN_LEFT:
+			printf("TURN_LEFT \n");
+			break;
+		case TURN_RIGHT:
+			printf("TURN_RIGHT \n");
+			break;
+		case CHECK_RIGHT_PATH_0_GO_FORWARD:
+			printf("CHECK_RIGHT_PATH_0_GO_FORWARD \n");
+			break;
+		case CHECK_RIGHT_PATH_1_TURN_RIGHT:
+			printf("CHECK_RIGHT_PATH_1_TURN_RIGHT \n");
+			break;
+		case CHECK_RIGHT_PATH_2_GO_FORWARD:
+			printf("CHECK_RIGHT_PATH_2_GO_FORWARD \n");
+			break;
+		case CHECK_LEFT_PATH_0_GO_FORWARD:
+			printf("CHECK_LEFT_PATH_0_GO_FORWARD \n");
+			break;
+		case CHECK_LEFT_PATH_1_TURN_LEFT:
+			printf("CHECK_LEFT_PATH_1_TURN_LEFT \n");
+			break;
+		case CHECK_LEFT_PATH_2_GO_FORWARD:
+			printf("CHECK_LEFT_PATH_2_GO_FORWARD \n");
+			break;
+		case IDLE:
+			printf("IDLE \n");
+			break;
+		case TRANSITION:
+			printf("TRANSITION \n");
+			break;
+		}
 
 	//update the state of the robot according to probabilistic array and old state
 	if (movement_brain.make_state_decision()) {

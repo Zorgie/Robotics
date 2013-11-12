@@ -177,23 +177,25 @@ int main(int argc, char **argv) {
 	desired_speed_pub = n.advertise<movement::wheel_speed>("/desired_speed", 1); // We are Publishing a topic that changes the desired wheel speeds.
 	requested_action_performed_pub = n.advertise<navigation::movement_state>("/movement/requested_action_performed",1);
 
-	int CURRENT_STATE = 0;
-	int SIDE = 1;
+	//int CURRENT_STATE = 0;
+	//int SIDE = 1;
 
-	n.setParam("/CURRENT_STATE",0);
-	n.setParam("/SIDE",1);
+	//n.setParam("/CURRENT_STATE",0);
+	//n.setParam("/SIDE",1);
 
-	rotation.initiate_rotation(90.0);
-	go_straight.initiate_go_straight(0.31, 1);
+	//rotation.initiate_rotation(90.0); // Initializes the movement to rotate
+	//go_straight.initiate_go_straight(0.31, 1); // Initializes the movement to walk forward
 
 	while (ros::ok()) {
 		ros::spinOnce();
 		loop_rate.sleep();
-		n.getParam("/CURRENT_STATE",CURRENT_STATE);
-		n.getParam("/SIDE",SIDE);
+		//n.getParam("/CURRENT_STATE",CURRENT_STATE);
+		//n.getParam("/SIDE",SIDE);
 
 
-//		// Runs the step method of the wallfollower object, which remembers the state through fields (variables).
+
+
+		// Runs the step method of the wallfollower object, which remembers the state through fields (variables).
 //		movement::wheel_speed desired_speed;
 //		if(CURRENT_STATE==1){//(CURRENT_STATE == FOLLOW_RIGHT_WALL){
 //			//desired_speed = wf.step(ir_readings_processed_global, SIDE);

@@ -180,8 +180,10 @@ bool MovementBrain::make_state_decision(){
 		actionPerformedTrigger = false;
         
         //change to transition state
-        state_after_transition = current_movement_state;
-        current_movement_state = TRANSITION;
+		if(current_movement_state != TRANSITION){
+			state_after_transition = current_movement_state;
+			current_movement_state = TRANSITION;
+		}
         
 		return true;
 	}
@@ -361,7 +363,7 @@ robot_movement_state MovementBrain::make_state_decision_follow_left()
     if(wall_lost)
         return CHECK_LEFT_PATH_0_GO_FORWARD;
     if(wall_in_front)
-        return TURN_LEFT;
+        return TURN_RIGHT;
     
     //invalid state transition: reset to GO_STRAIGHT (maybe do something else here later)
     return GO_STRAIGHT;
