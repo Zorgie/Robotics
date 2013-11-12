@@ -8,6 +8,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <stdio.h>
 
+
 namespace enc = sensor_msgs::image_encodings;
 
 static const char WINDOW[] = "Original Window";
@@ -15,13 +16,13 @@ static const char WINDOW2[] = "Process Window";
 
 cv::Mat findRed(cv::Mat imgHSV){       
        cv::Mat imgThresh=cvCreateImage(cvSize(640,480),IPL_DEPTH_8U, 1);
-       inRange(imgHSV, cv::Scalar(0,0,100), cv::Scalar(70,90,255), imgThresh);
+       inRange(imgHSV, cv::Scalar(0,0,128), cv::Scalar(70,90,255), imgThresh);
        return imgThresh;
 } 
 
 cv::Mat findYellow(cv::Mat imgHSV){       
        cv::Mat imgThresh=cvCreateImage(cvSize(640,480),IPL_DEPTH_8U, 1);
-       inRange(imgHSV, cv::Scalar(0,150,150), cv::Scalar(30,255,255), imgThresh);
+       inRange(imgHSV, cv::Scalar(0,180,154), cv::Scalar(90,255,255), imgThresh);
        return imgThresh;
 }
 
@@ -68,9 +69,43 @@ public:
 
 // Bluring and thresholding
     cv::GaussianBlur(cv_ptr->image,cv_ptr->image,cv::Size(5,5),5,1);
-    cv::Mat frame = findRed(cv_ptr->image); //find red
-//    cv::Mat frame = findYellow(cv_ptr->image); //find yellow
+//    cv::Mat frame = findRed(cv_ptr->image); //find red
+    cv::Mat frame = findYellow(cv_ptr->image); //find yellow
 // Show original and processed image
+    cv::medianBlur(frame, frame, 5);
+
+int count = 0;
+
+    for(int x=0; x<frame.rows; x++){
+	for(int y=0; y<frame.cols; y++){
+	    int k = x*frame.cols + y;
+	    if(frame.data[k] == 255){
+		count++;
+	    }
+	}
+    } 
+
+    printf("White pixels: %d\n", count); 
+
+    std::vector<std::vector<cv::Point> > contours;
+    cv::Mat contourOutput = frame.clone();
+    cv::findContours( contourOutput, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE );
+
+    /*try {
+    printf("now im trying\n");
+    double area = fabs(contourArea(contours));
+    /*printf("Calculated the area\n");
+    if (area>10.0){
+	string text = "Object";
+	int fontFace = FONT_HERSHEY_SCRIPT_SIMPLE;
+	double fontScale = 2;
+	int thickness = 3;
+	cv::putText(cv_ptr->image, "object", textOrg, fontFace, fontScale, Scalar::all(255), thickness,8);
+	cv::circle(cv_ptr->image, cv::Point(50, 50), 10, CV_RGB(255,0,0))};*/
+    /*}
+    catch (cv::Exception){
+    }*/
+
     cv::imshow(WINDOW2, frame);
     cv::imshow(WINDOW,cv_ptr->image);
     cv::waitKey(3);
