@@ -86,7 +86,12 @@ void ir_transformation(const differential_drive::AnalogC &input){
 //	output.ch[6] = 0.01*voltageToRange_orange(input.ch7);
 //	output.ch[7] = 0.01*voltageToRange_white(input.ch8);
 	output.ch[6] = voltageToRange_green(input.ch7); //hardcoded offset
-	output.ch[7] = voltageToRange_red_long(input.ch8);
+
+	//USING SHORT RANGE SENSOR FOR NOW AT input CH8
+	//output.ch[7] = voltageToRange_red_long(input.ch8);
+	output.ch[7] = voltageToRange_green(input.ch8);
+
+	//printf("input long range: %d\n",input.ch8);
 
 	//printf("ch0: %f,    ,ch1: %f,    "
 			//"ch5: %f,    ch6: %f,    "
@@ -94,7 +99,8 @@ void ir_transformation(const differential_drive::AnalogC &input){
 
 
 	for (int i = 0; i < 7; i++) { // Short IR
-		if (output.ch[i] < 0.04 || output.ch[i] > 0.40) {
+	//	if (output.ch[i] < 0.04 || output.ch[i] > 0.40) {
+		if (output.ch[i] > 0.40) {
 			output.ch[i] = 0.0 / 0.0;
 			output_average.ch[i] = 0.0 / 0.0;
 			//printf("Naned a value \n");
@@ -104,7 +110,8 @@ void ir_transformation(const differential_drive::AnalogC &input){
 		}
 	}
 	for (int i = 7; i < 8; i++) { // Long IR
-			if (output.ch[i] < 0.12 || output.ch[i] > 0.6) {
+		//	if (output.ch[i] < 0.12 || output.ch[i] > 0.6) {
+		if (output.ch[i] < 0.04 || output.ch[i] > 0.40) {
 				output.ch[i] = 0.0 / 0.0;
 				output_average.ch[i] = 0.0 / 0.0;
 				//printf("Naned a value \n");

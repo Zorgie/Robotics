@@ -23,7 +23,7 @@ void MovementBrain::process_irsensor_readings(float s_front,
 {
     //thresholds: when does the front sensor think there is a wall?
     //TODO: calibrate the thresholds
-    const double c_front_thresh = 0.20;
+    const double c_front_thresh = 0.15;
     const double c_right_threshold = 0.25;
     const double c_left_threshold = 0.25;
     const double c_update_prob = 0.15;
@@ -95,7 +95,6 @@ void MovementBrain::process_irsensor_readings(float s_front,
 void MovementBrain::requested_action_performed(robot_action action_performed){
 
 	actionPerformedTrigger = true;
-
 	switch(current_movement_state){
         case CHECK_RIGHT_PATH_1_TURN_RIGHT:
         	if(action_performed == TURN_RIGHT_90)
@@ -241,13 +240,16 @@ robot_movement_state MovementBrain::make_state_decision_check_right_path_0()
     int right_eval = evaluate_right();
     int front_eval = evaluate_front();
     
-    if(front_eval == 1)
-        return TURN_LEFT;
+
     
     //found a path => turn
     if(right_eval == 0)
         return CHECK_RIGHT_PATH_1_TURN_RIGHT;
     
+
+    if(front_eval == 1)
+           return TURN_LEFT;
+
     //found wall again
     if(right_eval == 2)
         return FOLLOW_RIGHT;
@@ -429,6 +431,10 @@ void MovementBrain::set_current_movement_state(robot_movement_state state){
 
 robot_movement_state MovementBrain::get_current_movement_state(){
     return current_movement_state;
+}
+
+double MovementBrain::get_action_parameter(){
+	return action_parameter;
 }
 
 

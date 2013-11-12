@@ -41,6 +41,7 @@ public:
     robot_movement_state get_current_movement_state();
     void requested_action_performed(robot_action action_performed);
     robot_action get_action_to_perform();
+    double get_action_parameter();
     
     
 //private:
@@ -55,6 +56,7 @@ public:
     robot_movement_state state_after_transition;
     
     int timeCounter; //used for measuring how often the decision function has been called since the last change to TRANSITION state
+    double action_parameter; //used for storing the distance/angle the robot should turn!
     
     int  evaluate_front();
     int  evaluate_left();
