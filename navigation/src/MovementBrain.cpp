@@ -29,7 +29,7 @@ void MovementBrain::process_irsensor_readings(float s_front,
     const double c_update_prob = 0.15;
     
     //FRONT UPDATE:update probability that there is a wall in front of the robot
-    
+
     if(!isnan(s_front) && s_front < c_front_thresh){
         state_probability[FRONT_WALL] += c_update_prob;
         if(state_probability[FRONT_WALL] > 1){state_probability[FRONT_WALL] = 1;}

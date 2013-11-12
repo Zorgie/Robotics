@@ -43,6 +43,23 @@ void update_movement_state(const irsensors::floatarray &processed_ir_readings) {
 			front_left, back_left);
 
 	//printf("Current state: %d\n",movement_brain.get_current_movement_state());
+	printf("\n\n\nFront wall: %f\n",movement_brain.state_probability[0]);
+	printf("Left \t Wall: %f \t Invalid: %f \t No Wall: %f \n",
+			movement_brain.state_probability[1],
+		    movement_brain.state_probability[2],
+		    movement_brain.state_probability[3]);
+	printf("Right \t Wall: %f \t Invalid: %f \t No Wall: %f \n",
+			movement_brain.state_probability[4],
+			movement_brain.state_probability[5],
+			movement_brain.state_probability[6]);
+//	 FRONT_WALL      = 0,
+//	    LEFT_WALL       = 1,
+//	    LEFT_INVALID    = 2,
+//	    NO_LEFT_WALL    = 3,
+//	    RIGHT_WALL      = 4,
+//	    RIGHT_INVALID   = 5,
+//	    NO_RIGHT_WALL   = 6,
+
 		switch(movement_brain.get_current_movement_state()){
 		case GO_STRAIGHT:
 			printf("Go straigh \n");
