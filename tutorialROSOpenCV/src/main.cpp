@@ -6,9 +6,11 @@
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <pcl/point_cloud.h>
 #include <stdio.h>
 #include <cmath>
 #include "ImageConverter.h"
+#include "DepthReader.h"
 
 namespace enc = sensor_msgs::image_encodings;
 
@@ -44,6 +46,8 @@ int count(cv::Mat image) {
 }
 
 void imgCallback(const sensor_msgs::ImageConstPtr& msg);
+
+void depthCallback(const sensor_msgs::PointCloud2& pcl);
 
 int main(int argc, char** argv) {
 	ros::init(argc, argv, "image_converter");
@@ -84,4 +88,9 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	cv::imshow(WINDOW2, lines);
 	cv::imshow(WINDOW, cv_ptr->image);
 	cv::waitKey(3);
+}
+
+void depthCallback(const sensor_msgs::PointCloud2& pcl){
+	pcl::PointCloud<pcl::PointXYZ> cloud;
+	pcl::fromROSMsg(pcl, cloud);
 }
