@@ -32,4 +32,6 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 rosbuild_add_executable(test1 src/test.cpp)
 rosbuild_add_executable(shame src/shame.cpp)
 rosbuild_add_executable(meta src/meta.cpp)
-rosbuild_add_executable(main src/main.cpp)
+rosbuild_add_executable(main src/ImageConverter.cpp src/main.cpp)
+rosbuild_add_executable(lines src/plines.cpp)
+
