@@ -103,11 +103,11 @@ void movement_state_update(const navigation::movement_state &mvs) {
 	switch(CURRENT_STATE){
 	case GO_STRAIGHT_INF:
 		printf("GO_STRAIGHT_INF\n");
-		go_straight.initiate_go_straight(10,true);
+		go_straight.initiate_go_straight(10.0,true);
 		break;
 	case GO_STRAIGHT_X:
 		printf("GO_STRAIGHT_X\n");
-		go_straight.initiate_go_straight(0.20,true);
+		go_straight.initiate_go_straight(0.10,true);
 		break;
 	case TURN_LEFT_90:
 		printf("TURN_LEFT_90\n");
@@ -177,26 +177,26 @@ int main(int argc, char **argv) {
 	desired_speed_pub = n.advertise<movement::wheel_speed>("/desired_speed", 1); // We are Publishing a topic that changes the desired wheel speeds.
 	requested_action_performed_pub = n.advertise<navigation::movement_state>("/movement/requested_action_performed",1);
 
-	//int CURRENT_STATE = 0;
-	//int SIDE = 1;
+	movement::wheel_speed desired_speed;
 
-	//n.setParam("/CURRENT_STATE",0);
-	//n.setParam("/SIDE",1);
-
-	//rotation.initiate_rotation(90.0); // Initializes the movement to rotate
-	//go_straight.initiate_go_straight(0.31, 1); // Initializes the movement to walk forward
+//	int CURRENT_STATE = 0;
+//	int SIDE = 1;
+//	n.setParam("/CURRENT_STATE",0);
+//	n.setParam("/SIDE",1);
+//	rotation.initiate_rotation(90.0); // Initializes the movement to rotate
+//	go_straight.initiate_go_straight(0.31, 1); // Initializes the movement to walk forward
 
 	while (ros::ok()) {
 		ros::spinOnce();
 		loop_rate.sleep();
-		//n.getParam("/CURRENT_STATE",CURRENT_STATE);
-		//n.getParam("/SIDE",SIDE);
+//		n.getParam("/CURRENT_STATE",CURRENT_STATE);
+//		n.getParam("/SIDE",SIDE);
 
 
 
 
-		// Runs the step method of the wallfollower object, which remembers the state through fields (variables).
-//		movement::wheel_speed desired_speed;
+////		 Runs the step method of the wallfollower object, which remembers the state through fields (variables).
+////		movement::wheel_speed desired_speed;
 //		if(CURRENT_STATE==1){//(CURRENT_STATE == FOLLOW_RIGHT_WALL){
 //			//desired_speed = wf.step(ir_readings_processed_global, SIDE);
 //			desired_speed = wf.step(ir_readings_processed_global, SIDE);
@@ -209,8 +209,9 @@ int main(int argc, char **argv) {
 //			//desired_speed = rotation.step(wheel_distance_traveled_global);
 //			//desired_speed = go_straight.step(wheel_distance_traveled_global);
 //		}else if(CURRENT_STATE==2){//(CURRENT_STATE == TURN_RIGHT_90){
-//			printf("Rotate mode\n");
-//			desired_speed = rotation.step(wheel_distance_traveled_global);
+//			printf("Align mode\n");
+//			//desired_speed = rotation.step(wheel_distance_traveled_global);
+//			desired_speed = wall_align.step(ir_readings_processed_global,SIDE);
 //
 //		}
 //		//desired_speed.W1=0.27778;
@@ -218,8 +219,7 @@ int main(int argc, char **argv) {
 //		desired_speed_pub.publish(desired_speed);
 
 
-		//let the robot act according to its current movement state
-
+//		let the robot act according to its current movement state
 		act();
 
 	}

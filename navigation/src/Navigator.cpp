@@ -43,7 +43,7 @@ void update_movement_state(const irsensors::floatarray &processed_ir_readings) {
 			front_left, back_left);
 
 	//printf("Current state: %d\n",movement_brain.get_current_movement_state());
-	printf("\n\n\nFront wall: %f\n",movement_brain.state_probability[0]);
+	/*printf("\n\n\nFront wall: %f\n",movement_brain.state_probability[0]);
 	printf("Left \t Wall: %f \t Invalid: %f \t No Wall: %f \n",
 			movement_brain.state_probability[1],
 		    movement_brain.state_probability[2],
@@ -51,7 +51,14 @@ void update_movement_state(const irsensors::floatarray &processed_ir_readings) {
 	printf("Right \t Wall: %f \t Invalid: %f \t No Wall: %f \n",
 			movement_brain.state_probability[4],
 			movement_brain.state_probability[5],
-			movement_brain.state_probability[6]);
+			movement_brain.state_probability[6]);*/
+
+	std::cout << "front wall?: " << movement_brain.evaluate_front() << std::endl;
+	std::cout << "left wall?: " << movement_brain.evaluate_left() << std::endl;
+
+	std::cout << "sensor readings front: " << front << std::endl;
+	std::cout << "sensor readings front left: " << front_left << std::endl;
+	std::cout << "sensor readings back left: " << back_left << std::endl;
 //	 FRONT_WALL      = 0,
 //	    LEFT_WALL       = 1,
 //	    LEFT_INVALID    = 2,

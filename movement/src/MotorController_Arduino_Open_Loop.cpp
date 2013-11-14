@@ -3,6 +3,7 @@
 #include <differential_drive/PWM.h>
 #include "movement/wheel_speed.h"
 #include "movement/wheel_distance.h"
+#include "RobotPosition.h"
 
 using namespace differential_drive;
 
@@ -15,6 +16,9 @@ ros::Subscriber enc_sub; // Subscriber to the encoder readings;
 ros::Subscriber desired_speed_sub; // Subscriber to the desired speed;
 ros::Publisher pwm_pub; // Publisher of the PWM command signals;
 ros::Publisher wheel_distance_pub; // Publisher of the travelled wheel distance;
+ros::Publisher robot_pose_pub; // Publisher of the robot pose;
+
+//static RobotPosition robot_position;
 
 Encoders encoders_global; // This variable stores the last read encoder values;
 movement::wheel_speed wheel_speed_global; // This variable stores the desired wheel speed;
@@ -61,6 +65,7 @@ int main(int argc, char **argv) {
 
 	pwm_pub = n.advertise<PWM>("/motion/PWM", 1); // We are Publishing a topic that changes the PWM commands.
 	wheel_distance_pub = n.advertise<movement::wheel_distance>("/wheel_distance", 100);
+	robot_pose_pub = n.advertise<movement::robot_pose>("/robot_pose",100);
 
 	ros::Rate loop_rate(UPDATE_RATE);
 
@@ -74,6 +79,11 @@ int main(int argc, char **argv) {
 	double iGain = 100;
 	//double Speed = 0; // For parameter tuning.
 
+	RobotPosition robot_position;
+	robot_position.init();
+
+	movement::robot_pose current_robot_pose;
+
 	while(ros::ok()){
 		ros::spinOnce();
 		loop_rate.sleep();
@@ -84,6 +94,11 @@ int main(int argc, char **argv) {
 
 		//wheel_speed_global.W1 = -0.5; // Debugging
 		//wheel_speed_global.W2 = 0.5; // Debugging
+
+		current_robot_pose=robot_position.step(encoders_global);
+		std::cout << "X: " << current_robot_pose.x << "\t"
+				<< "Y: " << current_robot_pose.y << "\t"
+				<< "theta (in degrees): " << current_robot_pose.theta*(180.0/PI) << std::endl ;
 
 		// Computing the error: Error=Desired_Speed-Real_Speed
 		error_1=wheel_speed_global.W1-((encoders_global.delta_encoder1*UPDATE_RATE)/360.0);
@@ -122,14 +137,14 @@ int main(int argc, char **argv) {
 		integral_error_1=integral_error_1+(error_1/UPDATE_RATE);
 		integral_error_2=integral_error_2+(error_2/UPDATE_RATE);
 
-		/*if (integral_error_1 > 10)
-			integral_error_1 = 10.0;
-		if (integral_error_2 > 10)
-			integral_error_2 = 10.0;
-		if (integral_error_1 < -10)
-			integral_error_1 = -10.0;
-		if (integral_error_2 < -10)
-			integral_error_2 = -10.0;*/
+		if (fabs(integral_error_1) > 1.0){
+			integral_error_1 = (fabs(integral_error_1)/integral_error_1)*1.0;
+		}
+		if (fabs(integral_error_2) > 1.0){
+			integral_error_2 = (fabs(integral_error_2)/integral_error_2)*1.0;
+		}
+
+
 
 		// Gain Values
 
@@ -174,6 +189,7 @@ int main(int argc, char **argv) {
 
 		// Publish the PWM Commands.
 		pwm_pub.publish(pwm_command);
+		robot_pose_pub.publish(current_robot_pose);
 
 	}
 

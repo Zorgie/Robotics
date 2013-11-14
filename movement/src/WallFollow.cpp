@@ -35,20 +35,11 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 	float sensor_two = ir_readings.ch[SENSORS[2 * side + 1]];
 	//float front = ir_readings.ch[SENSORS[4]];
 	float distance, error_distance =0, error_theta = 0;
-//	float rf_offset = -0.00;
-//	float rb_offset = 0.00;
-//	float lf_offset = 0.01;
-//	float lb_offset = 0.005;
-	float rf_offset = 0.00;
-	float rb_offset = 0.00;
-	float lf_offset = 0.00;
-	float lb_offset = 0.00;
-	double distance_gain= 0.25;
+
+	double distance_gain= 0.5;
 	double angle_gain= 0.25;
 
 	if (side == 0) { //Right Side
-		sensor_two = sensor_two + rb_offset;
-		sensor_one = sensor_one + rf_offset;
 /*		printf("\n\n\nATAN CHECK:\n");
 		printf("sensor_two: %f \t-sensor_one: %f",sensor_two,sensor_one);
 		printf("\n sensor_distance: %f",SENSOR_DISTANCE);
@@ -62,8 +53,6 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 
 	} else if (side == 1) {
 		//error_theta = atan2((sensor_one - 0.035) - sensor_two, 0.15);
-		sensor_two = sensor_two + lb_offset;
-		sensor_one = sensor_one + lf_offset;
 		error_theta = -atan2(sensor_two - sensor_one, SENSOR_DISTANCE); //0.15
 		//error_theta = atan2(sensor_one - sensor_two, SENSOR_DISTANCE); // second argument is the physical dimension between the sensors
 		distance = 0.5 * (sensor_one + sensor_two);
@@ -97,6 +86,9 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 	}
 	if (fabs(error_distance) > 0.10) {
 			error_distance = (error_distance/fabs(error_distance))*0.10;
+	}
+	if (error_distance > 0.0) {
+		error_distance = 0.0; // Only interested on not being very close to the wall
 	}
 
 //	if (fabs(error_distance)>0.05){
