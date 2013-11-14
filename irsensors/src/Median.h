@@ -15,6 +15,7 @@ class Median {
 public:
 	Median();
 	virtual ~Median();
+	double CalcMHWScore(std::vector<int> scores);
 	float compute_median(std::vector<float> last_readings);
 };
 
