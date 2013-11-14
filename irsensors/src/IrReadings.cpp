@@ -1,7 +1,6 @@
 #include "ros/ros.h"
 #include <differential_drive/AnalogC.h>
 #include "irsensors/floatarray.h"
-#include "Median.h"
 #include <queue>
 
 ros::Subscriber ir_sub;
@@ -9,8 +8,16 @@ ros::Publisher ir_pub;
 
 
 irsensors::floatarray output_average;
+irsensors::floatarray output_median;
 
-std::queue<float> sensor_1_hist;
+std::vector<float> sensor_1_hist;
+std::vector<float> sensor_2_hist;
+std::vector<float> sensor_3_hist;
+std::vector<float> sensor_4_hist;
+std::vector<float> sensor_5_hist;
+std::vector<float> sensor_6_hist;
+std::vector<float> sensor_7_hist;
+std::vector<float> sensor_8_hist;
 
 int average1=0; //Rui is calibrating
 int average2=0; //Rui is calibrating
@@ -20,6 +27,47 @@ int compare (const void * a, const void * b)
   return ( *(float*)a - *(float*)b );
 }
 
+double CalcMHWScore(std::vector<int> scores)
+{
+	//std::cout << "Median begin" << std::endl;
+  double median;
+  size_t size = scores.size();
+
+  sort(scores.begin(), scores.end());
+
+  if (size  % 2 == 0)
+  {
+      median = (scores[size / 2 - 1] + scores[size / 2]) / 2;
+  }
+  else
+  {
+      median = scores[size / 2];
+  }
+
+  //std::cout << "Median end" << std::endl;
+  return median;
+}
+
+double ComputeVectorMedian(std::vector<float> last_readings){
+
+//	printf("begin\n");
+	std::vector<int> last_readings_int;
+	std::vector<int>::iterator it_int;
+	int median;
+
+
+	for (int n = 0; n < last_readings.size(); n++) {
+		it_int=last_readings_int.begin();
+		last_readings_int.insert(it_int,(int)(last_readings[n]*1000000.0));
+	}
+
+	median=CalcMHWScore(last_readings_int);
+
+
+//	printf("end\n");
+	return ((float)(median)/1000000.0);
+
+}
 
 float voltageToRange(float V){
 	float M = 0.0003846;
@@ -120,7 +168,7 @@ void ir_transformation(const differential_drive::AnalogC &input){
 	for (int i = 7; i < 8; i++) { // Long IR
 		//	if (output.ch[i] < 0.12 || output.ch[i] > 0.6) {
 		if (output.ch[i] < 0.04 || output.ch[i] > 0.40) {
-				output.ch[i] = 0.0 / 0.0;
+				//output.ch[i] = 0.0 / 0.0;
 				output_average.ch[i] = 0.0 / 0.0;
 				//printf("Naned a value \n");
 				//printf("%f \n", output.ch[i]);
@@ -134,12 +182,12 @@ void ir_transformation(const differential_drive::AnalogC &input){
 	//Rui is calibrating:
 	//average1=(int)((((tau-1)/tau)*average1)+((1.0/tau)*((float)input.ch6)));
 	//average2=(int)((((tau-1)/tau)*average2)+((1.0/tau)*((float)input.ch7)));
-	printf("\n\n\nAverage1 %f \t Average2 %f \n", output_average.ch[5],output_average.ch[6]);
-	printf("Current1 %d \t Current2 %d \n\n\n", input.ch6,input.ch7);
+//	printf("\n\n\nAverage1 %f \t Average2 %f \n", output_average.ch[5],output_average.ch[6]);
+//	printf("Current1 %d \t Current2 %d \n\n\n", input.ch6,input.ch7);
 	//printf("Range\n%f \n",output.ch[7]);
 
 
-	ir_pub.publish(output_average);
+	//ir_pub.publish(output_average);
 	//ir_pub.publish(output);
 
 	for (int i = 0; i < 8; i++) {
@@ -148,18 +196,94 @@ void ir_transformation(const differential_drive::AnalogC &input){
 			}
 		}
 
+	std::vector<float>::iterator it_1;
+	it_1 = sensor_1_hist.begin();
+	std::vector<float>::iterator it_2;
+	it_2 = sensor_2_hist.begin();
+	std::vector<float>::iterator it_3;
+	it_3 = sensor_3_hist.begin();
+	std::vector<float>::iterator it_4;
+	it_4 = sensor_4_hist.begin();
+	std::vector<float>::iterator it_5;
+	it_5 = sensor_5_hist.begin();
+	std::vector<float>::iterator it_6;
+	it_6 = sensor_6_hist.begin();
+	std::vector<float>::iterator it_7;
+	it_7 = sensor_7_hist.begin();
+	std::vector<float>::iterator it_8;
+	it_8 = sensor_8_hist.begin();
 
-//	sensor_1_hist.push(output.ch[6]);
+
+
+
+//	std::vector<int>::iterator it_int;
+//	it_int = sensor_1_hist_int.begin();
+
+
+	double median_1;
+	double median_2;
+	double median_3;
+	double median_4;
+	double median_5;
+	double median_6;
+	double median_7;
+	double median_8;
+	int vector_size = 5;
+
+	sensor_1_hist.insert(it_1,output.ch[0]);
+	if (sensor_1_hist.size()==vector_size){
+		sensor_1_hist.pop_back();
+		median_1=ComputeVectorMedian(sensor_1_hist);
+	}
+	sensor_2_hist.insert(it_2,output.ch[1]);
+	if (sensor_2_hist.size()==vector_size){
+		sensor_2_hist.pop_back();
+		median_2=ComputeVectorMedian(sensor_2_hist);
+	}
+	sensor_6_hist.insert(it_6,output.ch[5]);
+	if (sensor_6_hist.size()==vector_size){
+		sensor_6_hist.pop_back();
+		median_6=ComputeVectorMedian(sensor_6_hist);
+	}
+	sensor_7_hist.insert(it_7,output.ch[6]);
+	if (sensor_7_hist.size()==vector_size){
+		sensor_7_hist.pop_back();
+		median_7=ComputeVectorMedian(sensor_7_hist);
+	}
+	sensor_8_hist.insert(it_8,output.ch[7]);
+	if (sensor_8_hist.size()==vector_size){
+		sensor_8_hist.pop_back();
+		median_8=ComputeVectorMedian(sensor_8_hist);
+	}
+
+
+	//printf("Median: %f \n", CalcMHWScore(sensor_1_hist_int));
 //
-//	if (sensor_1_hist.size()==5){
-//		sensor_1_hist.pop();
-//	}
-//
-//	qsort(&sensor_1_hist, sensor_1_hist.size(), sizeof(float), compare);
-//	for (int n = 0; n < sensor_1_hist.size(); n++) {
-//		printf("%f ", sensor_1_hist[n]);
-//	}
+	//qsort(&sensor_1_hist_int, sensor_1_hist_int.size(), sizeof(float), compare);
+	printf("Printing vector6:\n");
+	for (int n = 0; n < sensor_6_hist.size(); n++) {
+		printf("%f \t",sensor_6_hist[n]);
+	}
+	printf("\nPrinting vector8:\n");
+	for (int n = 0; n < sensor_8_hist.size(); n++) {
+		printf("%f \t",sensor_8_hist[n]);
+	}
+	//it = sensor_1_hist.end();
+	//printf("\n Last element: %f\n",it); // This gives me the oldest element
+	printf("\nMedian6: %f \t  Median8:  %f \n", median_6,median_8);
+	printf("\n Vector ended\n");
+
 //	printf("median=%f ",sensor_1_hist[sensor_1_hist.size()/2]);
+	output_median.ch[0]=median_1;
+	output_median.ch[1]=median_2;
+	output_median.ch[2]=median_3;
+	output_median.ch[3]=median_4;
+	output_median.ch[4]=median_5;
+	output_median.ch[5]=median_6;
+	output_median.ch[6]=median_7;
+	output_median.ch[7]=median_8;
+
+	ir_pub.publish(output_median);
 
 
 }
