@@ -55,6 +55,7 @@ void update_movement_state(const irsensors::floatarray &processed_ir_readings) {
 
 	std::cout << "front wall?: " << movement_brain.evaluate_front() << std::endl;
 	std::cout << "left wall?: " << movement_brain.evaluate_left() << std::endl;
+	std::cout << "right wall?: " << movement_brain.evaluate_right() << std::endl;
 
 	std::cout << "sensor readings front: " << front << std::endl;
 	std::cout << "sensor readings front left: " << front_left << std::endl;

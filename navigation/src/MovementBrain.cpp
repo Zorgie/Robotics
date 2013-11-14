@@ -7,6 +7,7 @@
 
 
 MovementBrain::MovementBrain(){
+	srand (time(NULL));
 	state_probability = *new std::vector<double>(7,0.0);
 	current_movement_state = IDLE;
 	actionPerformedTrigger = false;
@@ -21,21 +22,26 @@ void MovementBrain::process_irsensor_readings(float s_front,
                              float s_right_f,float s_right_b,
                              float s_left_f,float s_left_b)
 {
+
+	//update average distances
+	avg_left_wall_distance = (s_left_f+s_left_b)/2;
+	avg_right_wall_distance = (s_right_f+s_right_b)/2;
+
     //thresholds: when does the front sensor think there is a wall?
     //TODO: calibrate the thresholds
-    const double c_front_thresh = 0.15;
-    const double c_right_threshold = 0.25;
-    const double c_left_threshold = 0.25;
+    const double c_front_thresh = 0.20;
+    const double c_right_threshold = 0.20;
+    const double c_left_threshold = 0.20;
     const double c_update_prob = 0.15;
     
     //FRONT UPDATE:update probability that there is a wall in front of the robot
 
     if(!isnan(s_front) && s_front < c_front_thresh){
-        state_probability[FRONT_WALL] += c_update_prob;
+        state_probability[FRONT_WALL] += 0.5*c_update_prob;
         if(state_probability[FRONT_WALL] > 1){state_probability[FRONT_WALL] = 1;}
     }
     else{
-        state_probability[FRONT_WALL] -= 2*c_update_prob;
+        state_probability[FRONT_WALL] -= c_update_prob;
         if(state_probability[FRONT_WALL] < 0){state_probability[FRONT_WALL] = 0;}
     }
     
@@ -44,14 +50,14 @@ void MovementBrain::process_irsensor_readings(float s_front,
 	bool s_right_b_valid = !isnan(s_right_b) && s_right_b < c_right_threshold;
     
 	if (s_right_f_valid && s_right_b_valid) {
-		state_probability[RIGHT_WALL] += c_update_prob;
+		state_probability[RIGHT_WALL] += 3*c_update_prob;
 	}
     else if (!s_right_f_valid && !s_right_b_valid) {
-		state_probability[NO_RIGHT_WALL] += c_update_prob;
+		state_probability[NO_RIGHT_WALL] += 3*c_update_prob;
 	}
     else {
 		//invalid readings
-        state_probability[RIGHT_INVALID] += c_update_prob;
+        state_probability[RIGHT_INVALID] += 3*c_update_prob;
 	}
     
     //LEFT UPDATE: Update probability that there is a left wall next to the robot
@@ -59,14 +65,14 @@ void MovementBrain::process_irsensor_readings(float s_front,
 	bool s_left_b_valid = !isnan(s_left_b) && s_left_b < c_left_threshold;
     
 	if (s_left_f_valid && s_left_b_valid) {
-		state_probability[LEFT_WALL] += c_update_prob;
+		state_probability[LEFT_WALL] += 3*c_update_prob;
 	}
     else if (!s_left_f_valid && !s_left_b_valid) {
-		state_probability[NO_LEFT_WALL] += c_update_prob;
+		state_probability[NO_LEFT_WALL] += 3*c_update_prob;
 	}
     else {
 		//invalid readings
-        state_probability[LEFT_INVALID] += c_update_prob;
+        state_probability[LEFT_INVALID] += 3*c_update_prob;
 	}
 
     //NORMALIZE left and right sensor probability values so they sum up to 1
@@ -303,14 +309,29 @@ robot_movement_state MovementBrain::make_state_decision_straight()
     
     if(stay_straight)
         return GO_STRAIGHT;
+
+    if(follow_right && follow_left){
+    	if(avg_left_wall_distance < avg_right_wall_distance){
+    		std::cout << "CHOSE LEFT OVER RIGHT" << std::endl;
+    		return FOLLOW_LEFT;
+    	}
+    	else{
+    		std::cout << "CHOSE RIGHT OVER LEFT" << std::endl;
+    		return FOLLOW_RIGHT;
+    	}
+
+    }
     if(follow_right)
         return FOLLOW_RIGHT;
     if(follow_left)
         return FOLLOW_LEFT;
     
-    //otherwise: just turn left (chosen randomly) 90° as there is a front wall
+    //otherwise: just turn left/right (chosen randomly) 90° as there is a front wall
     //we might want to change that later to: turn to a direction where the sensors detect no wall
-    return TURN_LEFT;
+    if(rand()%2)
+    	return TURN_LEFT;
+    else
+    	return TURN_RIGHT;
 }
 
 robot_movement_state MovementBrain::make_state_decision_follow_right()
@@ -324,6 +345,9 @@ robot_movement_state MovementBrain::make_state_decision_follow_right()
                         ||  (front_eval == 0 && left_eval == 1 && right_eval == 2)
                         ||  (front_eval == 0 && left_eval == 2 && right_eval == 2);
 
+    bool swap_wall      =   (front_eval == 0 && left_eval == 2 && right_eval == 2
+        						&& avg_left_wall_distance < avg_right_wall_distance);
+
     //F01,F11,F21
     bool wall_lost =        (front_eval == 0 && left_eval == 0 && right_eval == 1)
                         ||  (front_eval == 0 && left_eval == 1 && right_eval == 1)
@@ -332,7 +356,10 @@ robot_movement_state MovementBrain::make_state_decision_follow_right()
     bool wall_in_front = (front_eval == 1);
 
     if(stay_following)
-        return FOLLOW_RIGHT;
+    	if(!swap_wall)
+    		return FOLLOW_RIGHT;
+    	else
+    		return FOLLOW_LEFT;
     if(wall_lost)
         return CHECK_RIGHT_PATH_0_GO_FORWARD;
     if(wall_in_front)
@@ -353,6 +380,9 @@ robot_movement_state MovementBrain::make_state_decision_follow_left()
                         ||  (front_eval == 0 && left_eval == 2 && right_eval == 1)
                         ||  (front_eval == 0 && left_eval == 2 && right_eval == 2);
     
+    bool swap_wall      =   (front_eval == 0 && left_eval == 2 && right_eval == 2
+    						&& avg_left_wall_distance > avg_right_wall_distance);
+
     //F01,F11,F21
     bool wall_lost =        (front_eval == 0 && left_eval == 1 && right_eval == 0)
                         ||  (front_eval == 0 && left_eval == 1 && right_eval == 1)
@@ -361,7 +391,10 @@ robot_movement_state MovementBrain::make_state_decision_follow_left()
     bool wall_in_front = (front_eval == 1);
     
     if(stay_following)
-        return FOLLOW_LEFT;
+    	if(!swap_wall)
+    		return FOLLOW_LEFT;
+    	else
+    		return FOLLOW_RIGHT;
     if(wall_lost)
         return CHECK_LEFT_PATH_0_GO_FORWARD;
     if(wall_in_front)

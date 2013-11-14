@@ -12,6 +12,8 @@
 #include <cmath>
 #include "export/navigation/RobotStates.h"
 #include "export/navigation/RobotActions.h"
+#include <stdlib.h>
+#include <time.h>
 
 
 enum sensor_states{
@@ -63,6 +65,9 @@ public:
     int  evaluate_right();
     
     bool actionPerformedTrigger;
+
+    double avg_left_wall_distance;
+    double avg_right_wall_distance;
 
 };
 #endif /* defined(__MovementBrain__) */
