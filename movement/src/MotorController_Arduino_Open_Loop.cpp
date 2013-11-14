@@ -182,8 +182,8 @@ int main(int argc, char **argv) {
 		if (pwm_command.PWM1<-255) pwm_command.PWM1=-255;
 		if (pwm_command.PWM2<-255) pwm_command.PWM2=-255;
 
-		//pwm_command.PWM1=0;
-		//pwm_command.PWM2=pGain;
+//		pwm_command.PWM1=0;
+//		pwm_command.PWM2=0;
 
 		printf("PWM1: %d \t PWM2: %d \n",pwm_command.PWM1,pwm_command.PWM2);
 

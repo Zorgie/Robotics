@@ -19,7 +19,7 @@ std::vector<float> sensor_6_hist;
 std::vector<float> sensor_7_hist;
 std::vector<float> sensor_8_hist;
 
-int average1=0; //Rui is calibrating
+float average1=0; //Rui is calibrating
 int average2=0; //Rui is calibrating
 
 int compare (const void * a, const void * b)
@@ -85,6 +85,17 @@ float voltageToRange_red_long(float V){
 	return range;
 }
 
+float voltageToRange_black(float V){
+	/*float M=0.0312; //p1
+	float B=0.4565; //p2
+	float K=0.0100; //K*/
+	float M=0.0383; //p1
+	float B=-0.4276; //p2
+	float K=0.01; //K
+	float range = (1/(M*V+B))-K;
+	return range;
+}
+
 float voltageToRange_white(float V){
 	/*float M=0.0312; //p1
 	float B=0.4565; //p2
@@ -144,7 +155,7 @@ void ir_transformation(const differential_drive::AnalogC &input){
 
 	//USING SHORT RANGE SENSOR FOR NOW AT input CH8
 	//output.ch[7] = voltageToRange_red_long(input.ch8);
-	output.ch[7] = voltageToRange_green(input.ch8);
+	output.ch[7] = voltageToRange_black(input.ch8);
 
 	//printf("input long range: %d\n",input.ch8);
 
@@ -180,10 +191,11 @@ void ir_transformation(const differential_drive::AnalogC &input){
 	//printf("Sensor6: %f \t Sensor7: %f \n",output_average.ch[5],output_average.ch[6]);
 
 	//Rui is calibrating:
-	//average1=(int)((((tau-1)/tau)*average1)+((1.0/tau)*((float)input.ch6)));
+//	average1=(float)((((tau-1)/tau)*average1)+((1.0/tau)*((float)input.ch8)));
 	//average2=(int)((((tau-1)/tau)*average2)+((1.0/tau)*((float)input.ch7)));
 //	printf("\n\n\nAverage1 %f \t Average2 %f \n", output_average.ch[5],output_average.ch[6]);
-//	printf("Current1 %d \t Current2 %d \n\n\n", input.ch6,input.ch7);
+//	printf("\n\n\nAverage: %f ",average1);
+//	printf("Current1 %d \t Current2 %d \n\n\n", input.ch8,input.ch8);
 	//printf("Range\n%f \n",output.ch[7]);
 
 
@@ -260,18 +272,18 @@ void ir_transformation(const differential_drive::AnalogC &input){
 	//printf("Median: %f \n", CalcMHWScore(sensor_1_hist_int));
 //
 	//qsort(&sensor_1_hist_int, sensor_1_hist_int.size(), sizeof(float), compare);
-	printf("Printing vector6:\n");
-	for (int n = 0; n < sensor_6_hist.size(); n++) {
-		printf("%f \t",sensor_6_hist[n]);
-	}
-	printf("\nPrinting vector8:\n");
+
+	printf("\n\n\n");
+	printf("Printing vector8:\n");
 	for (int n = 0; n < sensor_8_hist.size(); n++) {
 		printf("%f \t",sensor_8_hist[n]);
 	}
+	printf("\n");
+	printf("Median8: %f \n",median_8);
 	//it = sensor_1_hist.end();
 	//printf("\n Last element: %f\n",it); // This gives me the oldest element
-	printf("\nMedian6: %f \t  Median8:  %f \n", median_6,median_8);
-	printf("\n Vector ended\n");
+
+
 
 //	printf("median=%f ",sensor_1_hist[sensor_1_hist.size()/2]);
 	output_median.ch[0]=median_1;
