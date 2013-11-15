@@ -43,8 +43,8 @@ movement::wheel_speed Go_straight::step(movement::wheel_distance &distance_trave
 			speed.W1=SPEED;
 			speed.W2=SPEED;
 		}
-		else{
-			if(fabs(distance_moved - distance_target) <= 0.01){ // Smoothen the braking
+		else{                
+                //Here we can implement a smoother breaking algorithm if we want to
 				/*if (go_front){
 					speed.W1=SPEED*(abs((distance_moved - distance_target)/0.1));
 					speed.W2=-SPEED*(abs((distance_moved - distance_target)/0.1));
@@ -52,21 +52,20 @@ movement::wheel_speed Go_straight::step(movement::wheel_distance &distance_trave
 					speed.W1=-SPEED*(abs((distance_moved - distance_target)/0.1));
 					speed.W2=SPEED*(abs((distance_moved - distance_target)/0.1));
 				}	*/
+                
+                //at the moment: hard breaking
 				speed.W1=0;
 				speed.W2=0;
-			}
-			else{
-				printf("Unexpected behaviour \n");
-			}
 		}
 	}
+    
 	if(direction<0.0){
-			if(fabs(distance_moved - distance_target) > 0.001){
+			if(fabs(distance_moved - distance_target) > 0.01){
 				speed.W1=-SPEED;
 				speed.W2=-SPEED;
 			}
 			else{
-				if(fabs(distance_moved - distance_target) <= 0.01){ // Smoothen the braking
+                    //Here we can implement a smoother breaking algorithm if we want to
 					/*if (go_front){
 						speed.W1=SPEED*(abs((distance_moved - distance_target)/0.1));
 						speed.W2=-SPEED*(abs((distance_moved - distance_target)/0.1));
@@ -74,18 +73,12 @@ movement::wheel_speed Go_straight::step(movement::wheel_distance &distance_trave
 						speed.W1=-SPEED*(abs((distance_moved - distance_target)/0.1));
 						speed.W2=SPEED*(abs((distance_moved - distance_target)/0.1));
 					}	*/
+                
+                    //again hard breaks implemented at the moment
 					speed.W1=0;
 					speed.W2=0;
-				}
-				else{
-					printf("Unexpected behaviour \n");
-				}
 			}
 		}
-
-	/*printf("Desired_distance %f \n",distance_target);
-	printf("Distance1: %f \t Distance2: %f \n",distance_traveled.distance1,distance_traveled.distance2);
-	printf("WR: %f \t WL: %f \n\n\n", speed.W1, speed.W2);*/
 
 	return speed;
 }

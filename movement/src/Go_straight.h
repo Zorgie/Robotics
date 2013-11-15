@@ -19,7 +19,8 @@ private:
 	const static float SPEED = 0.3;
 	float distance_moved;
 	float distance_target;
-	bool direction_front;
+	bool  direction_front;
+    
 public:
 	Go_straight();
 	virtual ~Go_straight();

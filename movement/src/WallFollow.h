@@ -22,6 +22,7 @@ private:
 	float iGain;
 	float theta_command;
 	double param_gain;
+    double desired_distance_to_wall;
 	movement::wheel_speed desired_wheel_speed;
 	// Front right, back right, front left, back left, front middle.
 	const static int SENSORS[];
