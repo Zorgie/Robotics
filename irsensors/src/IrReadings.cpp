@@ -3,9 +3,13 @@
 #include "irsensors/floatarray.h"
 #include <queue>
 
+//Subscribing to:
+//=> IR sensors (unprocessed)
 ros::Subscriber ir_sub;
-ros::Publisher ir_pub;
 
+//Publishing:
+//=> IR sensors (processed)
+ros::Publisher ir_pub;
 
 irsensors::floatarray output_average;
 irsensors::floatarray output_median;
@@ -18,9 +22,6 @@ std::vector<float> sensor_5_hist;
 std::vector<float> sensor_6_hist;
 std::vector<float> sensor_7_hist;
 std::vector<float> sensor_8_hist;
-
-float average1=0; //Rui is calibrating
-int average2=0; //Rui is calibrating
 
 int compare (const void * a, const void * b)
 {
@@ -78,96 +79,84 @@ float voltageToRange(float V){
 }
 
 float voltageToRange_red_long(float V){
-	float M = 0.0186; //p1
-	float B = -0.1116; //p2
-	float K = 0.01; //K
-	float range = (1/(M*V+B))-K;
+	float M =  0.0186;                  //p1
+	float B = -0.1116;                  //p2
+	float K =  0.01;                    //K
+    
+	float  range = (1/(M*V+B))-K;
 	return range;
 }
 
 float voltageToRange_black(float V){
-	/*float M=0.0312; //p1
-	float B=0.4565; //p2
-	float K=0.0100; //K*/
-	float M=0.0383; //p1
-	float B=-0.4276; //p2
-	float K=0.01; //K
-	float range = (1/(M*V+B))-K;
+	float M =  0.0383;                    
+	float B = -0.4276;                    
+	float K =  0.01;                      
+    
+	float  range = (1/(M*V+B))-K;
 	return range;
 }
 
 float voltageToRange_white(float V){
-	/*float M=0.0312; //p1
-	float B=0.4565; //p2
-	float K=0.0100; //K*/
-	float M=0.0312; //p1
-	float B=0.4565; //p2
-	float K=0.01; //K
-	float range = (1/(M*V+B))-K;
+	float M = 0.0312;                       
+	float B = 0.4565;                       
+	float K = 0.01;                         
+    
+	float  range = (1/(M*V+B))-K;
 	return range;
 }
 
 float voltageToRange_green(float V){
-	/*float M=0.0319; //p1
-	float B=0.8255; //p2
-	float K=0.0100; //K*/
-	float M=0.0319; //p1
-	float B=0.8255; //p2
-	float K=0.01; //K
-	float range = (1/(M*V+B))-K;
+	float M = 0.0319;
+	float B = 0.8255;
+	float K = 0.01;
+    
+	float  range = (1/(M*V+B))-K;
 	return range;
 }
 
 float voltageToRange_orange(float V){
-	/*float M=0.00037363; //p1
-	float B=0.0027; //p2
-	float K=0.4000; //K*/
-	float M=0.0331; //p1
-	float B=0.6342; //p2
-	float K=0.01; //K
-	float range = (1/(M*V+B))-K;
+	float M = 0.0331;  
+	float B = 0.6342;  
+	float K = 0.01;
+    
+	float  range = (1/(M*V+B))-K;
 	return range;
 }
 
 float voltageToRange_blue(float V){
-	/*float M=0.0361; //p1
-	float B=0.2643; //p2
-	float K=0.0050; //K*/
-	float M=0.0326; //p1
-	float B=0.5670; //p2
-	float K=0.01; //K
-	float range = (1/(M*V+B))-K;
+	float M = 0.0326;
+	float B = 0.5670;
+	float K = 0.01;
+    
+	float  range = (1/(M*V+B))-K;
 	return range;
 }
 
 void ir_transformation(const differential_drive::AnalogC &input){
+    
 	irsensors::floatarray output;
-	float tau=5.0; // Use only the last tau samples for the average.
+    
+    // Use only the last tau samples for the average.
+	float tau = 5.0;
 
 	// Multiplying by 0.01 to transform centimeters into meters.
-	output.ch[0] = voltageToRange_orange(input.ch1);
-	output.ch[1] = voltageToRange_blue(input.ch2);
+	output.ch[0] =      voltageToRange_orange(input.ch1);
+	output.ch[1] =      voltageToRange_blue(input.ch2);
 	output.ch[2] = 0.01*voltageToRange(input.ch3);
 	output.ch[3] = 0.01*voltageToRange(input.ch4);
 	output.ch[4] = 0.01*voltageToRange(input.ch5);
-	output.ch[5] = voltageToRange_white(input.ch6);
-	output.ch[6] = voltageToRange_green(input.ch7);
-
-	//USING SHORT RANGE SENSOR FOR NOW AT input CH8
-	//output.ch[7] = voltageToRange_red_long(input.ch8);
+	output.ch[5] =      voltageToRange_white(input.ch6);
+	output.ch[6] =      voltageToRange_green(input.ch7);
+    
+	//using short range sensor in the front at the moment
 	output.ch[7] = voltageToRange_black(input.ch8);
 
-	//printf("input long range: %d\n",input.ch8);
-
-	//printf("ch0: %f,    ,ch1: %f,    "
-			//"ch5: %f,    ch6: %f,    "
-			//"ch7: %f\n",output.ch[0],output.ch[1],output.ch[5],output.ch[6],output.ch[7]);
 	for (int i = 0; i < 7; i++) {
 		output_average.ch[i]=(float)((((tau-1.0)/tau)*output_average.ch[i])+((1.0/tau)*output.ch[i]));
 	}
 
-	for (int i = 0; i < 7; i++) { // Short IR
-	//	if (output.ch[i] < 0.04 || output.ch[i] > 0.40) {
+    //short range sensors:
+	for (int i = 0; i < 7; i++) {
 		if (output_average.ch[i] > 0.25) {
 			output_average.ch[i] = 0.25;
 		}
@@ -176,38 +165,21 @@ void ir_transformation(const differential_drive::AnalogC &input){
 		}
 	}
 
-	for (int i = 7; i < 8; i++) { // Long IR
-		//	if (output.ch[i] < 0.12 || output.ch[i] > 0.6) {
-		if (output.ch[i] < 0.04 || output.ch[i] > 0.40) {
-				//output.ch[i] = 0.0 / 0.0;
-				output_average.ch[i] = 0.0 / 0.0;
-				//printf("Naned a value \n");
-				//printf("%f \n", output.ch[i]);
-			} else {
-				output_average.ch[i]=(float)((((tau-1.0)/tau)*output_average.ch[i])+((1.0/tau)*output.ch[i]));
-			}
-		}
-
-	//printf("Sensor6: %f \t Sensor7: %f \n",output_average.ch[5],output_average.ch[6]);
-
-	//Rui is calibrating:
-//	average1=(float)((((tau-1)/tau)*average1)+((1.0/tau)*((float)input.ch8)));
-	//average2=(int)((((tau-1)/tau)*average2)+((1.0/tau)*((float)input.ch7)));
-//	printf("\n\n\nAverage1 %f \t Average2 %f \n", output_average.ch[5],output_average.ch[6]);
-//	printf("\n\n\nAverage: %f ",average1);
-//	printf("Current1 %d \t Current2 %d \n\n\n", input.ch8,input.ch8);
-	//printf("Range\n%f \n",output.ch[7]);
-
-
-	//ir_pub.publish(output_average);
-	//ir_pub.publish(output);
-
+    //long range sensor at channel 7 (DO WE NEED TO CHANGE THAT AS WE PUT A SHORT RANGED ONE NOW?)
+    if (output.ch[7] < 0.04 || output.ch[7] > 0.40) {
+            output_average.ch[7] = 0.0 / 0.0;
+    } else {
+            output_average.ch[7]=(float)((((tau-1.0)/tau)*output_average.ch[7])+((1.0/tau)*output.ch[7]));
+    }
+		
+    
 	for (int i = 0; i < 8; i++) {
 			if (isnan(output.ch[i])) {
 				output_average.ch[i] = 0.0;
 			}
 		}
 
+    
 	std::vector<float>::iterator it_1;
 	it_1 = sensor_1_hist.begin();
 	std::vector<float>::iterator it_2;
@@ -226,12 +198,6 @@ void ir_transformation(const differential_drive::AnalogC &input){
 	it_8 = sensor_8_hist.begin();
 
 
-
-
-//	std::vector<int>::iterator it_int;
-//	it_int = sensor_1_hist_int.begin();
-
-
 	double median_1;
 	double median_2;
 	double median_3;
@@ -240,6 +206,7 @@ void ir_transformation(const differential_drive::AnalogC &input){
 	double median_6;
 	double median_7;
 	double median_8;
+    
 	int vector_size = 5;
 
 	sensor_1_hist.insert(it_1,output.ch[0]);
@@ -268,11 +235,6 @@ void ir_transformation(const differential_drive::AnalogC &input){
 		median_8=ComputeVectorMedian(sensor_8_hist);
 	}
 
-
-	//printf("Median: %f \n", CalcMHWScore(sensor_1_hist_int));
-//
-	//qsort(&sensor_1_hist_int, sensor_1_hist_int.size(), sizeof(float), compare);
-
 	printf("\n\n\n");
 	printf("Printing vector8:\n");
 	for (int n = 0; n < sensor_8_hist.size(); n++) {
@@ -280,12 +242,7 @@ void ir_transformation(const differential_drive::AnalogC &input){
 	}
 	printf("\n");
 	printf("Median8: %f \n",median_8);
-	//it = sensor_1_hist.end();
-	//printf("\n Last element: %f\n",it); // This gives me the oldest element
 
-
-
-//	printf("median=%f ",sensor_1_hist[sensor_1_hist.size()/2]);
 	output_median.ch[0]=median_1;
 	output_median.ch[1]=median_2;
 	output_median.ch[2]=median_3;
@@ -296,13 +253,11 @@ void ir_transformation(const differential_drive::AnalogC &input){
 	output_median.ch[7]=median_8;
 
 	ir_pub.publish(output_median);
-
-
 }
 
 int main(int argc, char** argv){
+    
 	ros::init(argc, argv, "IrControl");
-
 	ros::NodeHandle n;
 
 	for (int i = 0; i < 8; i++) { // initialize the sensors to zero.
