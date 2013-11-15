@@ -8,10 +8,11 @@
 
 MovementBrain::MovementBrain(){
 	srand (time(NULL));
-	state_probability = *new std::vector<double>(7,0.0);
-	current_movement_state = IDLE;
-	actionPerformedTrigger = false;
-
+	state_probability       = *new std::vector<double>(7,0.0);
+	current_movement_state  = IDLE;
+	actionPerformedTrigger  = false;
+    avg_left_wall_distance  = 0;
+    avg_right_wall_distance = 0;
 }
 
 MovementBrain::~MovementBrain(){
@@ -24,18 +25,16 @@ void MovementBrain::process_irsensor_readings(float s_front,
 {
 
 	//update average distances
-	avg_left_wall_distance = (s_left_f+s_left_b)/2;
+	avg_left_wall_distance  = (s_left_f+s_left_b)/2;
 	avg_right_wall_distance = (s_right_f+s_right_b)/2;
-
-    //thresholds: when does the front sensor think there is a wall?
-    //TODO: calibrate the thresholds
-    const double c_front_thresh = 0.20;
-    const double c_right_threshold = 0.20;
-    const double c_left_threshold = 0.20;
-    const double c_update_prob = 0.15;
     
-    //FRONT UPDATE:update probability that there is a wall in front of the robot
-
+    //thresholds[meters]: when does the front sensor think there is a wall?
+    const double c_front_thresh    = 0.20;
+    const double c_right_threshold = 0.20;
+    const double c_left_threshold  = 0.20;
+    const double c_update_prob     = 0.15;
+    
+    //FRONT UPDATE: Update probability that there is a wall in front of the robot
     if(!isnan(s_front) && s_front < c_front_thresh){
         state_probability[FRONT_WALL] += 0.5*c_update_prob;
         if(state_probability[FRONT_WALL] > 1){state_probability[FRONT_WALL] = 1;}
@@ -96,7 +95,7 @@ void MovementBrain::process_irsensor_readings(float s_front,
 
 
 
-//observe: robot is not able to detect 180° corners at the moment
+//observe: robot is not able to handle 180° corners at the moment
 //must be implemented later!
 void MovementBrain::requested_action_performed(robot_action action_performed){
 
@@ -224,7 +223,7 @@ bool MovementBrain::make_state_decision(){
             }
             break;
 
-        //for states such as TURN_LEFT: wait for manual reset signal
+        //for states such as TURN_LEFT: wait for manual reset signal - dont handle them in the above switch statement
         default:
             break;
     }
@@ -245,8 +244,6 @@ robot_movement_state MovementBrain::make_state_decision_check_right_path_0()
 {
     int right_eval = evaluate_right();
     int front_eval = evaluate_front();
-    
-
     
     //found a path => turn
     if(right_eval == 0)

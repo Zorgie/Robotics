@@ -46,7 +46,7 @@ public:
     double get_action_parameter();
     
     
-//private:
+private:
     robot_movement_state current_movement_state;
     
     robot_movement_state make_state_decision_straight();
