@@ -82,8 +82,8 @@ void send_inturrupt(robot_action action_completed) {
 }
 
 void robotPoseUpdate(const movement::robot_pose& p) {
-	poseCache.x = 200 + 100*p.x;
-	poseCache.y = 200 + 100*p.y;
+	poseCache.x = p.x;
+	poseCache.y = p.y;
 	poseCache.theta = p.theta;
 }
 
@@ -116,7 +116,7 @@ movement::robot_pose calibratePos(bool left) {
 	if (isnan(sensor1) || isnan(sensor2)) {
 		return pose_diff;
 	}
-	distance = 100 * (sensor1 + sensor2) / 2;
+	distance = (sensor1 + sensor2) / 2;
 	if (left)
 		distance = -distance;
 
