@@ -13,7 +13,7 @@
 
 
 void RobotPosition::init() {
-	// Our robot pose variables
+	//robot pose variables
 	x = 0;
 	y = 0;
 	theta = 0;
@@ -27,7 +27,7 @@ movement::robot_pose RobotPosition::step(differential_drive::Encoders &delta_enc
 	float V; // linear distance travelled
 	float w; // angular distance travelled
 	float wheel_distance_traveled1=(delta_encoders.delta_encoder1/360.0)*(PI*wheel_diameter); // RIGHT
-	// RIGHT wheel comes as negative when going forward, due to encoder.
+	// Right wheel comes as negative when going forward, due to encoder.
 	float wheel_distance_traveled2=(delta_encoders.delta_encoder2/360.0)*(PI*wheel_diameter); // LEFT
 
 	std::cout << "Roda1: " << wheel_distance_traveled1 << std::endl;
@@ -37,7 +37,7 @@ movement::robot_pose RobotPosition::step(differential_drive::Encoders &delta_enc
 
 	x=x+cos(theta)*V;
 	y=y+sin(theta)*V;
-	theta=theta+(-wheel_distance_traveled1-wheel_distance_traveled2)/(0.213/1.0);
+	theta=theta+(-wheel_distance_traveled1-wheel_distance_traveled2)/0.213; //0.213 = wheel distance? 
 
 	robot_pose.x=x;
 	robot_pose.y=y;

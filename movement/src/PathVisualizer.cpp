@@ -8,9 +8,9 @@
 static movement::robot_pose global_current_robot_pose;
 static ros::Subscriber robot_pose_sub;
 
+static const int UPDATE_RATE = 50;
+
 void robot_pose_update(const movement::robot_pose &msg) {
-	// Update current robot pose
-	printf("%f\n",msg.x);
 	global_current_robot_pose = msg;
 }
 
@@ -19,20 +19,16 @@ int main( int argc, char** argv )
   ros::init(argc, argv, "points_and_lines");
   ros::NodeHandle n;
   ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 10);
-  //robot_pose_sub = n.subscribe("/robot_pose", 1, robot_pose_update);
   robot_pose_sub = n.subscribe("/robot_pose", 1, robot_pose_update);
 
   std::vector<movement::robot_pose> pose_history;
 
-
-  ros::Rate r(50);
+  ros::Rate r(UPDATE_RATE);
 
   float f = 0.0;
   while (ros::ok())
   {
 	ros::spinOnce();
-
-
 
     visualization_msgs::Marker points;
     points.header.frame_id = "/my_frame";
@@ -41,8 +37,6 @@ int main( int argc, char** argv )
     points.action = visualization_msgs::Marker::ADD;
     points.pose.orientation.w = 1.0;
 
-
-
     points.id = 0;
 
     points.type = visualization_msgs::Marker::POINTS;
@@ -50,7 +44,6 @@ int main( int argc, char** argv )
     // POINTS markers use x and y scale for width/height respectively
     points.scale.x = 0.2;
     points.scale.y = 0.2;
-
 
     // Points are green
     points.color.g = 1.0f;
@@ -69,30 +62,22 @@ int main( int argc, char** argv )
 //
 //      points.points.push_back(p);
 //
-//    }
+//   }
 
     pose_history.push_back(global_current_robot_pose);
 
-//    for (std::vector<int>::iterator it = fifth.begin(); it != fifth.end(); ++it)
-//        std::cout << ' ' << *it;
-//      std::cout << '\n';
-
     for (std::vector<movement::robot_pose>::iterator it = pose_history.begin();
-    		it != pose_history.end(); ++it){
+        it != pose_history.end(); ++it){
 
-    geometry_msgs::Point p;
-	p.x = it->x;
-	p.y = it->y;
-	p.z = 0.0;
+        geometry_msgs::Point p;
+        p.x = it->x;
+        p.y = it->y;
+        p.z = 0.0;
 
-	points.points.push_back(p);
-	//printf("rui");
+        points.points.push_back(p);
     }
-    //printf("rui\n");
-	//printf("%f \n",global_current_robot_pose.x);
 
     marker_pub.publish(points);
-
 
     r.sleep();
 
