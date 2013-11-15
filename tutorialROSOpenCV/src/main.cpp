@@ -12,6 +12,7 @@
 #include <cmath>
 #include "ImageConverter.h"
 #include "DepthReader.h"
+#include "NavMap.h"
 
 namespace enc = sensor_msgs::image_encodings;
 
@@ -61,52 +62,52 @@ int main(int argc, char** argv) {
 			&depthCallback);
 	cv::namedWindow(WINDOW);
 	cv::namedWindow(WINDOW2);
+	NavMap navmap;
+	navmap.addNode(0, 0, 0);
+	navmap.addNode(1, 1, 0);
+	navmap.addWall(0, 0, 0, 100);
+	Point2f p;
+	printf("%d\n", navmap.intersectsWithWall(-10, -10, -10, 10, p));
 	ros::spin();
 	return 0;
 }
 
+int px(int x, int y) {
+	return y * 640 + x;
+}
+
 void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
+	using namespace cv;
 	const cv_bridge::CvImagePtr cv_ptr = ic.getImage(msg);
+	Mat originalImage = cv_ptr->image.clone();
+
 	// Retrieve the hough lines before messing up the image.
-	cv::Point p1, p2;
-	cv::Mat lines = ic.getHoughLines(cv_ptr->image, p1, p2);
+	cv::GaussianBlur(cv_ptr->image, cv_ptr->image, cv::Size(3, 3), 3, 1);
+	cv::vector<cv::Vec4i> lines;
+	cv::Mat lineTransform = ic.getHoughLines(cv_ptr->image, lines);
+
 	// Bluring and thresholding
-	cv::GaussianBlur(cv_ptr->image, cv_ptr->image, cv::Size(5, 5), 5, 1);
-	cv::Mat frame1 = findRed(cv_ptr->image); //find red
-	cv::Mat frame2 = findYellow(cv_ptr->image); //find yellow
 	// Show original and processed image
-	cv::medianBlur(frame1, frame1, 5);
-	cv::medianBlur(frame2, frame2, 5);
 
-	int redCount = count(frame1);
-	int yellowCount = count(frame2);
-
-	cv::Mat frame = frame1;
-
-	if (redCount > 3000) {
-		//printf("Tomato seen on screen!\n");
-	} else if (yellowCount > 2000) {
-		//printf("Lemon seen on screen!\n");
-		frame = frame2;
-	}
 	if (cloudCache != NULL && cloudCache->points.size() == 307200) {
-		//printf("%d, %d, %d, %d\n", p1.x, p1.y, p2.x, p2.y);
-		int pt1num = 640 * p1.y + p1.x;
-		int pt2num = 640 * p2.y + p2.x;
-		if (cloudCache->points.size() > pt1num
-				&& cloudCache->points.size() > pt2num) {
-			float z1 = cloudCache->points[pt1num].z;
-			float z2 = cloudCache->points[pt2num].z;
-			if (!isnan(z1) && !isnan(z2)) {
-				printf(
-						"p1X: %d, p1Y: %d, p1Z: %.2f, p2X: %d, p2Y: %d, p2Z: %.2f\n",
-						p1.x, p1.y, z1, p2.x, p2.y, z2);
+		for (int y = 0; y < 480; y++) {
+			for (int x = 0; x < 640; x++) {
+				int pixnum = px(x, y);
+				if (isnan(cloudCache->points[pixnum].z)) {
+					cv_ptr->image.data[3 * pixnum + 0] = 0;
+					cv_ptr->image.data[3 * pixnum + 1] = 0;
+					cv_ptr->image.data[3 * pixnum + 2] = 0;
+				}
 			}
 		}
 	}
-
-	cv::imshow(WINDOW2, lines);
+	for (int i = 0; i < lines.size(); i++) {
+		Vec4i v = lines[i];
+		line(cv_ptr->image, Point(v[0], v[1]), Point(v[2], v[3]),
+				Scalar(0, 255, 0), 3, 8);
+	}
 	cv::imshow(WINDOW, cv_ptr->image);
+	cv::imshow(WINDOW2, originalImage);
 	cv::waitKey(3);
 }
 
