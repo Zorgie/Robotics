@@ -62,14 +62,14 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg);
 
 void depthCallback(const sensor_msgs::PointCloud2& pcl);
 
-bool hasRight(int x, int y) {
-	if (x >= 220)
-		return true;
-	return false;
+bool hasRight(double x, double y) {
+	return true;
 }
 
-bool hasLeft(int x, int y) {
-	return true;
+bool hasLeft(double x, double y) {
+	if (x >= 0.3)
+		return true;
+	return false;
 }
 
 int main(int argc, char** argv) {
@@ -85,61 +85,34 @@ int main(int argc, char** argv) {
 	cv::namedWindow(WINDOW);
 
 	NavMap nav;
-	double currentX = 200;
-	double currentY = 200;
 	double currentFacing = -M_PI/4;
 	Scalar black = Scalar(0, 0, 0);
 	Mat img(480, 640, CV_8UC3, Scalar(255, 255, 255));
+
+	//Adding fake walls.
+	nav.addWall(0,0,0,1);
+	nav.addWall(0.3,0,0.3,0.7);
+	nav.addWall(0,1,0.15,1);
+
 	bool swept = false;
-	PlaneDetector pd;
+
+	double curX = 0.15;
+	double curY = 0.85;
+	ros::Rate rr(100);
 	while (ros::ok()) {
-		if (swept == false) {
-			if (cloudCache == 0) {
-				ros::spinOnce();
-				continue;
-			}
-			swept = true;
-			vector<Point3d> sweep = pd.sweep(200, *cloudCache);
-			double lastX = 0 / 0, lastY = 0 / 0;
-			for (int i = 0; i < sweep.size(); i++) {
-				Point2d adj = pd.pointConversion(Point2d(currentX,currentY),Point2d(sweep[i].z*100,sweep[i].x*100),currentFacing);
-				printf("Converted (%.2f, %.2f) to (%.2f, %.2f)\n",sweep[i].z*100,sweep[i].x*100,adj.x,adj.y);
-				if (isnan(lastX) || isnan(lastY)) {
-					lastX = adj.x;
-					lastY = adj.y;
-					continue;
-				}
-				double xDiff = abs(lastX - adj.x);
-				double yDiff = abs(lastY - adj.y);
-				if (yDiff > xDiff) {
-					// Wall parallell to the robot facing, throw away for now.
-					if (yDiff > 2) {
-						int intX = adj.x;
-						int intY = adj.y;
-						nav.extendWall(intX, intY, false);
-						lastX = adj.x;
-						lastY = adj.y;
-					}
-					printf("(Z, X): (%.3f, %.3f)\n", xDiff, yDiff);
-				} else {
-					if (xDiff > 2) {
-						int intX = adj.x;
-						int intY = adj.y;
-						nav.extendWall(intX, intY, true);
-						lastX = adj.x;
-						lastY = adj.y;
-						printf("Extending at (%d %d)\n", intX, intY);
-					}
-				}
-			}
-			printf("Sweep completed. Points: %d\n", sweep.size());
-			swept = true;
+		curX+=0.001;
+		if(hasLeft(curX,curY)){
+			nav.extendWall(curX,curY-0.15,true);
+		}
+		if(hasRight(curX,curY)){
+			nav.extendWall(curX,curY+0.15,true);
 		}
 		nav.draw(img);
-		circle(img, Point(currentX, currentY), 2, black, 3, 8);
+		circle(img, Point((int)(200+100*curX), (int)(200+100*curY)), 2, black, 3, 8);
 		cv::imshow(WINDOW, img);
 		cv::waitKey(3);
 		ros::spinOnce();
+		rr.sleep();
 	}
 	return 0;
 }

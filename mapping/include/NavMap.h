@@ -17,11 +17,11 @@ using namespace cv;
 
 typedef struct Node{
 	int index;
-	int x, y;
+	double x, y;
 	int type;
 };
 typedef struct Wall{
-	int x1, y1, x2, y2;
+	double x1, y1, x2, y2;
 	bool horizontal;
 };
 
@@ -32,18 +32,18 @@ private:
 	vector<Node> nodes;
 	bool intersection(Point2f o1, Point2f p1, Point2f o2, Point2f p2,
             Point2f &r);
-	const static int WALL_SNAP_DISTANCE = 10;
+	const static double WALL_SNAP_DISTANCE = 0.1;
 public:
 	NavMap(){}
 	virtual ~NavMap(){}
 
-	void addNode(int x, int y, int type);
+	void addNode(double x, double y, int type);
 	vector<int> getNeighbours(int nodeId);
-	void addWall(int x1, int y1, int x2, int y2);
-	void extendWall(int x, int y, bool horizontal);
-	bool intersectsWithWall(int x1, int y1, int x2, int y2, Point2f &intersect);
-	int getClosestReachableNode(int x, int y);
-	int getDistanceToNode(int nodeId);
+	void addWall(double x1, double y1, double x2, double y2);
+	void extendWall(double x, double y, bool horizontal);
+	bool intersectsWithWall(double x1, double y1, double x2, double y2, Point2f &intersect);
+	int getClosestReachableNode(double x, double y);
+	double getDistanceToNode(int nodeId);
 	void draw(Mat& img);
 
 	/**
@@ -51,7 +51,7 @@ public:
 	 * @param approximatePos the x,y position that the robot thinks it has.
 	 * @param relativeWallPoss The direction and distance
 	 */
-	Point getCalibratedPos(Point approximatePos, Point relativeWallPos);
+	Point2d getCalibratedPos(Point2d approximatePos, Point2d relativeWallPos);
 
 
 	Point2d pointConversion(Point2d origin, Point2d relativePos, double angle);
