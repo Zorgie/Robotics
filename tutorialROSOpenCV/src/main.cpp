@@ -8,6 +8,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <pcl/point_cloud.h>
 #include <stdio.h>
+#include <cstdio>
 #include <cmath>
 #include "ImageConverter.h"
 #include "DepthReader.h"
@@ -18,6 +19,7 @@ static const char WINDOW[] = "Original Window";
 static const char WINDOW2[] = "Process Window";
 image_transport::Publisher image_pub_;
 ImageConverter ic;
+pcl::PointCloud<pcl::PointXYZ>* cloudCache = NULL;
 
 cv::Mat findRed(cv::Mat imgHSV) {
 	cv::Mat imgThresh = cvCreateImage(cvSize(640, 480), IPL_DEPTH_8U, 1);
@@ -55,6 +57,8 @@ int main(int argc, char** argv) {
 	//image_transport::ImageTransport it_ = nh_;
 	ros::Subscriber sub = nh_.subscribe("/camera/rgb/image_color", 1,
 			&imgCallback);
+	ros::Subscriber dSub = nh_.subscribe("/camera/depth_registered/points", 1,
+			&depthCallback);
 	cv::namedWindow(WINDOW);
 	cv::namedWindow(WINDOW2);
 	ros::spin();
@@ -64,7 +68,8 @@ int main(int argc, char** argv) {
 void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	const cv_bridge::CvImagePtr cv_ptr = ic.getImage(msg);
 	// Retrieve the hough lines before messing up the image.
-	cv::Mat lines = ic.getHoughLines(cv_ptr->image);
+	cv::Point p1, p2;
+	cv::Mat lines = ic.getHoughLines(cv_ptr->image, p1, p2);
 	// Bluring and thresholding
 	cv::GaussianBlur(cv_ptr->image, cv_ptr->image, cv::Size(5, 5), 5, 1);
 	cv::Mat frame1 = findRed(cv_ptr->image); //find red
@@ -79,10 +84,25 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	cv::Mat frame = frame1;
 
 	if (redCount > 3000) {
-		printf("Tomato seen on screen!\n");
+		//printf("Tomato seen on screen!\n");
 	} else if (yellowCount > 2000) {
-		printf("Lemon seen on screen!\n");
+		//printf("Lemon seen on screen!\n");
 		frame = frame2;
+	}
+	if (cloudCache != NULL && cloudCache->points.size() == 307200) {
+		//printf("%d, %d, %d, %d\n", p1.x, p1.y, p2.x, p2.y);
+		int pt1num = 640 * p1.y + p1.x;
+		int pt2num = 640 * p2.y + p2.x;
+		if (cloudCache->points.size() > pt1num
+				&& cloudCache->points.size() > pt2num) {
+			float z1 = cloudCache->points[pt1num].z;
+			float z2 = cloudCache->points[pt2num].z;
+			if (!isnan(z1) && !isnan(z2)) {
+				printf(
+						"p1X: %d, p1Y: %d, p1Z: %.2f, p2X: %d, p2Y: %d, p2Z: %.2f\n",
+						p1.x, p1.y, z1, p2.x, p2.y, z2);
+			}
+		}
 	}
 
 	cv::imshow(WINDOW2, lines);
@@ -90,7 +110,20 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	cv::waitKey(3);
 }
 
-void depthCallback(const sensor_msgs::PointCloud2& pcl){
-	pcl::PointCloud<pcl::PointXYZ> cloud;
-	pcl::fromROSMsg(pcl, cloud);
+void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
+	using namespace pcl;
+	using namespace std;
+	PointCloud<PointXYZ> cloud;
+	fromROSMsg(pcloud, cloud);
+	if (cloudCache != NULL) {
+		delete (cloudCache);
+	}
+	cloudCache = new PointCloud<PointXYZ>(cloud);
+	/*
+	 float xMin = 0, xMax = 0;
+	 for(int i=0; i<cloud.points.size(); i++){
+	 xMin = min(xMin, cloud.points[i].x);
+	 xMax = max(xMax, cloud.points[i].x);
+	 }
+	 printf("%.2f, %.2f\n", xMin, xMax);*/
 }
