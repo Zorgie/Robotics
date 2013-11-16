@@ -95,7 +95,7 @@ void ir_transformation(const differential_drive::AnalogC &input){
 	}
     
     //CHECK: long range ir sensor: (Arent we using a short ranged one here now and have to change that?)
-    if (output.ch[7] < 0.04 || output.ch[i] > 0.40) {
+    if (output.ch[7] < 0.04 || output.ch[7] > 0.40) {
         output.ch[7] = 0.0 / 0.0;
         output_average.ch[7] = 0.0 / 0.0;
     } else {

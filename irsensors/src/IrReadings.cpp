@@ -140,16 +140,27 @@ void ir_transformation(const differential_drive::AnalogC &input){
 	float tau = 5.0;
 
 	// Multiplying by 0.01 to transform centimeters into meters.
-	output.ch[0] =      voltageToRange_orange(input.ch1);
-	output.ch[1] =      voltageToRange_blue(input.ch2);
+	output.ch[0] = voltageToRange_blue(input.ch1);//voltageToRange_orange(input.ch1);
+	output.ch[1] = voltageToRange_green(input.ch2)+0.01;//voltageToRange_blue(input.ch2);
 	output.ch[2] = 0.01*voltageToRange(input.ch3);
 	output.ch[3] = 0.01*voltageToRange(input.ch4);
 	output.ch[4] = 0.01*voltageToRange(input.ch5);
-	output.ch[5] =      voltageToRange_white(input.ch6);
-	output.ch[6] =      voltageToRange_green(input.ch7);
+	output.ch[5] = voltageToRange_orange(input.ch6);//voltageToRange_white(input.ch6);
+	output.ch[6] = voltageToRange_white(input.ch7);//voltageToRange_green(input.ch7);
     
 	//using short range sensor in the front at the moment
-	output.ch[7] = voltageToRange_black(input.ch8);
+	if (input.ch8<30){ //this is a value very far away, that can cause singularity in the mapping
+		// function, and come out as a close front wall
+		output.ch[7] = voltageToRange_black(30);
+	}else{
+		output.ch[7] = voltageToRange_black(input.ch8);
+	}
+
+	std::cout << "\n 0: \t" << output.ch[0] << std::endl;
+	std::cout << "1: \t" << output.ch[1] << std::endl;
+	std::cout << "5: \t" << output.ch[5] << std::endl;
+	std::cout << "6: \t" << output.ch[6] << std::endl;
+	std::cout << "7: \t" << output.ch[7] << "raw: \t" << input.ch8 << std::endl;
 
 	for (int i = 0; i < 7; i++) {
 		output_average.ch[i]=(float)((((tau-1.0)/tau)*output_average.ch[i])+((1.0/tau)*output.ch[i]));
