@@ -34,5 +34,6 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_add_executable(meta src/meta.cpp)
 #rosbuild_add_executable(main src/NavMap.cpp src/ImageConverter.cpp src/main.cpp)
 #rosbuild_add_executable(lines src/plines.cpp)
-rosbuild_add_executable(plane_detection_rui src/plane_detection_rui.cpp src/NavMap.cpp src/ImageConverter.cpp)
+#rosbuild_add_executable(plane_detection_rui src/plane_detection_rui.cpp src/NavMap.cpp src/ImageConverter.cpp)
+rosbuild_add_executable(matcher_simple src/matcher_simple.cpp src/NavMap.cpp src/ImageConverter.cpp)
 
