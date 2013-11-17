@@ -17,12 +17,23 @@
 #include <opencv2/features2d/features2d.hpp>
 #include "opencv2/nonfree/nonfree.hpp"
 
-//we add this for the BruteForceMatcher - outdated class (now BFMatcher)
-#include <opencv2/legacy/legacy.hpp>
 
 using namespace cv;
 
 namespace enc = sensor_msgs::image_encodings;
+
+int threshold_value = 100;
+int threshold_type  = 4;
+int const max_value = 255;
+int const max_type = 4;
+int const max_BINARY_value = 255;
+
+Mat src,src_gray,dst;
+char* window_name = "Threshold Demo";
+char* trackbar_type = "Type: \n 0: Binary \n 1: Binary Inverted \n 2: Truncate \n 3: To Zero \n 4: To Zero Inverted";
+char *trackbar_value = "Value";
+
+void Threshold_Demo(int,void*);
 
 static const char WINDOW[] = "Original Window";
 static const char WINDOW2[] = "Process Window";
@@ -75,57 +86,47 @@ int main(int argc, char** argv) {
 
 	double timeStampStart = (double)getTickCount();
 
-	Mat img1 = imread("tiger2.jpeg",CV_LOAD_IMAGE_GRAYSCALE);
-	Mat img2 = imread("tiger3.jpeg",CV_LOAD_IMAGE_GRAYSCALE);
-
-	//detecting keypoints
-	SurfFeatureDetector detector(400);
-	vector<KeyPoint> keypoints1,keypoints2;
-	detector.detect(img1,keypoints1);
-	detector.detect(img2,keypoints2);
-
-	//computing descriptors
-	SurfDescriptorExtractor extractor;
-	Mat descriptors1, descriptors2;
-	extractor.compute(img1,keypoints1,descriptors1);
-	extractor.compute(img2,keypoints2,descriptors2);
-
-	//matching descriptors
-	//Should be BFMatcher now, its outdated
-	/*BruteForceMatcher<L2<float> > matcher;
-	std::vector<int> matches;
-	matcher.add(descriptors2);
-	matcher.match(descriptors1,matches,0);
-*/
-
-	BFMatcher matcher(NORM_L2);
-	std::vector<DMatch> matches;
-	matcher.match(descriptors1,descriptors2,matches);
+	src_gray = imread("tomato.jpeg",CV_LOAD_IMAGE_GRAYSCALE);
+	Mat src_image = imread("tomato.jpeg",CV_LOAD_IMAGE_COLOR);
 
 
-	Mat img_matches;
-	drawMatches(img1,keypoints1,img2,keypoints2,matches,img_matches);
-	imshow("Matches",img_matches);
+	cout << "rows: " << src_gray.rows << endl;
+	cout << "cols: " << src_gray.cols << endl;
 
-	cout << "Number of matches " << matches.size() << endl;
-	cout << "First match distance: " << matches.front().distance << endl;
-	cout << "Second match distance: " << matches[1].distance << endl;
-
-	cout << "Image Index: " << matches[0].imgIdx << endl;
-	cout << "Image Index: " << matches[15].imgIdx << endl;
-
-	cout << "D1 cols: " << descriptors1.cols << endl;
-	cout << "D1 rows: " << descriptors1.rows << endl;
-
-	double overallDistance = 0;
-	for(int i = 0;i < matches.size();i++){
-		cout << "distance: " << matches[i].distance << endl;
-		overallDistance += matches[i].distance;
+	for(int i = 0;i < src_gray.rows;i++){
+		for(int j = 0;j < src_gray.cols;j++){
+			if(src_gray.at<uchar>(i,j) > 150 || src_gray.at<uchar>(i,j) < 100){
+				src_image.at<cv::Vec3b>(i,j)[0] = 0;
+				src_image.at<cv::Vec3b>(i,j)[1] = 0;
+				src_image.at<cv::Vec3b>(i,j)[2] = 0;
+			}
+		}
 	}
-	cout << "Overall distance: " << overallDistance << endl;
+
+	namedWindow(window_name,CV_WINDOW_AUTOSIZE);
+
+	createTrackbar(trackbar_type,window_name,&threshold_type,max_type,Threshold_Demo);
+	createTrackbar(trackbar_value,window_name,&threshold_value,max_value,Threshold_Demo);
+
 
 	double timePassed = ((double)getTickCount() - timeStampStart)/getTickFrequency();
 	cout << "time passed: " << timePassed << endl;
+
+	//threshold(src_gray,dst,100,255,0);
+	imshow(window_name,src_image);
+
+/*
+	Threshold_Demo(0,0);
+	while(true){
+		int c;
+		c = waitKey(20);
+		if((char)c == 97){
+			break;
+		}
+	}
+*/
+
+
 
 	waitKey(0);
 
@@ -140,6 +141,12 @@ int main(int argc, char** argv) {
 	printf("%d\n", navmap.intersectsWithWall(-10, -10, -10, 10, p));
 	ros::spin();
 	return 0;
+}
+
+void Threshold_Demo(int,void*){
+	//threshold(src_gray,dst,threshold_value,max_BINARY_value,threshold_type);
+	threshold(src_gray,dst,threshold_value,255,0);
+	imshow(window_name,dst);
 }
 
 int px(int x, int y) {

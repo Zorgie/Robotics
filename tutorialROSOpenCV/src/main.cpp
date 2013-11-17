@@ -16,11 +16,15 @@
 
 namespace enc = sensor_msgs::image_encodings;
 
+
+
 static const char WINDOW[] = "Original Window";
 static const char WINDOW2[] = "Process Window";
 image_transport::Publisher image_pub_;
 ImageConverter ic;
 pcl::PointCloud<pcl::PointXYZ>* cloudCache = NULL;
+
+bool killProgram = false;
 
 cv::Mat findRed(cv::Mat imgHSV) {
 	cv::Mat imgThresh = cvCreateImage(cvSize(640, 480), IPL_DEPTH_8U, 1);
@@ -53,8 +57,12 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg);
 void depthCallback(const sensor_msgs::PointCloud2& pcl);
 
 int main(int argc, char** argv) {
+
 	ros::init(argc, argv, "image_converter");
 	ros::NodeHandle nh_;
+	nh_.setParam("/takePhoto",0);
+
+
 	//image_transport::ImageTransport it_ = nh_;
 	ros::Subscriber sub = nh_.subscribe("/camera/rgb/image_color", 1,
 			&imgCallback);
@@ -68,7 +76,15 @@ int main(int argc, char** argv) {
 	navmap.addWall(0, 0, 0, 100);
 	Point2f p;
 	printf("%d\n", navmap.intersectsWithWall(-10, -10, -10, 10, p));
-	ros::spin();
+
+
+	while(ros::ok()){
+
+		ros::spinOnce();
+		if(killProgram){
+			break;
+		}
+	}
 	return 0;
 }
 
@@ -78,8 +94,21 @@ int px(int x, int y) {
 
 void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	using namespace cv;
+
+
 	const cv_bridge::CvImagePtr cv_ptr = ic.getImage(msg);
 	Mat originalImage = cv_ptr->image.clone();
+
+	int takePhoto;
+	//nh_.getParam("/takePhoto",takePhoto);
+	//if(takePhoto == 1){
+	imwrite("kinectImage.jpeg",originalImage);
+		//nh_.setParam("/takePhoto",0);
+	//}
+
+	killProgram = true;
+
+
 
 	// Retrieve the hough lines before messing up the image.
 	cv::GaussianBlur(cv_ptr->image, cv_ptr->image, cv::Size(3, 3), 3, 1);

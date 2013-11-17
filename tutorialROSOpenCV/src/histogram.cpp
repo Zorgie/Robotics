@@ -17,12 +17,13 @@
 #include <opencv2/features2d/features2d.hpp>
 #include "opencv2/nonfree/nonfree.hpp"
 
-//we add this for the BruteForceMatcher - outdated class (now BFMatcher)
-#include <opencv2/legacy/legacy.hpp>
 
 using namespace cv;
 
 namespace enc = sensor_msgs::image_encodings;
+
+
+void Threshold_Demo(int,void*);
 
 static const char WINDOW[] = "Original Window";
 static const char WINDOW2[] = "Process Window";
@@ -67,6 +68,8 @@ int main(int argc, char** argv) {
 	ros::Subscriber sub = nh_.subscribe("/camera/rgb/image_color", 1, &imgCallback);
 	ros::Subscriber dSub = nh_.subscribe("/camera/depth_registered/points", 1, &depthCallback);
 
+	Mat src,dst;
+
 	int takePhoto = 0;
 	nh_.setParam("/takePhoto",0);
 
@@ -75,57 +78,86 @@ int main(int argc, char** argv) {
 
 	double timeStampStart = (double)getTickCount();
 
-	Mat img1 = imread("tiger2.jpeg",CV_LOAD_IMAGE_GRAYSCALE);
-	Mat img2 = imread("tiger3.jpeg",CV_LOAD_IMAGE_GRAYSCALE);
+	src = imread("nothing3.jpeg",1);
 
-	//detecting keypoints
-	SurfFeatureDetector detector(400);
-	vector<KeyPoint> keypoints1,keypoints2;
-	detector.detect(img1,keypoints1);
-	detector.detect(img2,keypoints2);
+	cvtColor(src,src,CV_BGR2HSV);
 
-	//computing descriptors
-	SurfDescriptorExtractor extractor;
-	Mat descriptors1, descriptors2;
-	extractor.compute(img1,keypoints1,descriptors1);
-	extractor.compute(img2,keypoints2,descriptors2);
+	vector<Mat> bgr_planes;
+	split( src, bgr_planes );
 
-	//matching descriptors
-	//Should be BFMatcher now, its outdated
-	/*BruteForceMatcher<L2<float> > matcher;
-	std::vector<int> matches;
-	matcher.add(descriptors2);
-	matcher.match(descriptors1,matches,0);
-*/
+	int histSize = 256;
 
-	BFMatcher matcher(NORM_L2);
-	std::vector<DMatch> matches;
-	matcher.match(descriptors1,descriptors2,matches);
+	float range[] = { 0, 256 } ;
+	  const float* histRange = { range };
+
+	  bool uniform = true; bool accumulate = false;
+
+	Mat b_hist, g_hist, r_hist;
+
+	/// Compute the histograms:
+	calcHist(&bgr_planes[0], 1, 0, Mat(), b_hist, 1, &histSize, &histRange,
+			uniform, accumulate);
+	calcHist(&bgr_planes[1], 1, 0, Mat(), g_hist, 1, &histSize, &histRange,
+			uniform, accumulate);
+	calcHist(&bgr_planes[2], 1, 0, Mat(), r_hist, 1, &histSize, &histRange,
+			uniform, accumulate);
+
+	// Draw the histograms for B, G and R
+	int hist_w = 512;
+	int hist_h = 400;
+	int bin_w = cvRound((double) hist_w / histSize);
+
+	Mat histImage(hist_h, hist_w, CV_8UC3, Scalar(0, 0, 0));
+
+	 /// Normalize the result to [ 0, histImage.rows ]
+	  normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
+	  normalize(g_hist, g_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
+	  normalize(r_hist, r_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
+
+	  /// Draw for each channel
+	  for( int i = 1; i < histSize; i++ )
+	  {
+	      line( histImage, Point( bin_w*(i-1), hist_h - cvRound(b_hist.at<float>(i-1)) ) ,
+	                       Point( bin_w*(i), hist_h - cvRound(b_hist.at<float>(i)) ),
+	                       Scalar( 255, 0, 0), 2, 8, 0  );
+	      line( histImage, Point( bin_w*(i-1), hist_h - cvRound(g_hist.at<float>(i-1)) ) ,
+	                       Point( bin_w*(i), hist_h - cvRound(g_hist.at<float>(i)) ),
+	                       Scalar( 0, 255, 0), 2, 8, 0  );
+	      line( histImage, Point( bin_w*(i-1), hist_h - cvRound(r_hist.at<float>(i-1)) ) ,
+	                       Point( bin_w*(i), hist_h - cvRound(r_hist.at<float>(i)) ),
+	                       Scalar( 0, 0, 255), 2, 8, 0  );
+	  }
+
+	  /// Display
+	  namedWindow("calcHist Demo", CV_WINDOW_AUTOSIZE );
+	  imshow("calcHist Demo", histImage );
+
+	  waitKey(0);
+
+	  return 0;
 
 
-	Mat img_matches;
-	drawMatches(img1,keypoints1,img2,keypoints2,matches,img_matches);
-	imshow("Matches",img_matches);
 
-	cout << "Number of matches " << matches.size() << endl;
-	cout << "First match distance: " << matches.front().distance << endl;
-	cout << "Second match distance: " << matches[1].distance << endl;
 
-	cout << "Image Index: " << matches[0].imgIdx << endl;
-	cout << "Image Index: " << matches[15].imgIdx << endl;
 
-	cout << "D1 cols: " << descriptors1.cols << endl;
-	cout << "D1 rows: " << descriptors1.rows << endl;
-
-	double overallDistance = 0;
-	for(int i = 0;i < matches.size();i++){
-		cout << "distance: " << matches[i].distance << endl;
-		overallDistance += matches[i].distance;
-	}
-	cout << "Overall distance: " << overallDistance << endl;
 
 	double timePassed = ((double)getTickCount() - timeStampStart)/getTickFrequency();
 	cout << "time passed: " << timePassed << endl;
+
+	//threshold(src_gray,dst,100,255,0);
+
+/*
+	Threshold_Demo(0,0);
+	while(true){
+		int c;
+		c = waitKey(20);
+		if((char)c == 97){
+			break;
+		}
+	}
+*/
+
+
 
 	waitKey(0);
 
@@ -141,6 +173,8 @@ int main(int argc, char** argv) {
 	ros::spin();
 	return 0;
 }
+
+
 
 int px(int x, int y) {
 	return y * 640 + x;
