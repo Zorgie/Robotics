@@ -110,6 +110,15 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 
 
 
+
+	// Declare what you need
+	cv::FileStorage file("some_name.xml", cv::FileStorage::WRITE); // or .yml or .xml
+	cv::Mat points_X = Mat::eye(480, 640, CV_64F);
+	cv::Mat someMatrixOfAnyType;
+
+
+
+
 	// Retrieve the hough lines before messing up the image.
 	cv::GaussianBlur(cv_ptr->image, cv_ptr->image, cv::Size(3, 3), 3, 1);
 	cv::vector<cv::Vec4i> lines;
@@ -122,14 +131,19 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 		for (int y = 0; y < 480; y++) {
 			for (int x = 0; x < 640; x++) {
 				int pixnum = px(x, y);
-				if (isnan(cloudCache->points[pixnum].z)) {
-					cv_ptr->image.data[3 * pixnum + 0] = 0;
-					cv_ptr->image.data[3 * pixnum + 1] = 0;
-					cv_ptr->image.data[3 * pixnum + 2] = 0;
-				}
+				//points_X.at<double>(1,1)=cloudCache->points[pixnum].x;
+//				if (isnan(cloudCache->points[pixnum].z)) {
+//					cv_ptr->image.data[3 * pixnum + 0] = 0;
+//					cv_ptr->image.data[3 * pixnum + 1] = 0;
+//					cv_ptr->image.data[3 * pixnum + 2] = 0;
+//				}
 			}
 		}
 	}
+
+	// Write to file!
+		file << someMatrixOfAnyType;
+
 	for (int i = 0; i < lines.size(); i++) {
 		Vec4i v = lines[i];
 		line(cv_ptr->image, Point(v[0], v[1]), Point(v[2], v[3]),

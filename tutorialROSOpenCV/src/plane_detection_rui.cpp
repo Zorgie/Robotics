@@ -16,6 +16,8 @@
 
 namespace enc = sensor_msgs::image_encodings;
 
+double error_allowed =0.03;
+
 static const char WINDOW[] = "Original Window";
 static const char WINDOW2[] = "Process Window";
 image_transport::Publisher image_pub_;
@@ -56,6 +58,7 @@ int main(int argc, char** argv) {
 	ros::init(argc, argv, "image_converter");
 	ros::NodeHandle nh_;
 	//image_transport::ImageTransport it_ = nh_;
+	nh_.setParam("/error",error_allowed);
 	ros::Subscriber sub = nh_.subscribe("/camera/rgb/image_color", 1,
 			&imgCallback);
 	ros::Subscriber dSub = nh_.subscribe("/camera/depth_registered/points", 1,
@@ -68,7 +71,10 @@ int main(int argc, char** argv) {
 	navmap.addWall(0, 0, 0, 100);
 	Point2f p;
 	printf("%d\n", navmap.intersectsWithWall(-10, -10, -10, 10, p));
+	std::cout << "Ran" << std::endl;
+	nh_.getParam("/error",error_allowed);
 	ros::spin();
+
 	return 0;
 }
 
@@ -116,7 +122,7 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 //         printf("\n");
 //    }
 
-	std::cout << cv::determinant(E) << std::endl;
+//	std::cout << cv::determinant(E) << std::endl;
 
 	/* generate random number between 1 and 307200: */
 	int rand_pt_1_u = rand() % 480 + 1;
@@ -137,15 +143,25 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 
 	bool three_correct_values = 0;
 	int tries=0;
+	int pt_1_x=300;int pt_2_x=320;int pt_3_x=340;
+		int pt_1_y=260;int pt_2_y=220;int pt_3_y=240;
 
 	while (three_correct_values!=1){
 		tries +=1;
-		rand_pt_1_u = rand() % 480 + 1;
-		rand_pt_2_u = rand() % 480 + 1;
-		rand_pt_3_u = rand() % 480 + 1;
-		rand_pt_1_v = rand() % 480 + 1;
-		rand_pt_2_v = rand() % 480 + 1;
-		rand_pt_3_v = rand() % 480 + 1;
+
+
+//		rand_pt_1_u = rand() % 480 + 1;
+//		rand_pt_2_u = rand() % 480 + 1;
+//		rand_pt_3_u = rand() % 480 + 1;
+//		rand_pt_1_v = rand() % 480 + 1;
+//		rand_pt_2_v = rand() % 480 + 1;
+//		rand_pt_3_v = rand() % 480 + 1;
+		rand_pt_1_u = pt_1_x;
+		rand_pt_2_u = pt_2_x;
+		rand_pt_3_u = pt_3_x;
+		rand_pt_1_v = pt_1_y;
+		rand_pt_2_v = pt_2_y;
+		rand_pt_3_v = pt_3_y;
 		pt_1_pix=px(rand_pt_1_u,rand_pt_1_v);
 		pt_2_pix=px(rand_pt_2_u,rand_pt_2_v);
 		pt_3_pix=px(rand_pt_3_u,rand_pt_3_v);
@@ -162,21 +178,22 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 		//return;
 		continue;
 	}
-	if (fabs(cloudCache->points[pt_1_pix].x)<0.1 || fabs(cloudCache->points[pt_1_pix].y)<0.1 || fabs(cloudCache->points[pt_1_pix].z)<0.1
-				|| fabs(cloudCache->points[pt_2_pix].x)<0.1 || fabs(cloudCache->points[pt_2_pix].y)<0.1 || fabs(cloudCache->points[pt_2_pix].z)<0.1
-				|| fabs(cloudCache->points[pt_3_pix].x)<0.1 || fabs(cloudCache->points[pt_3_pix].y)<0.1 || fabs(cloudCache->points[pt_3_pix].z)<0.1){
-			//std::cout << "SMALL VALUES" << std::endl;
-			//return;
-			continue;
-		}
-	if (fabs(cloudCache->points[pt_1_pix].x)>1000.0 || fabs(cloudCache->points[pt_1_pix].y)>1000.0 || fabs(cloudCache->points[pt_1_pix].z)>1000.0
-					|| fabs(cloudCache->points[pt_2_pix].x)>1000.0 || fabs(cloudCache->points[pt_2_pix].y)>1000.0 || fabs(cloudCache->points[pt_2_pix].z)>1000.0
-					|| fabs(cloudCache->points[pt_3_pix].x)>1000.0 || fabs(cloudCache->points[pt_3_pix].y)>1000.0 || fabs(cloudCache->points[pt_3_pix].z)>1000.0){
-				//std::cout << "ENORMOUS VALUES" << std::endl;
-				//return;
-				continue;
-			}
-	std::cout << "Got 3 good values" << std::endl;
+	//std::cout << "X value: "<<cloudCache->points[pt_1_pix].x << std::endl;
+//	if (fabs(cloudCache->points[pt_1_pix].x)<0.1 || fabs(cloudCache->points[pt_1_pix].y)<0.1 || fabs(cloudCache->points[pt_1_pix].z)<0.1
+//				|| fabs(cloudCache->points[pt_2_pix].x)<0.1 || fabs(cloudCache->points[pt_2_pix].y)<0.1 || fabs(cloudCache->points[pt_2_pix].z)<0.1
+//				|| fabs(cloudCache->points[pt_3_pix].x)<0.1 || fabs(cloudCache->points[pt_3_pix].y)<0.1 || fabs(cloudCache->points[pt_3_pix].z)<0.1){
+//			//std::cout << "SMALL VALUES" << std::endl;
+//			//return;
+//			continue;
+//		}
+//	if (fabs(cloudCache->points[pt_1_pix].x)>1000.0 || fabs(cloudCache->points[pt_1_pix].y)>1000.0 || fabs(cloudCache->points[pt_1_pix].z)>1000.0
+//					|| fabs(cloudCache->points[pt_2_pix].x)>1000.0 || fabs(cloudCache->points[pt_2_pix].y)>1000.0 || fabs(cloudCache->points[pt_2_pix].z)>1000.0
+//					|| fabs(cloudCache->points[pt_3_pix].x)>1000.0 || fabs(cloudCache->points[pt_3_pix].y)>1000.0 || fabs(cloudCache->points[pt_3_pix].z)>1000.0){
+//				//std::cout << "ENORMOUS VALUES" << std::endl;
+//				//return;
+//				continue;
+//			}
+//	std::cout << "Got 3 good values" << std::endl;
 	three_correct_values=1;
 	}
 
@@ -213,24 +230,24 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	temp_C.at<double>(2,0)=pt_3.x;temp_C.at<double>(2,1)=pt_3.y;temp_C.at<double>(2,2)=1.0;
 //
 //
-	printf(" Pontos que originam Matrix temp: \n");
-	std::cout << pt_1.x << pt_1.y << pt_1.z <<std::endl;
-	std::cout << pt_2.x << pt_2.y << pt_2.z <<std::endl;
-	std::cout << pt_3.x << pt_3.y << pt_3.z <<std::endl;
+//	printf(" Pontos que originam Matrix temp: \n");
+//	std::cout << pt_1.x << pt_1.y << pt_1.z <<std::endl;
+//	std::cout << pt_2.x << pt_2.y << pt_2.z <<std::endl;
+//	std::cout << pt_3.x << pt_3.y << pt_3.z <<std::endl;
 
-	printf(" Matrix temp: \n");
-	for( int i = 0; i < temp.rows; i++ ) {
-	         for( int j = 0; j < temp.cols; j++ ) {
-	              // Observe the type used in the template
-	              printf( " %f  ", temp.at<double>(i,j) );
-	         }
-	         printf("\n");
-	}
+//	printf(" Matrix temp: \n");
+//	for( int i = 0; i < temp.rows; i++ ) {
+//	         for( int j = 0; j < temp.cols; j++ ) {
+//	              // Observe the type used in the template
+//	              printf( " %f  ", temp.at<double>(i,j) );
+//	         }
+//	         printf("\n");
+//	}
 	double d=1.0;
 	double D=cv::determinant(temp);
-	std::cout << "Determinant:" << D << std::endl;
+//	std::cout << "Determinant:" << D << std::endl;
 	double a=(-d/D)*cv::determinant(temp_A);
-	std::cout << "Determinant A:" << cv::determinant(temp_A) << std::endl;
+//	std::cout << "Determinant A:" << cv::determinant(temp_A) << std::endl;
 	double b=(-d/D)*cv::determinant(temp_B);
 	double c=(-d/D)*cv::determinant(temp_C);
 
@@ -239,9 +256,20 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	cv::Point3d plane_eq(a,b,c);
 
 	std::cout << "Values: "<< plane_eq.x <<'\t'<< plane_eq.y <<'\t'<< plane_eq.z << std::endl;
+	int temp_pixnum = px(320, 240);
+	cloudCache->points[temp_pixnum].z;
+	double x_temp = (double) cloudCache->points[temp_pixnum].x;
+	double y_temp = (double) cloudCache->points[temp_pixnum].y;
+	double z_temp= (double)cloudCache->points[temp_pixnum].z;
 
+	std::cout << "center XYZ: "<<x_temp<< '\t'<<y_temp<< '\t'<<z_temp<< std::endl;
+	std::cout << "error: " << fabs(1.0+x_temp*plane_eq.x+y_temp*plane_eq.y+z_temp*plane_eq.z) << std::endl;
 
 	int plane_count=0;
+
+
+
+
 
 	if (cloudCache != NULL && cloudCache->points.size() == 307200) {
 			for (int y = 0; y < 480; y++) {
@@ -252,14 +280,19 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 					double y_temp= (double)cloudCache->points[pixnum].y;
 					double z_temp= (double)cloudCache->points[pixnum].z;
 
+					if ((abs(pt_1_x-x)<10 && abs(pt_1_y-y)<10) ||
+						(abs(pt_2_x-x)<10 && abs(pt_2_y-y)<10) ||
+						(abs(pt_3_x-x)<10 && abs(pt_3_y-y)<10)  ){
+
+						cv_ptr->image.data[3 * pixnum + 0] = 0;
+						cv_ptr->image.data[3 * pixnum + 1] = 255;
+						cv_ptr->image.data[3 * pixnum + 2] = 0;
 
 
-
-
-
+					}
 
 					cv::Point3d current_point(x_temp,y_temp,z_temp);
-
+					// PAINTS INVALID VALUES AS BLUE
 					if (isnan(cloudCache->points[pixnum].z)) {
 										cv_ptr->image.data[3 * pixnum + 0] = 255;
 										cv_ptr->image.data[3 * pixnum + 1] = 0;
@@ -278,7 +311,7 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	//							<< plane_eq.z << std::endl;
 	//
 	//				}
-					if(fabs(1.0+current_point.dot(plane_eq))<0.01){
+					if(fabs(1.0+current_point.dot(plane_eq))<error_allowed){
 //						cv_ptr->image.data[3 * pixnum + 0] = 0;
 //						cv_ptr->image.data[3 * pixnum + 1] = 0;
 //						cv_ptr->image.data[3 * pixnum + 2] = 255;
@@ -306,20 +339,28 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 				double y_temp= (double)cloudCache->points[pixnum].y;
 				double z_temp= (double)cloudCache->points[pixnum].z;
 
+//				if (x==539 && y==379){
+//
+//					std::cout << "\nX:" << cloudCache->points[pixnum].x <<
+//							"\tY:" << cloudCache->points[pixnum].y <<
+//							"\tZ:" << cloudCache->points[pixnum].z << std::endl;
+//
+//				}
+
 				cv::Point3d current_point(x_temp,y_temp,z_temp);
 
-				if (isnan(cloudCache->points[pixnum].z)) {
-									cv_ptr->image.data[3 * pixnum + 0] = 255;
-									cv_ptr->image.data[3 * pixnum + 1] = 0;
-									cv_ptr->image.data[3 * pixnum + 2] = 0;
-									continue;
-								}
+//				if (isnan(cloudCache->points[pixnum].z)) {
+//									cv_ptr->image.data[3 * pixnum + 0] = 255;
+//									cv_ptr->image.data[3 * pixnum + 1] = 0;
+//									cv_ptr->image.data[3 * pixnum + 2] = 0;
+//									continue;
+//								}
 				if(fabs(x_temp)>1000.0 || fabs(y_temp)>1000.0 || fabs(z_temp)>1000.0){
 										continue;
 									}
-									if(fabs(x_temp)<0.1 || fabs(y_temp)<0.1 || fabs(z_temp)<0.1){
-										continue;
-									}
+//									if(fabs(x_temp)<0.1 || fabs(y_temp)<0.1 || fabs(z_temp)<0.1){
+//										continue;
+//									}
 									if(isnan(x_temp) || isnan(y_temp) || isnan(z_temp) ){
 										continue;
 									}
@@ -336,15 +377,16 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 //
 //				}
 				if (rand() % 19000 + 1 < 2) {
-				std::cout << current_point.x << ", " << current_point.y
-				<< ", " << current_point.z << std::endl;
-				std::cout << "Current plane:" << std::endl;
-				std::cout << plane_eq.x << ", " << plane_eq.y << ", "
-				<< plane_eq.z << std::endl;
-				std::cout << "Dot product plus one: " << 1.0+current_point.dot(plane_eq) << std::endl;
+//				std::cout << "Current point:" << std::endl;
+//				std::cout << current_point.x << ", " << current_point.y
+//				<< ", " << current_point.z << std::endl;
+//				std::cout << "Current plane:" << std::endl;
+//				std::cout << plane_eq.x << ", " << plane_eq.y << ", "
+//				<< plane_eq.z << std::endl;
+//				std::cout << "Dot product plus one: " << 1.0+current_point.dot(plane_eq) << std::endl;
 				}
 
-				if(fabs(1.0+current_point.dot(plane_eq))<0.05){
+				if(fabs(1.0+current_point.dot(plane_eq))<error_allowed){
 					cv_ptr->image.data[3 * pixnum + 0] = 0;
 					cv_ptr->image.data[3 * pixnum + 1] = 0;
 					cv_ptr->image.data[3 * pixnum + 2] = 255;
