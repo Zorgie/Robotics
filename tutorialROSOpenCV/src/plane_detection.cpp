@@ -16,9 +16,7 @@
 
 namespace enc = sensor_msgs::image_encodings;
 
-double error_allowed =0.01;
-pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-vector<pcl::PointIndices> PointIndicesVector;
+double error_allowed =0.03;
 
 static const char WINDOW[] = "Original Window";
 static const char WINDOW2[] = "Process Window";
@@ -84,13 +82,6 @@ int px(int x, int y) {
 	return y * 640 + x;
 }
 
-int inv_px_x(int k) {
-	return 	k%640;
-}
-int inv_px_y(int k) {
-	return ((int)k)/((int)640);
-}
-
 void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	using namespace cv;
 	const cv_bridge::CvImagePtr cv_ptr = ic.getImage(msg);
@@ -107,8 +98,8 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	 /* initialize random seed: */
 	 srand (time(NULL));
 	 int rand_pt_1, rand_pt_2, rand_pt_3;
-	 
-	 
+
+
 //	 double m[3][3] = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
 //	 cv::Mat M = cv::Mat(3, 3, CV_64F, m);
 
@@ -264,15 +255,15 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 
 	cv::Point3d plane_eq(a,b,c);
 
-//	std::cout << "Values: "<< plane_eq.x <<'\t'<< plane_eq.y <<'\t'<< plane_eq.z << std::endl;
+	std::cout << "Values: "<< plane_eq.x <<'\t'<< plane_eq.y <<'\t'<< plane_eq.z << std::endl;
 	int temp_pixnum = px(320, 240);
 	cloudCache->points[temp_pixnum].z;
 	double x_temp = (double) cloudCache->points[temp_pixnum].x;
 	double y_temp = (double) cloudCache->points[temp_pixnum].y;
 	double z_temp= (double)cloudCache->points[temp_pixnum].z;
 
-//	std::cout << "center XYZ: "<<x_temp<< '\t'<<y_temp<< '\t'<<z_temp<< std::endl;
-//	std::cout << "error: " << fabs(1.0+x_temp*plane_eq.x+y_temp*plane_eq.y+z_temp*plane_eq.z) << std::endl;
+	std::cout << "center XYZ: "<<x_temp<< '\t'<<y_temp<< '\t'<<z_temp<< std::endl;
+	std::cout << "error: " << fabs(1.0+x_temp*plane_eq.x+y_temp*plane_eq.y+z_temp*plane_eq.z) << std::endl;
 
 	int plane_count=0;
 
@@ -303,9 +294,9 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 					cv::Point3d current_point(x_temp,y_temp,z_temp);
 					// PAINTS INVALID VALUES AS BLUE
 					if (isnan(cloudCache->points[pixnum].z)) {
-									//	cv_ptr->image.data[3 * pixnum + 0] = 255;
-									//	cv_ptr->image.data[3 * pixnum + 1] = 0;
-									//	cv_ptr->image.data[3 * pixnum + 2] = 0;
+										cv_ptr->image.data[3 * pixnum + 0] = 255;
+										cv_ptr->image.data[3 * pixnum + 1] = 0;
+										cv_ptr->image.data[3 * pixnum + 2] = 0;
 										continue;
 									}
 
@@ -396,10 +387,9 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 				}
 
 				if(fabs(1.0+current_point.dot(plane_eq))<error_allowed){
-					// PRINT PLANE FOUND
-//					cv_ptr->image.data[3 * pixnum + 0] = 0;
-//					cv_ptr->image.data[3 * pixnum + 1] = 0;
-//					cv_ptr->image.data[3 * pixnum + 2] = 255;
+					cv_ptr->image.data[3 * pixnum + 0] = 0;
+					cv_ptr->image.data[3 * pixnum + 1] = 0;
+					cv_ptr->image.data[3 * pixnum + 2] = 255;
 				}
 
 //				cv::Point3d current_point(a,b,c);
@@ -411,40 +401,6 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 			}
 		}
 	}
-	
-	for (size_t i = 0; i < inliers->indices.size(); ++i) {
-		cv_ptr->image.data[3 * inliers->indices[i] + 0] = 0;
-		cv_ptr->image.data[3 * inliers->indices[i] + 1] = 0;
-		cv_ptr->image.data[3 * inliers->indices[i] + 2] = 255;
-	}
-	
-	
-	int terminate=PointIndicesVector.size();
-	
-	 for (int plane_points = 0; plane_points < terminate; plane_points++) {
-	
-		pcl::PointIndices good_inliers;	
-		good_inliers=PointIndicesVector.back();
-		PointIndicesVector.pop_back();
-		int B,G,R;
-		if (plane_points==0){
-			B=255;G=0;R=0;
-		}
-		if (plane_points==1){
-					B=0;G=255;R=0;
-				}
-		if (plane_points==2){
-					B=0;G=0;R=255;
-				}
-		
-		for (size_t i = 0; i < good_inliers.indices.size (); ++i){
-//			cv_ptr->image.data[3 * good_inliers.indices[i] + 0] = B;
-//			cv_ptr->image.data[3 * good_inliers.indices[i] + 1] = G;
-//			cv_ptr->image.data[3 * good_inliers.indices[i] + 2] = R;
-		}
-	
-	 }
-
 //	std::cout << pt_1.x << ", " << pt_1.y << ", " << pt_1.z<< std::endl;
 //	std::cout << pt_2.x << ", " << pt_2.y << ", " << pt_2.z<< std::endl;
 //	std::cout << pt_1.dot(pt_2) << std::endl;
@@ -453,8 +409,8 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 
 	for (int i = 0; i < lines.size(); i++) {
 		Vec4i v = lines[i];
-		//line(cv_ptr->image, Point(v[0], v[1]), Point(v[2], v[3]),
-				//Scalar(0, 255, 0), 3, 8);
+		line(cv_ptr->image, Point(v[0], v[1]), Point(v[2], v[3]),
+				Scalar(0, 255, 0), 3, 8);
 	}
 	cv::imshow(WINDOW, cv_ptr->image);
 	//cv::imshow(WINDOW2, originalImage);
@@ -470,78 +426,6 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 		delete (cloudCache);
 	}
 	cloudCache = new PointCloud<PointXYZ>(cloud);
-	
-	  bool run_me=true;
-	  int iteration=0;
-	  
-	  std::cerr << "\n\n\nNEW FRAME\n\n" << std::endl;
-	  
-	  while (run_me){
-	  iteration++;
-	  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-//	  pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-	    
-	    
-	  
-	  // Create the segmentation object
-	  pcl::SACSegmentation<pcl::PointXYZ> seg;
-	  // Optional
-	  seg.setOptimizeCoefficients (true);
-	  // Mandatory
-	  seg.setModelType (pcl::SACMODEL_PLANE);
-	  seg.setMethodType (pcl::SAC_RANSAC);
-	  seg.setDistanceThreshold (error_allowed);
-
-	  seg.setInputCloud (cloud.makeShared ());
-	  seg.segment (*inliers, *coefficients);
-
-	  //PointIndicesVector.push_back(*inliers);
-	  
-	  pcl::PointIndices good_inliers;
-	  good_inliers=*inliers;
-	  PointIndicesVector.push_back(good_inliers);
-	  
-//	  for (int to_eliminate = 0; to_eliminate < good_inliers.indices.size(); to_eliminate++) {
-//		  cloud.points[to_eliminate].x=0.0;
-//		  cloud.points[to_eliminate].y=0.0;
-//		  cloud.points[to_eliminate].z=0.0;
-//	  }
-	  
-	  
-	  
-	  std::cerr << "\n\n\nNumber of indexes:" << inliers->indices.size() << std::endl;
-	  if (inliers->indices.size () == 0)
-	  {
-		  
-	    PCL_ERROR ("Could not estimate a planar model for the given dataset.");
-	    return;
-	  }
-
-//	  std::cerr << "Model coefficients: " << coefficients->values[0] << " " 
-//	                                      << coefficients->values[1] << " "
-//	                                      << coefficients->values[2] << " " 
-//	                                      << coefficients->values[3] << std::endl;
-	  std::cerr << "Model coefficients (Rui form): " << coefficients->values[0]/coefficients->values[3] << " " 
-	  	                                      << coefficients->values[1]/coefficients->values[3] << " "
-	  	                                      << coefficients->values[2]/coefficients->values[3] << " " 
-	  	                                      << "1" << std::endl;
-	  
-	  if (iteration==1){
-		  run_me=false;}
-	  
-	  
-	  }
-//
-//	  std::cerr << "Model inliers: " << inliers->indices.size () << std::endl;
-//	  for (size_t i = 0; i < inliers->indices.size (); ++i)
-//	    std::cerr << inliers->indices[i] << "    " << cloud.points[inliers->indices[i]].x << " "
-//	                                               << cloud.points[inliers->indices[i]].y << " "
-//	                                               << cloud.points[inliers->indices[i]].z << std::endl;
-
-	
-	
-	
-	
 	/*
 	 float xMin = 0, xMax = 0;
 	 for(int i=0; i<cloud.points.size(); i++){
