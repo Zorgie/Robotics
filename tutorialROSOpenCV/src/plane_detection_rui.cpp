@@ -16,8 +16,8 @@
 
 namespace enc = sensor_msgs::image_encodings;
 
-double error_allowed =0.01;
-pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+double error_allowed =0.03;
+//pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
 vector<pcl::PointIndices> PointIndicesVector;
 
 static const char WINDOW[] = "Original Window";
@@ -412,11 +412,11 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 		}
 	}
 	
-	for (size_t i = 0; i < inliers->indices.size(); ++i) {
-		cv_ptr->image.data[3 * inliers->indices[i] + 0] = 0;
-		cv_ptr->image.data[3 * inliers->indices[i] + 1] = 0;
-		cv_ptr->image.data[3 * inliers->indices[i] + 2] = 255;
-	}
+//	for (size_t i = 0; i < inliers->indices.size(); ++i) {
+//		cv_ptr->image.data[3 * inliers->indices[i] + 0] = 0;
+//		cv_ptr->image.data[3 * inliers->indices[i] + 1] = 0;
+//		cv_ptr->image.data[3 * inliers->indices[i] + 2] = 255;
+//	}
 	
 	
 	int terminate=PointIndicesVector.size();
@@ -436,11 +436,14 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 		if (plane_points==2){
 					B=0;G=0;R=255;
 				}
+		if (plane_points==3){
+							B=120;G=120;R=120;
+						}
 		
 		for (size_t i = 0; i < good_inliers.indices.size (); ++i){
-//			cv_ptr->image.data[3 * good_inliers.indices[i] + 0] = B;
-//			cv_ptr->image.data[3 * good_inliers.indices[i] + 1] = G;
-//			cv_ptr->image.data[3 * good_inliers.indices[i] + 2] = R;
+			cv_ptr->image.data[3 * good_inliers.indices[i] + 0] = B;
+			cv_ptr->image.data[3 * good_inliers.indices[i] + 1] = G;
+			cv_ptr->image.data[3 * good_inliers.indices[i] + 2] = R;
 		}
 	
 	 }
@@ -476,10 +479,12 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 	  
 	  std::cerr << "\n\n\nNEW FRAME\n\n" << std::endl;
 	  
+	  PointIndicesVector.clear();
+	  
 	  while (run_me){
 	  iteration++;
 	  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-//	  pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+	  pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
 	    
 	    
 	  
@@ -495,27 +500,39 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 	  seg.setInputCloud (cloud.makeShared ());
 	  seg.segment (*inliers, *coefficients);
 
+	  
+	  std::cerr << "\n\n\nNumber of indexes:" << inliers->indices.size() << std::endl;
+	  	  if (inliers->indices.size () == 0)
+	  	  {
+	  		  
+	  	    PCL_ERROR ("Could not estimate a planar model for the given dataset.");
+	  	    iteration=4;
+	  	  }
+	  	  else{
+
 	  //PointIndicesVector.push_back(*inliers);
 	  
 	  pcl::PointIndices good_inliers;
 	  good_inliers=*inliers;
 	  PointIndicesVector.push_back(good_inliers);
 	  
-//	  for (int to_eliminate = 0; to_eliminate < good_inliers.indices.size(); to_eliminate++) {
-//		  cloud.points[to_eliminate].x=0.0;
-//		  cloud.points[to_eliminate].y=0.0;
-//		  cloud.points[to_eliminate].z=0.0;
-//	  }
+	    
 	  
-	  
-	  
-	  std::cerr << "\n\n\nNumber of indexes:" << inliers->indices.size() << std::endl;
-	  if (inliers->indices.size () == 0)
-	  {
-		  
-	    PCL_ERROR ("Could not estimate a planar model for the given dataset.");
-	    return;
+	  for (int to_eliminate = 0; to_eliminate < good_inliers.indices.size(); to_eliminate=to_eliminate+1) {
+		  cloud.points[good_inliers.indices[to_eliminate]].x=0.0/0.0;
+		  cloud.points[good_inliers.indices[to_eliminate]].y=0.0/0.0;
+		  cloud.points[good_inliers.indices[to_eliminate]].z=0.0/0.0;
 	  }
+	  
+	  
+	  
+//	  std::cerr << "\n\n\nNumber of indexes:" << inliers->indices.size() << std::endl;
+//	  if (inliers->indices.size () == 0)
+//	  {
+//		  
+//	    PCL_ERROR ("Could not estimate a planar model for the given dataset.");
+//	    iteration=4;
+//	  }
 
 //	  std::cerr << "Model coefficients: " << coefficients->values[0] << " " 
 //	                                      << coefficients->values[1] << " "
@@ -526,7 +543,9 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 	  	                                      << coefficients->values[2]/coefficients->values[3] << " " 
 	  	                                      << "1" << std::endl;
 	  
-	  if (iteration==1){
+	  	  }
+	  
+	  if (iteration==4){
 		  run_me=false;}
 	  
 	  
