@@ -22,179 +22,109 @@
 
 using namespace cv;
 
-namespace enc = sensor_msgs::image_encodings;
-
-static const char WINDOW[] = "Original Window";
-static const char WINDOW2[] = "Process Window";
-image_transport::Publisher image_pub_;
 ImageConverter ic;
-pcl::PointCloud<pcl::PointXYZ>* cloudCache = NULL;
-
-cv::Mat findRed(cv::Mat imgHSV) {
-	cv::Mat imgThresh = cvCreateImage(cvSize(640, 480), IPL_DEPTH_8U, 1);
-	inRange(imgHSV, cv::Scalar(0, 0, 128), cv::Scalar(70, 90, 255), imgThresh);
-	return imgThresh;
-}
-
-cv::Mat findYellow(cv::Mat imgHSV) {
-	cv::Mat imgThresh = cvCreateImage(cvSize(640, 480), IPL_DEPTH_8U, 1);
-	inRange(imgHSV, cv::Scalar(0, 180, 154), cv::Scalar(90, 255, 255),
-			imgThresh);
-	return imgThresh;
-}
-
-int count(cv::Mat image) {
-	int count = 0;
-	for (int x = 0; x < image.rows; x++) {
-		for (int y = 0; y < image.cols; y++) {
-			int k = x * image.cols + y;
-			if (image.data[k] == 255) {
-				count++;
-			}
-		}
-	}
-	return count;
-}
-
-void imgCallback(const sensor_msgs::ImageConstPtr& msg);
-
-void depthCallback(const sensor_msgs::PointCloud2& pcl);
 
 int main(int argc, char** argv) {
-	ros::init(argc, argv, "image_converter");
-	ros::NodeHandle nh_;
-
-	ros::Subscriber sub = nh_.subscribe("/camera/rgb/image_color", 1, &imgCallback);
-	ros::Subscriber dSub = nh_.subscribe("/camera/depth_registered/points", 1, &depthCallback);
-
-	int takePhoto = 0;
-	nh_.setParam("/takePhoto",0);
-
-
-
 
 	double timeStampStart = (double)getTickCount();
 
-	Mat img1 = imread("tiger2.jpeg",CV_LOAD_IMAGE_GRAYSCALE);
-	Mat img2 = imread("tiger3.jpeg",CV_LOAD_IMAGE_GRAYSCALE);
-
-	//detecting keypoints
-	SurfFeatureDetector detector(400);
-	vector<KeyPoint> keypoints1,keypoints2;
-	detector.detect(img1,keypoints1);
-	detector.detect(img2,keypoints2);
-
-	//computing descriptors
-	SurfDescriptorExtractor extractor;
-	Mat descriptors1, descriptors2;
-	extractor.compute(img1,keypoints1,descriptors1);
-	extractor.compute(img2,keypoints2,descriptors2);
-
-	//matching descriptors
-	//Should be BFMatcher now, its outdated
-	/*BruteForceMatcher<L2<float> > matcher;
-	std::vector<int> matches;
-	matcher.add(descriptors2);
-	matcher.match(descriptors1,matches,0);
-*/
-
-	BFMatcher matcher(NORM_L2);
-	std::vector<DMatch> matches;
-	matcher.match(descriptors1,descriptors2,matches);
+	Mat objectMat = imread("tiger4c.jpeg",CV_LOAD_IMAGE_GRAYSCALE);
+	Mat sceneMat = imread("tigertest3.jpeg",CV_LOAD_IMAGE_GRAYSCALE);
 
 
-	Mat img_matches;
-	drawMatches(img1,keypoints1,img2,keypoints2,matches,img_matches);
-	imshow("Matches",img_matches);
 
-	cout << "Number of matches " << matches.size() << endl;
-	cout << "First match distance: " << matches.front().distance << endl;
-	cout << "Second match distance: " << matches[1].distance << endl;
+	float nndrRation = 0.8f;
+	vector<KeyPoint> keypoints0,keypointsS;
+	Mat descriptors_object, descriptors_scene;
 
-	cout << "Image Index: " << matches[0].imgIdx << endl;
-	cout << "Image Index: " << matches[15].imgIdx << endl;
+	SurfFeatureDetector surf(500);
 
-	cout << "D1 cols: " << descriptors1.cols << endl;
-	cout << "D1 rows: " << descriptors1.rows << endl;
-
-	double overallDistance = 0;
-	for(int i = 0;i < matches.size();i++){
-		cout << "distance: " << matches[i].distance << endl;
-		overallDistance += matches[i].distance;
+	surf.detect(sceneMat,keypointsS);
+	if(keypointsS.size() < 7){
+		cout << "TOO FEW KEYPOINTS SCENE " << endl;
+		return 0;
 	}
-	cout << "Overall distance: " << overallDistance << endl;
+	surf.detect(objectMat,keypoints0);
+	if(keypoints0.size() < 7){
+			cout << "TOO FEW KEYPOINTS OBJECT " << endl;
+			return 0;
+	}
 
-	double timePassed = ((double)getTickCount() - timeStampStart)/getTickFrequency();
-	cout << "time passed: " << timePassed << endl;
+
+	SurfDescriptorExtractor extractor;
+	extractor.compute(sceneMat,keypointsS,descriptors_scene);
+	extractor.compute(objectMat,keypoints0,descriptors_object);
+
+
+
+	//FlannBasedMatcher matcher;
+	BFMatcher matcher(NORM_L1);
+
+	std::vector<vector<DMatch> > matches;
+	matcher.knnMatch(descriptors_object,descriptors_scene,matches,2);
+	vector<DMatch> good_matches;
+	good_matches.reserve(matches.size());
+
+	for(size_t i = 0;i < matches.size();i++){
+		if(matches[i].size() < 2)
+			continue;
+		const DMatch &m1 = matches[i][0];
+		const DMatch &m2 = matches[i][1];
+
+		if(m1.distance <= nndrRation * m2.distance)
+			good_matches.push_back(m1);
+	}
+
+
+	if(good_matches.size() >= 1){
+		cout << "OBJ FOUND" << endl;
+		std::vector<Point2f> obj;
+		std::vector<Point2f> scene;
+
+		for( unsigned int i = 0; i < good_matches.size(); i++ )
+	    {
+	        //-- Get the keypoints from the good matches
+	        obj.push_back( keypoints0[ good_matches[i].queryIdx ].pt );
+	        scene.push_back( keypointsS[ good_matches[i].trainIdx ].pt );
+	    }
+
+		Mat H = findHomography( obj, scene, CV_RANSAC );
+
+
+	std::vector<Point2f> obj_corners(4);
+	obj_corners[0] = cvPoint(0, 0);
+	obj_corners[1] = cvPoint(objectMat.cols, 0);
+	obj_corners[2] = cvPoint(objectMat.cols, objectMat.rows);
+	obj_corners[3] = cvPoint(0, objectMat.rows);
+	std::vector<Point2f> scene_corners(4);
+
+	perspectiveTransform(obj_corners, scene_corners, H);
+
+		line(sceneMat, scene_corners[0], scene_corners[1], Scalar(255, 255, 0), 2); //TOP line
+		line(sceneMat, scene_corners[1], scene_corners[2], Scalar(255, 255, 0), 2);
+		line(sceneMat, scene_corners[2], scene_corners[3], Scalar(255, 255, 0), 2);
+		line(sceneMat, scene_corners[3], scene_corners[0], Scalar(255, 255, 0), 2);
+
+
+		Mat x;
+		  drawMatches( objectMat, keypoints0, sceneMat, keypointsS,
+		               good_matches, x, Scalar::all(-1), Scalar::all(-1),
+		               vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+
+		imshow("result",x);
+
+
+	}
+	else
+	{
+		cout << "Obj not found" << endl;
+	}
+
+	 cout << "Matches found: " << matches.size() << endl;
+	 cout << "Good matches found: " << good_matches.size() << endl;
+
 
 	waitKey(0);
-
-
-	cv::namedWindow(WINDOW);
-	cv::namedWindow(WINDOW2);
-	NavMap navmap;
-	navmap.addNode(0, 0, 0);
-	navmap.addNode(1, 1, 0);
-	navmap.addWall(0, 0, 0, 100);
-	Point2f p;
-	printf("%d\n", navmap.intersectsWithWall(-10, -10, -10, 10, p));
-	ros::spin();
 	return 0;
 }
 
-int px(int x, int y) {
-	return y * 640 + x;
-}
-
-void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
-	using namespace cv;
-	const cv_bridge::CvImagePtr cv_ptr = ic.getImage(msg);
-	Mat originalImage = cv_ptr->image.clone();
-
-	// Retrieve the hough lines before messing up the image.
-	cv::GaussianBlur(cv_ptr->image, cv_ptr->image, cv::Size(3, 3), 3, 1);
-	cv::vector<cv::Vec4i> lines;
-	cv::Mat lineTransform = ic.getHoughLines(cv_ptr->image, lines);
-
-	// Bluring and thresholding
-	// Show original and processed image
-
-	if (cloudCache != NULL && cloudCache->points.size() == 307200) {
-		for (int y = 0; y < 480; y++) {
-			for (int x = 0; x < 640; x++) {
-				int pixnum = px(x, y);
-				if (isnan(cloudCache->points[pixnum].z)) {
-					cv_ptr->image.data[3 * pixnum + 0] = 0;
-					cv_ptr->image.data[3 * pixnum + 1] = 0;
-					cv_ptr->image.data[3 * pixnum + 2] = 0;
-				}
-			}
-		}
-	}
-	for (int i = 0; i < lines.size(); i++) {
-		Vec4i v = lines[i];
-		line(cv_ptr->image, Point(v[0], v[1]), Point(v[2], v[3]),
-				Scalar(0, 255, 0), 3, 8);
-	}
-	cv::imshow(WINDOW, cv_ptr->image);
-	cv::imshow(WINDOW2, originalImage);
-	cv::waitKey(3);
-}
-
-void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
-	using namespace pcl;
-	using namespace std;
-	PointCloud<PointXYZ> cloud;
-	fromROSMsg(pcloud, cloud);
-	if (cloudCache != NULL) {
-		delete (cloudCache);
-	}
-	cloudCache = new PointCloud<PointXYZ>(cloud);
-	/*
-	 float xMin = 0, xMax = 0;
-	 for(int i=0; i<cloud.points.size(); i++){
-	 xMin = min(xMin, cloud.points[i].x);
-	 xMax = max(xMax, cloud.points[i].x);
-	 }
-	 printf("%.2f, %.2f\n", xMin, xMax);*/
-}
