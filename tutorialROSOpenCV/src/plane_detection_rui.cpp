@@ -477,28 +477,52 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 	  bool run_me=true;
 	  int iteration=0;
 	  
-	  std::cerr << "\n\n\nNEW FRAME\n\n" << std::endl;
+	  std::cerr << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNEW FRAME\n\n" << std::endl;
+	  
+	  
+//	  double t = (double)getTickCount();
+//	  // do something ...
+//	  t = ((double)getTickCount() - t)/getTickFrequency();
+//  	  cout << "Times passed in seconds: " << t << endl;
+	  
 	  
 	  PointIndicesVector.clear();
 	  
 	  while (run_me){
 	  iteration++;
+	  
+	  double t = (double)getTickCount();
+	  double t_total = (double)getTickCount();
+	  
 	  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
 	  pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
 	    
 	    
-	  
-	  // Create the segmentation object
+	 	  // Create the segmentation object
 	  pcl::SACSegmentation<pcl::PointXYZ> seg;
 	  // Optional
 	  seg.setOptimizeCoefficients (true);
 	  // Mandatory
 	  seg.setModelType (pcl::SACMODEL_PLANE);
-	  seg.setMethodType (pcl::SAC_RANSAC);
+	  seg.setMethodType (pcl::SAC_RANSAC);//SAC_RANSAC     PROSAC has acceptable results.
+//	  const static int SAC_RANSAC = 0;
+//	 47  const static int SAC_LMEDS = 1;
+//	 48  const static int SAC_MSAC = 2;
+//	 49  const static int SAC_RRANSAC = 3;
+//	 50  const static int SAC_RMSAC = 4;
+//	 51  const static int SAC_MLESAC = 5;
+//	 52  const static int SAC_PROSAC = 6;
 	  seg.setDistanceThreshold (error_allowed);
+	  std::cout << seg.getMaxIterations() << std::endl;
+  	  seg.setMaxIterations(50);
+  	  std::cout << seg.getMaxIterations() << std::endl;
+	  
 
 	  seg.setInputCloud (cloud.makeShared ());
 	  seg.segment (*inliers, *coefficients);
+	  
+	  t = ((double)getTickCount() - t)/getTickFrequency();
+	  cout << "Times passed in seconds for RANSAC: " << t << endl;
 
 	  
 	  std::cerr << "\n\n\nNumber of indexes:" << inliers->indices.size() << std::endl;
@@ -516,7 +540,7 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 	  good_inliers=*inliers;
 	  PointIndicesVector.push_back(good_inliers);
 	  
-	    
+	  t = (double)getTickCount();
 	  
 	  for (int to_eliminate = 0; to_eliminate < good_inliers.indices.size(); to_eliminate=to_eliminate+1) {
 		  cloud.points[good_inliers.indices[to_eliminate]].x=0.0/0.0;
@@ -525,6 +549,13 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 	  }
 	  
 	  
+	  t = ((double)getTickCount() - t)/getTickFrequency();
+	 	  cout << "Times passed in seconds for NANing: " << t << endl;
+	 	 t_total = ((double)getTickCount() - t_total)/getTickFrequency();
+	 	 	 	  cout << "Times passed in seconds for ALL: " << t_total << endl;  
+	 	  
+	 	  
+	 	  
 	  
 //	  std::cerr << "\n\n\nNumber of indexes:" << inliers->indices.size() << std::endl;
 //	  if (inliers->indices.size () == 0)

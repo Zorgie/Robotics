@@ -39,4 +39,5 @@ rosbuild_add_executable(plane_detection_rui src/plane_detection_rui.cpp src/NavM
 #rosbuild_add_executable(basic_threshold src/basic_threshold.cpp src/NavMap.cpp src/ImageConverter.cpp)
 #rosbuild_add_executable(histogram src/histogram.cpp src/NavMap.cpp src/ImageConverter.cpp)
 #rosbuild(plane_detection src/plane_detection)
-
+#rosbuild_add_executable(plane_detection_pcl src/plane_detection_pcl.cpp src/NavMap.cpp src/ImageConverter.cpp)
+#rosbuild_add_executable(plane_detection_sctrach src/plane_detection_scratch.cpp src/ImageConverter.cpp)
