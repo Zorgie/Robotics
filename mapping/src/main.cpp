@@ -20,6 +20,7 @@ namespace enc = sensor_msgs::image_encodings;
 
 static const char WINDOW[] = "Original Window";
 static const char WINDOW2[] = "Process Window";
+static const char WINDOW3[] = "Plane Window";
 image_transport::Publisher image_pub_;
 ImageConverter ic;
 pcl::PointCloud<pcl::PointXYZ>* cloudCache = NULL;
@@ -68,6 +69,7 @@ int main(int argc, char** argv) {
 			&depthCallback);
 	cv::namedWindow(WINDOW);
 	cv::namedWindow(WINDOW2);
+	cv::namedWindow(WINDOW3);
 
 	ros::spin();
 	return 0;
@@ -87,6 +89,7 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 
 	const cv_bridge::CvImagePtr cv_ptr = ic.getImage(msg);
 	Mat originalImage = cv_ptr->image.clone();
+	Mat planeImage = cv_ptr->image.clone();
 
 	// Retrieve the hough lines before messing up the image.
 	cv::GaussianBlur(cv_ptr->image, cv_ptr->image, cv::Size(3, 3), 3, 1);
@@ -99,19 +102,12 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	if (cloudCache == 0)
 		return;
 
-	vector<Vec4i> newLines;
-	if (lines.size() >= 1) {
-		newLines.push_back(lines[0]);
-	} else {
-		return;
-	}
-	Scalar colors[] = { Scalar(100, 0, 0), Scalar(100, 100, 0), Scalar(0, 100, 0),
-			Scalar(0, 0, 100), Scalar(0, 100, 100), Scalar(100,100,100) };
+	Scalar colors[] = { Scalar(100, 0, 0), Scalar(100, 100, 0), Scalar(0, 100,
+			0), Scalar(0, 0, 100), Scalar(0, 100, 100), Scalar(100, 100, 100),
+			Scalar(200,0,0), Scalar(0,200,0), Scalar(0,0,200), Scalar(200,200,0), Scalar(200,0,200)};
 	vector<Point3d> planes = pd.getPlanes(cv_ptr->image, *cloudCache, lines);
 	if (cloudCache != NULL && cloudCache->points.size() == 307200) {
 		PlaneDetector pd;
-		float mindist = 1000000000;
-		float maxdist = -1000000000;
 		for (int y = 0; y < 480; y++) {
 			for (int x = 0; x < 640; x++) {
 				int pixnum = px(x, y);
@@ -121,33 +117,33 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 								cloudCache->points[pixnum].y,
 								cloudCache->points[pixnum].z);
 						float dist = fabs(pd.pointOnPlane(p, planes[j]));
-						if (fabs(dist) < 0.07) {
-							cv_ptr->image.data[3 * pixnum + 0] =
+						if (fabs(dist) < pd.DIST_EPSILON) {
+							planeImage.data[3 * pixnum + 0] =
 									colors[j].val[0];
-							cv_ptr->image.data[3 * pixnum + 1] =
+							planeImage.data[3 * pixnum + 1] =
 									colors[j].val[1];
-							cv_ptr->image.data[3 * pixnum + 2] =
+							planeImage.data[3 * pixnum + 2] =
 									colors[j].val[2];
 						} else {
 						}
 					}
 				} else {
-					cv_ptr->image.data[3 * pixnum + 0] = 0;
-					cv_ptr->image.data[3 * pixnum + 1] = 0;
-					cv_ptr->image.data[3 * pixnum + 2] = 0;
+					planeImage.data[3 * pixnum + 0] = 0;
+					planeImage.data[3 * pixnum + 1] = 0;
+					planeImage.data[3 * pixnum + 2] = 0;
 				}
 			}
 		}
-		printf("\nMindist: %.4f, Maxdist: %.4f\n", mindist, maxdist);
 	}
 
-	for (int i = 0; i < lines.size() && i < 1; i++) {
+	for (int i = 0; i < lines.size() && i < 11; i++) {
 		Vec4i v = lines[i];
 		line(cv_ptr->image, Point(v[0], v[1]), Point(v[2], v[3]),
 				Scalar(0, 255, 0), 3, 8);
 	}
 	cv::imshow(WINDOW, cv_ptr->image);
 	cv::imshow(WINDOW2, originalImage);
+	cv::imshow(WINDOW3, planeImage);
 	cv::waitKey(3);
 }
 

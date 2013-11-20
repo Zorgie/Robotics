@@ -28,6 +28,7 @@ private:
 		return y * 640 + x;
 	}
 public:
+	static const double DIST_EPSILON = 0.05;
 	PlaneDetector();
 	virtual ~PlaneDetector();
 	float pointOnPlane(Point3d point, Point3d plane);
