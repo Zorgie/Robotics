@@ -7,10 +7,7 @@
 
 #include "NavMap.h"
 
-NavMap::NavMap() {/*
- neighbours = map<int, vector<int> >;
- walls = vector<Wall>;
- nodes = vector<Node>;*/
+NavMap::NavMap() {
 }
 
 NavMap::~NavMap() {
@@ -25,7 +22,50 @@ vector<int> NavMap::getNeighbours(int nodeId) {
 }
 
 void NavMap::addWall(int x1, int y1, int x2, int y2) {
-	walls.push_back( { x1, y1, x2, y2 });
+	int snapped;
+	if (x2 - x1 > y2 - y1) {
+		// Horizontal wall
+		snapped = y1 + (y2 - y1) / 2;
+		walls.push_back( { x1, snapped, x2, snapped });
+	} else {
+		// Vertical wall
+		snapped = x1 + (x2 - x1) / 2;
+		walls.push_back( { snapped, y1, snapped, y2 });
+	}
+}
+
+void NavMap::extendWall(int x, int y) {
+	double closest = 100000;
+	int index = -1;
+	int align = -1;
+	Point p(x, y);
+	for (int i = 0; i < walls.size(); i++) {
+		Point w(walls[i].x1, walls[i].y2);
+		if (norm(w - p) < closest) {
+			index = i;
+			align = 1;
+		}
+		w = Point(walls[i].x2, walls[i].y2);
+		if (norm(w - p) < closest) {
+			index = i;
+			align = 2;
+		}
+	}
+	if (closest > 5) {
+		addWall(x, y, x, y);
+		return;
+	}
+	if (align == 1) {
+		if (x - walls[index].x1 > y - walls[index].y1) // Horizontal wall
+			walls[index].x1 = x;
+		else
+			walls[index].y1 = y;
+	} else {
+		if (x - walls[index].x2 > y - walls[index].y2) // Vertical wall
+			walls[index].x2 = x;
+		else
+			walls[index].y2 = y;
+	}
 }
 
 bool NavMap::intersectsWithWall(int x1, int y1, int x2, int y2,
@@ -69,4 +109,21 @@ bool NavMap::intersection(Point2f o1, Point2f p1, Point2f o2, Point2f p2,
 	double t1 = (x.x * d2.y - x.y * d2.x) / cross;
 	r = o1 + d1 * t1;
 	return true;
+}
+
+void NavMap::draw(Mat& img) {
+	Scalar black = (0, 0, 0);
+	Scalar nodeColors[] = { Scalar(255, 0, 0), Scalar(0, 255, 0), Scalar(0, 0,
+			255) };
+	int colorCount = 3;
+	// Drawing walls.
+	for (int i = 0; i < walls.size(); i++) {
+		line(img, Point(walls[i].x1, walls[i].y1),
+				Point(walls[i].x2, walls[i].y2), black, 3, 8);
+	}
+	// Drawing nodes.
+	for (int i = 0; i < nodes.size(); i++) {
+		circle(img, Point(nodes[i].x, nodes[i].y), 5,
+				nodeColors[nodes[i].type % colorCount], 3, 8);
+	}
 }

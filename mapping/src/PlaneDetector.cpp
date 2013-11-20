@@ -47,53 +47,6 @@ bool PlaneDetector::linesMatch(Vec4i& line1, Vec4i& line2) {
 	return false;
 }
 
-Vec4i PlaneDetector::mergeLines(Vec4i& line1, Vec4i& line2) {
-	Vec4i mid;
-	Point2i diffA = Point(line1[0], line1[1]) - Point(line2[0], line2[1]);
-	mid[0] = line1[0] + diffA.x / 2;
-	mid[1] = line1[1] + diffA.y / 2;
-	Point2i diffB = Point(line1[2], line1[3]) - Point(line2[2], line2[3]);
-	mid[2] = line2[2] + diffB.x / 2;
-	mid[3] = line2[3] + diffB.y / 2;
-	cerr << "merged d: " << (norm(diffA) + norm(diffB)) << endl;
-	return mid;
-}
-
-vector<Vec4i> PlaneDetector::mergeLines(vector<Vec4i> lines) {
-	vector<Vec4i> result;
-	vector<int> quantity;
-	for (int i = 0; i < lines.size(); i++) {
-		fixLineCoords(lines[i]);
-		Vec4i from = lines[i];
-		bool match = false;
-		for (int j = 0; j < result.size(); j++) {
-			Vec4i to = result[j];
-			if (linesMatch(from, to)) {
-				match = true;
-				result[j] = mergeLines(from, to);
-				quantity[j] = quantity[j] + 1;
-				break;
-			}
-		}
-		if (!match) {
-			result.push_back(from);
-			quantity.push_back(1);
-		}
-	}
-	if (result.size() == lines.size())
-		return result;
-	else
-		return mergeLines(result);
-	/*
-	 vector<Vec4i> purged;
-	 for (int i = 0; i < result.size(); i++) {
-	 if (quantity[i] >= 2) {
-	 purged.push_back(result[i]);
-	 }
-	 }
-	 return purged;*/
-}
-
 float PlaneDetector::pointOnPlane(Point3d point, Point3d plane) {
 	return point.x * plane.x + point.y * plane.y + point.z * plane.z + 1;
 }

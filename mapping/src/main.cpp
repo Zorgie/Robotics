@@ -62,6 +62,16 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg);
 
 void depthCallback(const sensor_msgs::PointCloud2& pcl);
 
+bool hasRight(int x, int y) {
+	if (x >= 220)
+		return true;
+	return false;
+}
+
+bool hasLeft(int x, int y) {
+	return true;
+}
+
 int main(int argc, char** argv) {
 
 	ros::init(argc, argv, "image_converter");
@@ -73,9 +83,29 @@ int main(int argc, char** argv) {
 	ros::Subscriber dSub = nh_.subscribe("/camera/depth_registered/points", 1,
 			&depthCallback);
 	cv::namedWindow(WINDOW);
-	cv::namedWindow(WINDOW2);
 
-	ros::spin();
+	NavMap nav;
+	double currentX = 200;
+	double currentY = 200;
+	nav.addWall(170, 100, 190, 220);
+	nav.addWall(180, 220, 200, 220);
+	nav.addWall(220, 100, 220, 180);
+	Scalar black = Scalar(0, 0, 0);
+	Mat img(480, 640, CV_8UC3, Scalar(255, 255, 255));
+
+	while (ros::ok()) {
+		currentX += 0.1;
+		int x = currentX;
+		int y = currentY;
+		if (hasLeft(x, y))
+			nav.extendWall(x, y+20);
+		if (hasRight(x, y))
+			nav.extendWall(x, y-20);
+		nav.draw(img);
+		cv::imshow(WINDOW, img);
+		cv::waitKey(3);
+		ros::spinOnce();
+	}
 	return 0;
 }
 
@@ -86,20 +116,6 @@ int px(int x, int y) {
 	if (p >= 640 * 480)
 		return 640 * 480 - 1;
 	return p;
-}
-
-vector<Point3d> crosses(Mat& image, Scalar& fg, Scalar& bg) {
-
-}
-
-void paintItWhite(int xx, int yy, int dist, Mat& image) {
-	for (int x = xx - dist; x <= xx + dist; x++) {
-		for (int y = yy - dist; y <= yy + dist; y++) {
-			image.data[3*px(x, y)] = 255;
-			image.data[3*px(x, y)+1] = 255;
-			image.data[3*px(x, y)+2] = 255;
-		}
-	}
 }
 
 void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
@@ -116,9 +132,9 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 
 	PlaneDetector pd;
 
-	cv::imshow(WINDOW, originalImage);
-	cv::imshow(WINDOW2, modImage);
-	cv::waitKey(3);
+//	cv::imshow(WINDOW, originalImage);
+//	cv::imshow(WINDOW2, modImage);
+//	cv::waitKey(3);
 }
 
 void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
@@ -130,11 +146,4 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 		delete (cloudCache);
 	}
 	cloudCache = new PointCloud<PointXYZ>(cloud);
-	/*
-	 float xMin = 0, xMax = 0;
-	 for(int i=0; i<cloud.points.size(); i++){
-	 xMin = min(xMin, cloud.points[i].x);
-	 xMax = max(xMax, cloud.points[i].x);
-	 }
-	 printf("%.2f, %.2f\n", xMin, xMax);*/
 }
