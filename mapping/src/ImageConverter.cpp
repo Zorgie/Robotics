@@ -20,20 +20,14 @@ int ImageConverter::count(cv::Mat image) {
 	return count;
 }
 
-cv::Mat ImageConverter::getHoughLines(cv::Mat img, cv::vector<cv::Vec4i> &lines) {
+cv::vector<cv::Vec4i> ImageConverter::getHoughLines(cv::Mat img) {
 	using namespace cv;
-	cv::Mat dst, color_dst;
+	cv::Mat dst;
 	Canny(img, dst, 50, 200, 3);
-	cvtColor(dst, color_dst, CV_GRAY2BGR);
-	//vector<Vec4i> lines;
+	vector<Vec4i> lines;
 	HoughLinesP(dst, lines, 1, CV_PI / 180, 80, 30, 10);
 	double maxDist = 0;
-	for (size_t i = 0; i < lines.size(); i++) {
-		Point p1 = Point(lines[i][0], lines[i][1]);
-		Point p2 = Point(lines[i][2], lines[i][3]);
-		line(color_dst, p1, p2, Scalar(0, 0, 255), 3, 8);
-	}
-	return color_dst;
+	return lines;
 }
 
 cv_bridge::CvImagePtr ImageConverter::getImage(

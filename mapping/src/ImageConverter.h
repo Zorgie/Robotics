@@ -32,7 +32,7 @@ public:
 
 	int count(cv::Mat image);
 
-	cv::Mat getHoughLines(cv::Mat img, cv::vector<cv::Vec4i> &lines);
+	cv::vector<cv::Vec4i> getHoughLines(cv::Mat img);
 
 	cv_bridge::CvImagePtr getImage(const sensor_msgs::ImageConstPtr& msg);
 };

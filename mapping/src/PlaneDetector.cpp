@@ -8,12 +8,90 @@
 #include "PlaneDetector.h"
 
 PlaneDetector::PlaneDetector() {
-	// TODO Auto-generated constructor stub
-
 }
 
 PlaneDetector::~PlaneDetector() {
 	// TODO Auto-generated destructor stub
+}
+
+bool PlaneDetector::linesMatch(Vec4i& line1, Vec4i& line2) {
+	if (isHorizontal(line1) != isHorizontal(line2))
+		return false;
+	bool horiz = isHorizontal(line1);
+	if (horiz) {
+		if (!((line2[0] < line1[2] && line2[2] > line1[0])
+				|| (line2[2] > line1[0] && line2[0] < line1[2]))) {
+			return false;
+		}
+	} else {
+		if (!((line2[1] < line1[3] && line2[3] > line1[1])
+				|| (line2[3] > line1[1] && line2[1] < line1[3]))) {
+			return false;
+		}
+	}
+	double slope1 = (double) (line1[3] - line1[1]) / (line1[2] - line1[0]);
+	double slope2 = (double) (line2[3] - line2[1]) / (line2[2] - line2[0]);
+	double maxSlope = max(abs(slope1), abs(slope2));
+	double slope1norm = slope1 / maxSlope;
+	double slope2norm = slope2 / maxSlope;
+	if (abs(slope1norm - slope2norm) > 0.1)
+		return false;
+	double m1 = line1[1] - slope1 * line1[0];
+	double m2 = line2[1] - slope2 * line2[0];
+	if (abs(m2 - m1) < 50) {
+		printf("Matched (%d, %d), (%d, %d) to (%d, %d), (%d, %d)\n", line1[0],
+				line1[1], line1[2], line1[3], line2[0], line2[1], line2[2],
+				line2[3]);
+		return true;
+	}
+	return false;
+}
+
+Vec4i PlaneDetector::mergeLines(Vec4i& line1, Vec4i& line2) {
+	Vec4i mid;
+	Point2i diffA = Point(line1[0], line1[1]) - Point(line2[0], line2[1]);
+	mid[0] = line1[0] + diffA.x / 2;
+	mid[1] = line1[1] + diffA.y / 2;
+	Point2i diffB = Point(line1[2], line1[3]) - Point(line2[2], line2[3]);
+	mid[2] = line2[2] + diffB.x / 2;
+	mid[3] = line2[3] + diffB.y / 2;
+	cerr << "merged d: " << (norm(diffA) + norm(diffB)) << endl;
+	return mid;
+}
+
+vector<Vec4i> PlaneDetector::mergeLines(vector<Vec4i> lines) {
+	vector<Vec4i> result;
+	vector<int> quantity;
+	for (int i = 0; i < lines.size(); i++) {
+		fixLineCoords(lines[i]);
+		Vec4i from = lines[i];
+		bool match = false;
+		for (int j = 0; j < result.size(); j++) {
+			Vec4i to = result[j];
+			if (linesMatch(from, to)) {
+				match = true;
+				result[j] = mergeLines(from, to);
+				quantity[j] = quantity[j] + 1;
+				break;
+			}
+		}
+		if (!match) {
+			result.push_back(from);
+			quantity.push_back(1);
+		}
+	}
+	if (result.size() == lines.size())
+		return result;
+	else
+		return mergeLines(result);
+	/*
+	 vector<Vec4i> purged;
+	 for (int i = 0; i < result.size(); i++) {
+	 if (quantity[i] >= 2) {
+	 purged.push_back(result[i]);
+	 }
+	 }
+	 return purged;*/
 }
 
 float PlaneDetector::pointOnPlane(Point3d point, Point3d plane) {
@@ -34,6 +112,73 @@ Point3d PlaneDetector::depthCloseToPoint(Point2d p, PointCloud<PointXYZ>& pcl,
 		}
 	}
 	return Point3d(-1, -1, -1);
+}
+
+vector<Vec4d> PlaneDetector::getWalls(Mat& rgbImage,
+		PointCloud<PointXYZ>& pcl) {
+	vector<Vec4d> walls;
+	vector<Vec4i> lines = ic.getHoughLines(rgbImage);
+	// Find the front wall.
+	return walls;
+}
+
+bool PlaneDetector::isHorizontal(Vec4i &line) {
+	return abs(line[0] - line[2]) > abs(line[1] - line[3]);
+}
+
+void PlaneDetector::fixLineCoords(Vec4i &line) {
+	if (isHorizontal(line)) {
+		if (line[0] > line[2]) { // Flip if x1 is larger than x2.
+			Point2i temp = Point(line[0], line[1]);
+			line[0] = line[2];
+			line[1] = line[3];
+			line[2] = temp.x;
+			line[3] = temp.y;
+		}
+	} else { // Vertical line
+		if (line[1] > line[3]) { // Flip if y1 is larger than y2.
+			Point2i temp = Point(line[0], line[1]);
+			line[0] = line[2];
+			line[1] = line[3];
+			line[2] = temp.x;
+			line[3] = temp.y;
+		}
+	}
+}
+
+vector<Point2i> PlaneDetector::surroundingDots(Mat& rgbImage,
+		PointCloud<PointXYZ>& pcl, Vec4i line, double distFromStart) {
+	vector<Point2i> result;
+	fixLineCoords(line);
+	Point2i a;
+	Point2i b;
+	distFromStart = min(0.8, distFromStart);
+	distFromStart = max(0.2, distFromStart);
+	for (int j = 0; j < 2; j++) {
+		Point2i diff = b - a;
+		float len = cv::norm(diff);
+		Point2i mid1(a.x + diff.x * (distFromStart - 0.2),
+				a.y + diff.y * (distFromStart - 0.2));
+		Point2i mid2(a.x + diff.x * (distFromStart),
+				a.y + diff.y * (distFromStart));
+		Point2i mid3(a.x + diff.x * (distFromStart + 0.2),
+				a.y + diff.y * (distFromStart + 0.2));
+		Point2i rotated;
+		if (j == 0)
+			rotated = Point2i(-diff.y, diff.x);
+		else
+			rotated = Point2i(diff.y, -diff.x);
+		result.push_back(
+				Point2i(mid1.x + distFromStart * (rotated.x / 5),
+						mid1.y + distFromStart * (rotated.y / 5)));
+		result.push_back(
+				Point2i(mid2.x + distFromStart * (rotated.x / 2),
+						mid2.y + distFromStart * (rotated.y / 2)));
+		result.push_back(
+				Point2i(mid3.x + distFromStart * (rotated.x / 5),
+						mid3.y + distFromStart * (rotated.y / 5)));
+	}
+	return result;
 }
 
 cv::Point3d PlaneDetector::getPlane(vector<Point3d> points) {
@@ -65,99 +210,6 @@ cv::Point3d PlaneDetector::getPlane(vector<Point3d> points) {
 
 	return plane_eq;
 }
-
-/*Point3d PlaneDetector::getPlane(vector<Point3d> coord) {
- Point3d plane;
- if (coord.size() != 3)
- return plane;
- Point3d pt_1 = coord[0];
- Point3d pt_2 = coord[1];
- Point3d pt_3 = coord[2];
- //	cerr << A.x << ", " << A.y << ", " << A.z << endl;
- //
- //	float a = (B.y - A.y) * (C.z - A.z) - (C.y - A.y) * (B.z - A.z);
- //	float b = (B.z - A.z) * (C.x - A.x) - (C.z - A.z) * (B.x - A.x);
- //	float c = (B.x - A.x) * (C.y - A.y) - (C.x - A.x) * (B.y - A.y);
- //	float d = -(a * A.x + b * A.y + c * A.z);
- //	printf("Planevals: %.2f %.2f %.2f %.2f\n",a,b,c,d);
- //	return Point3d(a / d, b / d, c / d);
-
- cv::Mat temp = cv::Mat(3, 3, CV_64F);
-
- temp.at<double>(0, 0) = pt_1.x;
- temp.at<double>(0, 1) = pt_1.y;
- temp.at<double>(0, 2) = pt_1.z;
- temp.at<double>(1, 0) = pt_2.x;
- temp.at<double>(1, 1) = pt_2.y;
- temp.at<double>(1, 2) = pt_2.z;
- temp.at<double>(2, 0) = pt_3.x;
- temp.at<double>(2, 1) = pt_3.y;
- temp.at<double>(2, 2) = pt_3.z;
- cv::Mat temp_A = cv::Mat(3, 3, CV_64F);
- ;
- //temp.at<double>(1,1);
- temp_A.at<double>(0, 0) = 1.0;
- temp_A.at<double>(0, 1) = pt_1.y;
- temp_A.at<double>(0, 2) = pt_1.z;
- temp_A.at<double>(1, 0) = 1.0;
- temp_A.at<double>(1, 1) = pt_2.y;
- temp_A.at<double>(1, 2) = pt_2.z;
- temp_A.at<double>(2, 0) = 1.0;
- temp_A.at<double>(2, 1) = pt_3.y;
- temp_A.at<double>(2, 2) = pt_3.z;
- cv::Mat temp_B = cv::Mat(3, 3, CV_64F);
- ;
- //temp.at<double>(1,1);
- temp_B.at<double>(0, 0) = pt_1.x;
- temp_B.at<double>(0, 1) = 1.0;
- temp_B.at<double>(0, 2) = pt_1.z;
- temp_B.at<double>(1, 0) = pt_2.x;
- temp_B.at<double>(1, 1) = 1.0;
- temp_B.at<double>(1, 2) = pt_2.z;
- temp_B.at<double>(2, 0) = pt_3.x;
- temp_B.at<double>(2, 1) = 1.0;
- temp_B.at<double>(2, 2) = pt_3.z;
- cv::Mat temp_C = cv::Mat(3, 3, CV_64F);
- ;
- //temp.at<double>(1,1);
- temp_C.at<double>(0, 0) = pt_1.x;
- temp_C.at<double>(0, 1) = pt_1.y;
- temp_C.at<double>(0, 2) = 1.0;
- temp_C.at<double>(1, 0) = pt_2.x;
- temp_C.at<double>(1, 1) = pt_2.y;
- temp_C.at<double>(1, 2) = 1.0;
- temp_C.at<double>(2, 0) = pt_3.x;
- temp_C.at<double>(2, 1) = pt_3.y;
- temp_C.at<double>(2, 2) = 1.0;
- //
- //
- //	printf(" Pontos que originam Matrix temp: \n");
- //	std::cout << pt_1.x << pt_1.y << pt_1.z <<std::endl;
- //	std::cout << pt_2.x << pt_2.y << pt_2.z <<std::endl;
- //	std::cout << pt_3.x << pt_3.y << pt_3.z <<std::endl;
-
- //	printf(" Matrix temp: \n");
- //	for( int i = 0; i < temp.rows; i++ ) {
- //	         for( int j = 0; j < temp.cols; j++ ) {
- //	              // Observe the type used in the template
- //	              printf( " %f  ", temp.at<double>(i,j) );
- //	         }
- //	         printf("\n");
- //	}
- double d = 1.0;
- double D = cv::determinant(temp);
- //	std::cout << "Determinant:" << D << std::endl;
- double a = (-d / D) * cv::determinant(temp_A);
- //	std::cout << "Determinant A:" << cv::determinant(temp_A) << std::endl;
- double b = (-d / D) * cv::determinant(temp_B);
- double c = (-d / D) * cv::determinant(temp_C);
-
- cv::Point3d plane_eq(a, b, c);
-
- printf("Planevals: %.2f %.2f %.2f \n", a, b, c);
- return plane_eq;
-
- }*/
 
 vector<Point3d> PlaneDetector::getPlanes(Mat& rgbImage,
 		PointCloud<PointXYZ>& pcl, vector<Vec4i>& lines) {
@@ -196,11 +248,12 @@ vector<Point3d> PlaneDetector::getPlanes(Mat& rgbImage,
 					break;
 				}
 			}
-			if (planeAlreadyFound){
+			if (planeAlreadyFound) {
 				cv::line(rgbImage, check1, check2, Scalar(0, 0, 255), 3, 8);
 				cv::line(rgbImage, check2, check3, Scalar(0, 0, 255), 3, 8);
 				cv::line(rgbImage, check3, check1, Scalar(0, 0, 255), 3, 8);
-				continue;}
+				continue;
+			}
 			cv::line(rgbImage, check1, check2, Scalar(255, 0, 0), 3, 8);
 			cv::line(rgbImage, check2, check3, Scalar(255, 0, 0), 3, 8);
 			cv::line(rgbImage, check3, check1, Scalar(255, 0, 0), 3, 8);

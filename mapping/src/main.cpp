@@ -21,9 +21,14 @@ namespace enc = sensor_msgs::image_encodings;
 static const char WINDOW[] = "Original Window";
 static const char WINDOW2[] = "Process Window";
 static const char WINDOW3[] = "Plane Window";
+Scalar colors[] = { Scalar(100, 0, 0), Scalar(100, 100, 0), Scalar(0, 100, 0),
+		Scalar(0, 0, 100), Scalar(0, 100, 100), Scalar(100, 100, 100), Scalar(
+				200, 0, 0), Scalar(0, 200, 0), Scalar(0, 0, 200), Scalar(200,
+				200, 0), Scalar(200, 0, 200) };
 image_transport::Publisher image_pub_;
 ImageConverter ic;
 pcl::PointCloud<pcl::PointXYZ>* cloudCache = NULL;
+vector<Vec4i> houghLineCache;
 
 bool killProgram = false;
 
@@ -69,7 +74,6 @@ int main(int argc, char** argv) {
 			&depthCallback);
 	cv::namedWindow(WINDOW);
 	cv::namedWindow(WINDOW2);
-	cv::namedWindow(WINDOW3);
 
 	ros::spin();
 	return 0;
@@ -84,66 +88,36 @@ int px(int x, int y) {
 	return p;
 }
 
-void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
-	using namespace cv;
+vector<Point3d> crosses(Mat& image, Scalar& fg, Scalar& bg) {
 
-	const cv_bridge::CvImagePtr cv_ptr = ic.getImage(msg);
-	Mat originalImage = cv_ptr->image.clone();
-	Mat planeImage = cv_ptr->image.clone();
+}
 
-	// Retrieve the hough lines before messing up the image.
-	cv::GaussianBlur(cv_ptr->image, cv_ptr->image, cv::Size(3, 3), 3, 1);
-	cv::vector<cv::Vec4i> lines;
-	cv::Mat lineTransform = ic.getHoughLines(cv_ptr->image, lines);
-
-	// Bluring and thresholding
-	// Show original and processed image
-	PlaneDetector pd;
-	if (cloudCache == 0)
-		return;
-
-	Scalar colors[] = { Scalar(100, 0, 0), Scalar(100, 100, 0), Scalar(0, 100,
-			0), Scalar(0, 0, 100), Scalar(0, 100, 100), Scalar(100, 100, 100),
-			Scalar(200,0,0), Scalar(0,200,0), Scalar(0,0,200), Scalar(200,200,0), Scalar(200,0,200)};
-	vector<Point3d> planes = pd.getPlanes(cv_ptr->image, *cloudCache, lines);
-	if (cloudCache != NULL && cloudCache->points.size() == 307200) {
-		PlaneDetector pd;
-		for (int y = 0; y < 480; y++) {
-			for (int x = 0; x < 640; x++) {
-				int pixnum = px(x, y);
-				if (!isnan(cloudCache->points[pixnum].z)) {
-					for (int j = 0; j < 6 && j < planes.size(); j++) {
-						Point3d p(cloudCache->points[pixnum].x,
-								cloudCache->points[pixnum].y,
-								cloudCache->points[pixnum].z);
-						float dist = fabs(pd.pointOnPlane(p, planes[j]));
-						if (fabs(dist) < pd.DIST_EPSILON) {
-							planeImage.data[3 * pixnum + 0] =
-									colors[j].val[0];
-							planeImage.data[3 * pixnum + 1] =
-									colors[j].val[1];
-							planeImage.data[3 * pixnum + 2] =
-									colors[j].val[2];
-						} else {
-						}
-					}
-				} else {
-					planeImage.data[3 * pixnum + 0] = 0;
-					planeImage.data[3 * pixnum + 1] = 0;
-					planeImage.data[3 * pixnum + 2] = 0;
-				}
-			}
+void paintItWhite(int xx, int yy, int dist, Mat& image) {
+	for (int x = xx - dist; x <= xx + dist; x++) {
+		for (int y = yy - dist; y <= yy + dist; y++) {
+			image.data[3*px(x, y)] = 255;
+			image.data[3*px(x, y)+1] = 255;
+			image.data[3*px(x, y)+2] = 255;
 		}
 	}
+}
 
-	for (int i = 0; i < lines.size() && i < 11; i++) {
-		Vec4i v = lines[i];
-		line(cv_ptr->image, Point(v[0], v[1]), Point(v[2], v[3]),
-				Scalar(0, 255, 0), 3, 8);
-	}
-	cv::imshow(WINDOW, cv_ptr->image);
-	cv::imshow(WINDOW2, originalImage);
-	cv::imshow(WINDOW3, planeImage);
+void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
+	using namespace cv;
+	if (cloudCache == 0)
+		return;
+	const cv_bridge::CvImagePtr cv_ptr = ic.getImage(msg);
+	Mat originalImage = cv_ptr->image.clone();
+	Mat modImage = cv_ptr->image.clone();
+
+	Mat mapImage(640, 480, CV_8UC3, Scalar(255, 255, 255));
+
+	cv::GaussianBlur(originalImage, modImage, cv::Size(3, 3), 8, 3);
+
+	PlaneDetector pd;
+
+	cv::imshow(WINDOW, originalImage);
+	cv::imshow(WINDOW2, modImage);
 	cv::waitKey(3);
 }
 
