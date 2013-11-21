@@ -112,6 +112,9 @@ int main(int argc, char** argv) {
 				if (zDiff > xDiff) {
 					// Wall parallell to the robot facing, throw away for now.
 					if (zDiff > 0.02) {
+						int intX = (currentX + (s.x*100));
+						int intY = (currentX + (s.z*100));
+						nav.extendWall(intX, intY, false);
 						lastX = s.x;
 						lastZ = s.z;
 					}
