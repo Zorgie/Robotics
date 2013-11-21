@@ -168,7 +168,7 @@ vector<Point3d> PlaneDetector::getPlanes(Mat& rgbImage,
 		PointCloud<PointXYZ>& pcl, vector<Vec4i>& lines) {
 	vector<Point3d> foundPlanes;
 
-	for (int i = 0; lines.size(); i++) {
+	for (int i = 0; i < 2; i++) {
 		Vec4i line = lines[i];
 		Point2i a = Point2i(line[0], line[1]);
 		Point2i b = Point2i(line[2], line[3]);
@@ -187,13 +187,52 @@ vector<Point3d> PlaneDetector::getPlanes(Mat& rgbImage,
 				rotated = Point2i(diff.y, -diff.x);
 
 
-			Point2i check1(mid1.x + rotated.x / 5, mid1.y + rotated.y / 5);
-			Point2i check2(mid2.x + rotated.x / 2, mid2.y + rotated.y / 2);
-			Point2i check3(mid3.x + rotated.x / 5, mid3.y + rotated.y / 5);
-			Point3d d1 = depthCloseToPoint(check1, pcl, 10);
-			Point3d d2 = depthCloseToPoint(check2, pcl, 10);
-			Point3d d3 = depthCloseToPoint(check3, pcl, 10);
+			Point2i check1;
+			Point2i check2;
+			Point2i check3;
+			Point3d d1;
+			Point3d d2;
+			Point3d d3;
 
+			if (i==0){
+				check1.x=300;
+				check1.y=260;
+				check2.x=320;
+				check2.y=220;
+				check3.x=340;
+				check3.y=240;
+				d1 = depthCloseToPoint(check1, pcl, 10);
+				d2 = depthCloseToPoint(check2, pcl, 10);
+				d3 = depthCloseToPoint(check3, pcl, 10);
+//				Point2i check1(mid1.x + rotated.x / 5, mid1.y + rotated.y / 5);
+//				Point2i check2(mid2.x + rotated.x / 2, mid2.y + rotated.y / 2);
+//				Point2i check3(mid3.x + rotated.x / 5, mid3.y + rotated.y / 5);
+//				int pt_1_x = 300;
+//				int pt_2_x = 320;
+//				int pt_3_x = 340;
+//				int pt_1_y = 260;
+//				int pt_2_y = 220;
+//				int pt_3_y = 240;
+			} else {
+				check1.x=330;
+				check1.y=400;
+				check2.x=450;
+				check2.y=420;
+				check3.x=390;
+				check3.y=380;
+//				check1(400, 260);
+//				check2(420, 220);
+//				check3(380, 240);
+				d1 = depthCloseToPoint(check1, pcl, 10);
+				d2 = depthCloseToPoint(check2, pcl, 10);
+				d3 = depthCloseToPoint(check3, pcl, 10);
+
+
+			}
+
+//			Point3d d1 = depthCloseToPoint(check1, pcl, 10);
+//			Point3d d2 = depthCloseToPoint(check2, pcl, 10);
+//			Point3d d3 = depthCloseToPoint(check3, pcl, 10);
 			bool planeAlreadyFound = false;
 			for (int j = 0; j < foundPlanes.size(); j++) {
 				if (fabs(pointOnPlane(d1, foundPlanes[j])) < DIST_EPSILON

@@ -83,6 +83,7 @@ int main(int argc, char** argv) {
 	ros::Subscriber dSub = nh_.subscribe("/camera/depth_registered/points", 1,
 			&depthCallback);
 	cv::namedWindow(WINDOW);
+	cv::namedWindow(WINDOW2);
 
 	NavMap nav;
 	double currentX = 200;
@@ -91,68 +92,6 @@ int main(int argc, char** argv) {
 	Mat img(480, 640, CV_8UC3, Scalar(255, 255, 255));
 	bool swept = false;
 	while (ros::ok()) {
-		if (swept == false) {
-			if (cloudCache == 0) {
-				ros::spinOnce();
-				continue;
-			}
-			swept = true;
-			PlaneDetector pd;
-			vector<Point3d> sweep = pd.sweep(300, *cloudCache);
-			double lastX = 0 / 0, lastZ = 0 / 0;
-			for (int i = 0; i < sweep.size(); i++) {
-				if (isnan(lastX) || isnan(lastZ)) {
-					lastX = sweep[i].x;
-					lastZ = sweep[i].z;
-					continue;
-				}
-				Point3d s = sweep[i];
-				double xDiff = abs(lastX - s.x);
-				double zDiff = abs(lastZ - s.z);
-				if (zDiff > xDiff) {
-					// Wall parallell to the robot facing, throw away for now.
-					if (zDiff > 0.02) {
-						int intX = (currentX + (s.x*100));
-						int intY = (currentX + (s.z*100));
-						nav.extendWall(intX, intY, false);
-						lastX = s.x;
-						lastZ = s.z;
-					}
-					printf("(Z, X): (%.3f, %.3f)\n",xDiff,zDiff);
-				} else {
-					if (xDiff > 0.02) {
-						int intX = (currentX + (s.x*100));
-						int intY = (currentY + (s.z*100));
-						nav.extendWall(intX, intY, true);
-						lastX = s.x;
-						lastZ = s.z;
-						printf("Extending at (%d %d)\n",intX,intY);
-					}
-				}
-			}
-			printf("Sweep completed. Points: %d\n",sweep.size());
-			swept = true;
-		}/*
-		currentX += 0.1;
-		if (rand() % 100 == 0) {
-			currentY += rand() % 3;
-		}
-		Point syncPos = nav.getCalibratedPos(Point(currentX, currentY),
-				Point(0, -20));
-		if (syncPos.y != currentY) {
-			cerr << "Snapped " << (syncPos.y - currentY) << endl;
-		}
-		currentY = syncPos.y;
-		int x = currentX;
-		int y = currentY;
-		if (hasLeft(x, y))
-			nav.extendWall(x, y + 20, true);
-		if (hasRight(x, y))
-			nav.extendWall(x, y - 20, true);*/
-		nav.draw(img);
-		circle(img, Point(currentX, currentY), 2, black, 3, 8);
-		cv::imshow(WINDOW, img);
-		cv::waitKey(3);
 		ros::spinOnce();
 	}
 	return 0;
@@ -181,9 +120,34 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 
 	PlaneDetector pd;
 
-//	cv::imshow(WINDOW, originalImage);
-//	cv::imshow(WINDOW2, modImage);
-//	cv::waitKey(3);
+	vector<Vec4i> lines = ic.getHoughLines(originalImage);
+
+	vector<Point3d> planes = pd.getPlanes(modImage, *cloudCache, lines);
+
+	for (int y = 0; y < 480; y++) {
+		for (int x = 0; x < 640; x++) {
+			int pixnum = px(x, y);
+			PointXYZ pixel = cloudCache->points[pixnum];
+			if (isnan(pixel.z)) {
+				modImage.data[3 * pixnum] = 0;
+				modImage.data[3 * pixnum + 1] = 0;
+				modImage.data[3 * pixnum + 2] = 0;
+				continue;
+			}
+			for (int i = 0; i < planes.size(); i++) {
+				if (pd.pointOnPlane(Point3d(pixel.x, pixel.y, pixel.z), planes[i])
+						< 0.01) {
+					modImage.data[3 * pixnum] = 0;
+					modImage.data[3 * pixnum + 1] = 0;
+					modImage.data[3 * pixnum + 2] = 0;
+				}
+			}
+		}
+	}
+
+	cv::imshow(WINDOW, originalImage);
+	cv::imshow(WINDOW2, modImage);
+	cv::waitKey(3);
 }
 
 void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
