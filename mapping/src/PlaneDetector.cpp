@@ -230,3 +230,15 @@ vector<Point3d> PlaneDetector::getPlanes(Mat& rgbImage,
 
 	return foundPlanes;
 }
+
+vector<Point3d> PlaneDetector::sweep(int y, PointCloud<PointXYZ>& pcl) {
+	vector<Point3d> res;
+	for(int x=0; x<pcl.width; x++){
+		int pixnum = px(x,y);
+		Point3d pixel = Point3d(pcl.points[pixnum].x,pcl.points[pixnum].y,pcl.points[pixnum].z);
+		if(!isnan(pixel.z)){
+			res.push_back(pixel);
+		}
+	}
+	return res;
+}

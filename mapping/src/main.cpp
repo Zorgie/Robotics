@@ -87,21 +87,67 @@ int main(int argc, char** argv) {
 	NavMap nav;
 	double currentX = 200;
 	double currentY = 200;
-	nav.addWall(170, 100, 190, 220);
-	nav.addWall(180, 220, 200, 220);
-	nav.addWall(220, 100, 220, 180);
 	Scalar black = Scalar(0, 0, 0);
 	Mat img(480, 640, CV_8UC3, Scalar(255, 255, 255));
-
+	bool swept = false;
 	while (ros::ok()) {
+		if (swept == false) {
+			if (cloudCache == 0) {
+				ros::spinOnce();
+				continue;
+			}
+			swept = true;
+			PlaneDetector pd;
+			vector<Point3d> sweep = pd.sweep(300, *cloudCache);
+			double lastX = 0 / 0, lastZ = 0 / 0;
+			for (int i = 0; i < sweep.size(); i++) {
+				if (isnan(lastX) || isnan(lastZ)) {
+					lastX = sweep[i].x;
+					lastZ = sweep[i].z;
+					continue;
+				}
+				Point3d s = sweep[i];
+				double xDiff = abs(lastX - s.x);
+				double zDiff = abs(lastZ - s.z);
+				if (zDiff > xDiff) {
+					// Wall parallell to the robot facing, throw away for now.
+					if (zDiff > 0.02) {
+						lastX = s.x;
+						lastZ = s.z;
+					}
+					printf("(Z, X): (%.3f, %.3f)\n",xDiff,zDiff);
+				} else {
+					if (xDiff > 0.02) {
+						int intX = (currentX + (s.x*100));
+						int intY = (currentY + (s.z*100));
+						nav.extendWall(intX, intY, true);
+						lastX = s.x;
+						lastZ = s.z;
+						printf("Extending at (%d %d)\n",intX,intY);
+					}
+				}
+			}
+			printf("Sweep completed. Points: %d\n",sweep.size());
+			swept = true;
+		}/*
 		currentX += 0.1;
+		if (rand() % 100 == 0) {
+			currentY += rand() % 3;
+		}
+		Point syncPos = nav.getCalibratedPos(Point(currentX, currentY),
+				Point(0, -20));
+		if (syncPos.y != currentY) {
+			cerr << "Snapped " << (syncPos.y - currentY) << endl;
+		}
+		currentY = syncPos.y;
 		int x = currentX;
 		int y = currentY;
 		if (hasLeft(x, y))
-			nav.extendWall(x, y+20);
+			nav.extendWall(x, y + 20, true);
 		if (hasRight(x, y))
-			nav.extendWall(x, y-20);
+			nav.extendWall(x, y - 20, true);*/
 		nav.draw(img);
+		circle(img, Point(currentX, currentY), 2, black, 3, 8);
 		cv::imshow(WINDOW, img);
 		cv::waitKey(3);
 		ros::spinOnce();

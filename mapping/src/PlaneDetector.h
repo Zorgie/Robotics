@@ -45,6 +45,8 @@ public:
 	vector<Point2i> surroundingDots(Mat& rgbImage, PointCloud<PointXYZ>& pcl, Vec4i line, double distFromStart);
 	Point3d getPlane(vector<Point3d> coords);
 	vector<Vec4i> mergeLines(vector<Vec4i> lines);
+
+	vector<Point3d> sweep(int y, PointCloud<PointXYZ>& pcl);
 };
 
 #endif /* PLANEDETECTOR_H_ */
