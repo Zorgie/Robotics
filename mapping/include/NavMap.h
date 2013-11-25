@@ -34,8 +34,8 @@ private:
             Point2f &r);
 	const static int WALL_SNAP_DISTANCE = 10;
 public:
-	NavMap();
-	virtual ~NavMap();
+	NavMap(){}
+	virtual ~NavMap(){}
 
 	void addNode(int x, int y, int type);
 	vector<int> getNeighbours(int nodeId);
@@ -52,6 +52,9 @@ public:
 	 * @param relativeWallPoss The direction and distance
 	 */
 	Point getCalibratedPos(Point approximatePos, Point relativeWallPos);
+
+
+	Point2d pointConversion(Point2d origin, Point2d relativePos, double angle);
 };
 
 #endif /* NAVMAP_H_ */

@@ -26,7 +26,7 @@ bool Go_straight::isFinished(){
 	return fabs(distance_moved - distance_target) < 0.06;
 }
 
-movement::wheel_speed Go_straight::step(movement::wheel_distance &distance_traveled){
+movement::wheel_speed Go_straight::step(movement::wheel_distance& distance_traveled){
 
 	movement::wheel_speed speed;
 

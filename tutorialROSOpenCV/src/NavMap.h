@@ -38,9 +38,11 @@ public:
 	void addNode(int x, int y, int type);
 	vector<int> getNeighbours(int nodeId);
 	void addWall(int x1, int y1, int x2, int y2);
+	void extendWall(int x, int y);
 	bool intersectsWithWall(int x1, int y1, int x2, int y2, Point2f &intersect);
 	int getClosestReachableNode(int x, int y);
 	int getDistanceToNode(int nodeId);
+	void drawWalls(Mat& img, Scalar& color);
 };
 
 #endif /* NAVMAP_H_ */

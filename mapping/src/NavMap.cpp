@@ -5,13 +5,7 @@
  *      Author: robo
  */
 
-#include "NavMap.h"
-
-NavMap::NavMap() {
-}
-
-NavMap::~NavMap() {
-}
+#include "../include/NavMap.h"
 
 void NavMap::addNode(int x, int y, int type) {
 	nodes.push_back( { nodes.size(), x, y, type });
@@ -35,6 +29,7 @@ void NavMap::addWall(int x1, int y1, int x2, int y2) {
 }
 
 void NavMap::extendWall(int x, int y, bool horizontal) {
+	printf("Extending wall to (%d, %d). Wall segments: %d\n", x, y, walls.size());
 	double closest = 100000;
 	int index = -1;
 	int align = -1;
@@ -163,3 +158,10 @@ Point NavMap::getCalibratedPos(Point approximatePos,
 	}
 	return p;
 }
+
+Point2d NavMap::pointConversion(Point2d origin, Point2d relativePos, double angle){
+		Point2d world;
+		world.x = origin.x + cos(angle)*relativePos.x - sin(angle)*relativePos.y;
+		world.y = origin.y + sin(angle)*relativePos.x + cos(angle)*relativePos.y;
+		return world;
+	}
