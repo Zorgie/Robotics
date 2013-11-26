@@ -63,9 +63,12 @@ int main(int argc, char **argv) {
 	encoders_global.delta_encoder2 = 0;
 	encoders_global.timestamp = 0;
 
+	RobotPosition robot_position;
+	robot_position.init();
+
     //subscribe to topics
 	enc_sub             = n.subscribe("/motion/Encoders", 1, encoder_cb);          
-	desired_speed_sub   = n.subscribe("/desired_speed", 1, desired_speed_update);   
+	desired_speed_sub   = n.subscribe("/desired_speed", 1, desired_speed_update);
 
     //advertise topics
 	pwm_pub             = n.advertise<PWM>("/motion/PWM", 1);
@@ -81,11 +84,9 @@ int main(int argc, char **argv) {
 	double integral_error_2     = 0.0;
 	double proportional_error_1 = 0.0;
 	double proportional_error_2 = 0.0;
-	double pGain                = 50;
-	double iGain                = 100;
+	double pGain                = 50.0; //50.0
+	double iGain                = 100.0; //100.0
 
-	RobotPosition robot_position;
-	robot_position.init();
 
 	movement::robot_pose current_robot_pose;
 

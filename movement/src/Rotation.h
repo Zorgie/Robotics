@@ -25,7 +25,7 @@ public:
 	Rotation();
 	virtual ~Rotation();
 	void initiate_rotation(float degrees);
-	movement::wheel_speed step(movement::wheel_distance &distance_traveled);
+	movement::wheel_speed step(movement::wheel_distance& distance_traveled);
 	bool isFinished();
 };
 

@@ -1,0 +1,128 @@
+[ rosmake ] rosmake starting...                                                 
+[ rosmake ] Packages requested are: ['movement']                                
+[ rosmake ] Logging to directory /home/robo/.ros/rosmake/rosmake_output-20131122-140609
+[ rosmake ] Expanded args ['movement'] to:
+['movement']                         
+[rosmake-0] Starting >>> std_msgs [ make ]                                      
+[rosmake-1] Starting >>> roslang [ make ]                                       
+[rosmake-2] Starting >>> opencv2 [ make ]                                       
+[rosmake-3] Starting >>> geometry_msgs [ make ]                                 
+[rosmake-1] Finished <<< roslang  No Makefile in package roslang                
+[rosmake-1] Starting >>> roscpp [ make ]                                        
+[rosmake-0] Finished <<< std_msgs  No Makefile in package std_msgs              
+[rosmake-2] Finished <<< opencv2 ROS_NOBUILD in package opencv2                 
+[rosmake-0] Starting >>> rospy [ make ]                                         
+[rosmake-2] Starting >>> rosbuild [ make ]                                      
+[rosmake-0] Finished <<< rospy  No Makefile in package rospy                    
+[rosmake-0] Starting >>> roslib [ make ]                                        
+[rosmake-0] Finished <<< roslib  No Makefile in package roslib                  
+[rosmake-0] Starting >>> rosconsole [ make ]                                    
+[rosmake-0] Finished <<< rosconsole  No Makefile in package rosconsole          
+[rosmake-0] Starting >>> message_filters [ make ]                               
+[rosmake-0] Finished <<< message_filters  No Makefile in package message_filters
+[rosmake-0] Starting >>> rosbag [ make ]                                        
+[rosmake-3] Finished <<< geometry_msgs  No Makefile in package geometry_msgs    
+[rosmake-0] Finished <<< rosbag  No Makefile in package rosbag                  
+[rosmake-0] Starting >>> bond [ make ]                                          
+[rosmake-3] Starting >>> visualization_msgs [ make ]                            
+[rosmake-1] Finished <<< roscpp  No Makefile in package roscpp                  
+[rosmake-2] Finished <<< rosbuild  No Makefile in package rosbuild              
+[rosmake-1] Starting >>> differential_drive [ make ]                            
+[rosmake-2] Starting >>> sensor_msgs [ make ]                                   
+[rosmake-3] Finished <<< visualization_msgs  No Makefile in package visualization_msgs
+[rosmake-2] Finished <<< sensor_msgs  No Makefile in package sensor_msgs        
+[rosmake-2] Starting >>> cv_bridge [ make ]                                     
+[rosmake-3] Starting >>> pluginlib [ make ]                                     
+[rosmake-0] Finished <<< bond ROS_NOBUILD in package bond                       
+[rosmake-0] Starting >>> pcl [ make ]                                           
+[rosmake-2] Finished <<< cv_bridge ROS_NOBUILD in package cv_bridge             
+[rosmake-0] Finished <<< pcl ROS_NOBUILD in package pcl
+ No Makefile in package pcl
+[rosmake-2] Starting >>> smclib [ make ]                                        
+[rosmake-3] Finished <<< pluginlib ROS_NOBUILD in package pluginlib             
+[rosmake-3] Starting >>> image_transport [ make ]                               
+[rosmake-0] Starting >>> rosservice [ make ]                                    
+[rosmake-2] Finished <<< smclib ROS_NOBUILD in package smclib                   
+[rosmake-2] Starting >>> bondcpp [ make ]                                       
+[rosmake-2] Finished <<< bondcpp ROS_NOBUILD in package bondcpp                 
+[rosmake-2] Starting >>> nodelet [ make ]                                       
+[rosmake-0] Finished <<< rosservice  No Makefile in package rosservice          
+[rosmake-0] Starting >>> dynamic_reconfigure [ make ]                           
+[rosmake-2] Finished <<< nodelet ROS_NOBUILD in package nodelet                 
+[rosmake-2] Starting >>> bullet [ make ]                                        
+[rosmake-2] Finished <<< bullet ROS_NOBUILD in package bullet                   
+[rosmake-2] Starting >>> angles [ make ]                                        
+[rosmake-2] Finished <<< angles ROS_NOBUILD in package angles                   
+[rosmake-2] Starting >>> rostest [ make ]                                       
+[rosmake-2] Finished <<< rostest  No Makefile in package rostest                
+[rosmake-2] Starting >>> roswtf [ make ]                                        
+[rosmake-2] Finished <<< roswtf  No Makefile in package roswtf                  
+[rosmake-2] Starting >>> tf [ make ]                                            
+[rosmake-3] Finished <<< image_transport ROS_NOBUILD in package image_transport 
+[rosmake-0] Finished <<< dynamic_reconfigure ROS_NOBUILD in package dynamic_reconfigure
+[rosmake-0] Starting >>> nodelet_topic_tools [ make ]                           
+[rosmake-3] Starting >>> common_rosdeps [ make ]                                
+[rosmake-0] Finished <<< nodelet_topic_tools ROS_NOBUILD in package nodelet_topic_tools
+[rosmake-2] Finished <<< tf ROS_NOBUILD in package tf                           
+[rosmake-3] Finished <<< common_rosdeps ROS_NOBUILD in package common_rosdeps   
+[rosmake-3] Starting >>> pcl_ros [ make ]                                       
+[rosmake-3] Finished <<< pcl_ros ROS_NOBUILD in package pcl_ros                 
+[rosmake-3] Starting >>> mapping [ make ]                                       
+[ rosmake ] [ make ] [ differential_drive: 0.1 se... [ 2 Active 31/36 Complete ][ rosmake ] [ make ] [ differential_drive: 0.2 se... [ 2 Active 31/36 Complete ][ rosmake ] [ make ] [ differential_drive: 0.3 se... [ 2 Active 31/36 Complete ][ rosmake ] [ make ] [ differential_drive: 0.4 se... [ 2 Active 31/36 Complete ][ rosmake ] [ make ] [ differential_drive: 0.5 se... [ 2 Active 31/36 Complete ][rosmake-3] Finished <<< mapping [PASS] [ 0.47 seconds ]                        
+[ rosmake ] [ make ] [ differential_drive: 0.6 sec ] [ 1 Active 32/36 Complete ][ rosmake ] [ make ] [ differential_drive: 0.7 sec ] [ 1 Active 32/36 Complete ][ rosmake ] [ make ] [ differential_drive: 0.8 sec ] [ 1 Active 32/36 Complete ][ rosmake ] [ make ] [ differential_drive: 0.9 sec ] [ 1 Active 32/36 Complete ][ rosmake ] [ make ] [ differential_drive: 1.0 sec ] [ 1 Active 32/36 Complete ][ rosmake ] [ make ] [ differential_drive: 1.1 sec ] [ 1 Active 32/36 Complete ][ rosmake ] [ make ] [ differential_drive: 1.2 sec ] [ 1 Active 32/36 Complete ][ rosmake ] [ make ] [ differential_drive: 1.3 sec ] [ 1 Active 32/36 Complete ][ rosmake ] [ make ] [ differential_drive: 1.4 sec ] [ 1 Active 32/36 Complete ][rosmake-1] Finished <<< differential_drive [PASS] [ 1.44 seconds ]             
+[rosmake-1] Starting >>> irsensors [ make ]                                     
+[ rosmake ] [ make ] [ irsensors: 0.0 sec ]          [ 1 Active 33/36 Complete ][ rosmake ] [ make ] [ irsensors: 0.1 sec ]          [ 1 Active 33/36 Complete ][ rosmake ] [ make ] [ irsensors: 0.2 sec ]          [ 1 Active 33/36 Complete ][ rosmake ] [ make ] [ irsensors: 0.3 sec ]          [ 1 Active 33/36 Complete ][ rosmake ] [ make ] [ irsensors: 0.4 sec ]          [ 1 Active 33/36 Complete ][ rosmake ] [ make ] [ irsensors: 0.5 sec ]          [ 1 Active 33/36 Complete ][ rosmake ] [ make ] [ irsensors: 0.6 sec ]          [ 1 Active 33/36 Complete ][rosmake-1] Finished <<< irsensors [PASS] [ 0.71 seconds ]                      
+[rosmake-1] Starting >>> navigation [ make ]                                    
+[ rosmake ] [ make ] [ navigation: 0.0 sec ]         [ 1 Active 34/36 Complete ][ rosmake ] [ make ] [ navigation: 0.1 sec ]         [ 1 Active 34/36 Complete ][ rosmake ] [ make ] [ navigation: 0.2 sec ]         [ 1 Active 34/36 Complete ][ rosmake ] [ make ] [ navigation: 0.3 sec ]         [ 1 Active 34/36 Complete ][ rosmake ] [ make ] [ navigation: 0.4 sec ]         [ 1 Active 34/36 Complete ][ rosmake ] [ make ] [ navigation: 0.5 sec ]         [ 1 Active 34/36 Complete ][ rosmake ] [ make ] [ navigation: 0.6 sec ]         [ 1 Active 34/36 Complete ][rosmake-1] Finished <<< navigation [PASS] [ 0.71 seconds ]                     
+[rosmake-1] Starting >>> movement [ make ]                                      
+[ rosmake ] [ make ] [ movement: 0.0 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 0.1 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 0.2 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 0.3 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 0.4 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 0.5 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 0.6 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 0.7 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 0.8 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 0.9 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 1.0 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 1.1 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 1.2 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 1.3 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 1.4 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 1.5 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 1.6 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 1.7 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 1.8 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 1.9 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 2.0 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 2.1 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 2.2 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 2.3 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 2.4 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 2.5 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 2.6 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 2.7 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 2.8 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 2.9 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 3.0 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 3.1 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] [ make ] [ movement: 3.2 sec ]           [ 1 Active 35/36 Complete ][ rosmake ] Last 40 lines
+{-------------------------------------------------------------------------------
+  [ 50%] [ 50%] Built target rospack_genmsg_all
+  Built target rosbuild_precompile
+  make[3]: Entering directory `/home/robo/ros_workspace/Robotics/movement/build'
+  make[3]: Entering directory `/home/robo/ros_workspace/Robotics/movement/build'
+  make[3]: Entering directory `/home/robo/ros_workspace/Robotics/movement/build'
+  make[3]: Entering directory `/home/robo/ros_workspace/Robotics/movement/build'
+  make[3]: Leaving directory `/home/robo/ros_workspace/Robotics/movement/build'
+  make[3]: Leaving directory `/home/robo/ros_workspace/Robotics/movement/build'
+  Scanning dependencies of target path_visualizer
+  make[3]: Leaving directory `/home/robo/ros_workspace/Robotics/movement/build'
+  [ 55%] Built target wall_follower_tuning
+  Scanning dependencies of target open_loop_control
+  make[3]: Leaving directory `/home/robo/ros_workspace/Robotics/movement/build'
+  make[3]: Entering directory `/home/robo/ros_workspace/Robotics/movement/build'
+  make[3]: Entering directory `/home/robo/ros_workspace/Robotics/movement/build'
+  [ 60%] [ 90%] Built target movement_control
+  Building CXX object CMakeFiles/path_visualizer.dir/src/PathVisualizer.o
+  [ 95%] [100%] Building CXX object CMakeFiles/open_loop_control.dir/src/MotorController_Arduino_Open_Loop.o
+  Building CXX object CMakeFiles/open_loop_control.dir/src/RobotPosition.o
+  In file included from /home/robo/ros_workspace/Robotics/movement/src/RobotPosition.cpp:8:0:
+  /home/robo/ros_workspace/Robotics/movement/src/RobotPosition.h:22:2: error: ‘NavMap’ does not name a type
+  /home/robo/ros_workspace/Robotics/movement/src/RobotPosition.cpp: In member function ‘movement::robot_pose RobotPosition::step(differential_drive::Encoders&)’:
+  /home/robo/ros_workspace/Robotics/movement/src/RobotPosition.cpp:28:8: warning: unused variable ‘w’ [-Wunused-variable]
+  make[3]: *** [CMakeFiles/open_loop_control.dir/src/RobotPosition.o] Error 1
+  make[3]: *** Waiting for unfinished jobs....
+  In file included from /home/robo/ros_workspace/Robotics/movement/src/MotorController_Arduino_Open_Loop.cpp:6:0:
+  /home/robo/ros_workspace/Robotics/movement/src/RobotPosition.h:22:2: error: ‘NavMap’ does not name a type
+  In file included from /home/robo/ros_workspace/Robotics/movement/src/PathVisualizer.cpp:3:0:
+  /home/robo/ros_workspace/Robotics/movement/src/RobotPosition.h:22:2: error: ‘NavMap’ does not name a type
+  make[3]: *** [CMakeFiles/path_visualizer.dir/src/PathVisualizer.o] Error 1
+  make[3]: Leaving directory `/home/robo/ros_workspace/Robotics/movement/build'
+  make[2]: *** [CMakeFiles/path_visualizer.dir/all] Error 2
+  make[2]: *** Waiting for unfinished jobs....
+  make[3]: *** [CMakeFiles/open_loop_control.dir/src/MotorController_Arduino_Open_Loop.o] Error 1
+  make[3]: Leaving directory `/home/robo/ros_workspace/Robotics/movement/build'
+  make[2]: *** [CMakeFiles/open_loop_control.dir/all] Error 2
+  make[2]: Leaving directory `/home/robo/ros_workspace/Robotics/movement/build'
+  make[1]: *** [all] Error 2
+  make[1]: Leaving directory `/home/robo/ros_workspace/Robotics/movement/build'
+-------------------------------------------------------------------------------}
+[ rosmake ] Output from build of package movement written to:
+[ rosmake ]    /home/robo/.ros/rosmake/rosmake_output-20131122-140609/movement/build_output.log
+[rosmake-1] Finished <<< movement [FAIL] [ 3.24 seconds ]                       
+[ rosmake ] Halting due to failure in package movement. 
+[ rosmake ] Waiting for other threads to complete.
+[ rosmake ] Results:                                                            
+[ rosmake ] Built 36 packages with 1 failures.                                  
+[ rosmake ] Summary output to directory                                         
+[ rosmake ] /home/robo/.ros/rosmake/rosmake_output-20131122-140609              

@@ -16,7 +16,7 @@
 
 namespace enc = sensor_msgs::image_encodings;
 
-double error_allowed =0.03;
+double error_allowed = 0.01;
 //pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
 vector<pcl::PointIndices> PointIndicesVector;
 
@@ -37,6 +37,36 @@ cv::Mat findYellow(cv::Mat imgHSV) {
 	inRange(imgHSV, cv::Scalar(0, 180, 154), cv::Scalar(90, 255, 255),
 			imgThresh);
 	return imgThresh;
+}
+
+cv::Point3d plane_calc_least_squares(std::vector<cv::Point3d> points) {
+//	as seen in: http://stackoverflow.com/questions/1400213/3d-least-squares-plane
+	if (points.size() < 3) {
+		std::cerr
+				<< "WARNING: Giving less than three points for least squares plane computation."
+				<< std::endl;
+	}
+
+	cv::Mat A = cv::Mat::zeros(points.size(), 3, CV_64F);
+	cv::Mat b = cv::Mat::zeros(points.size(), 1, CV_64F);
+
+	for (int i = 0; i < points.size(); i++) {
+		A.at<double>(i, 0) = points[i].x;
+		A.at<double>(i, 1) = points[i].y;
+		A.at<double>(i, 2) = points[i].z;
+		b.at<double>(i, 0) = -1.0;
+	}
+
+	cv::Mat At = A.t();
+	cv::Mat AtA = At * A;
+	cv::Mat Atb = At * b;
+	cv::Mat AtA_inv = AtA.inv();
+	cv::Mat x = AtA_inv * Atb;
+
+	cv::Point3d plane_eq(x.at<double>(0, 0), x.at<double>(1, 0),
+			x.at<double>(2, 0));
+
+	return plane_eq;
 }
 
 int count(cv::Mat image) {
@@ -60,7 +90,7 @@ int main(int argc, char** argv) {
 	ros::init(argc, argv, "image_converter");
 	ros::NodeHandle nh_;
 	//image_transport::ImageTransport it_ = nh_;
-	nh_.setParam("/error",error_allowed);
+	nh_.setParam("/error", error_allowed);
 	ros::Subscriber sub = nh_.subscribe("/camera/rgb/image_color", 1,
 			&imgCallback);
 	ros::Subscriber dSub = nh_.subscribe("/camera/depth_registered/points", 1,
@@ -74,7 +104,7 @@ int main(int argc, char** argv) {
 	Point2f p;
 	printf("%d\n", navmap.intersectsWithWall(-10, -10, -10, 10, p));
 	std::cout << "Ran" << std::endl;
-	nh_.getParam("/error",error_allowed);
+	nh_.getParam("/error", error_allowed);
 	ros::spin();
 
 	return 0;
@@ -85,10 +115,10 @@ int px(int x, int y) {
 }
 
 int inv_px_x(int k) {
-	return 	k%640;
+	return k % 640;
 }
 int inv_px_y(int k) {
-	return ((int)k)/((int)640);
+	return ((int) k) / ((int) 640);
 }
 
 void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
@@ -101,20 +131,20 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	cv::vector<cv::Vec4i> lines;
 	cv::Mat lineTransform = ic.getHoughLines(cv_ptr->image, lines);
 
+	double t = (double) getTickCount();
+
 	// Bluring and thresholding
 	// Show original and processed image
 
-	 /* initialize random seed: */
-	 srand (time(NULL));
-	 int rand_pt_1, rand_pt_2, rand_pt_3;
-	 
-	 
+	/* initialize random seed: */
+	srand(time(NULL));
+	int rand_pt_1, rand_pt_2, rand_pt_3;
+
 //	 double m[3][3] = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
 //	 cv::Mat M = cv::Mat(3, 3, CV_64F, m);
 
 	// cv::Mat M(3,3,CV_32FC2);
-	 cv::Mat E = cv::Mat::eye(4, 4, CV_64F);
-
+	cv::Mat E = cv::Mat::eye(4, 4, CV_64F);
 
 	for (int i = 1; i <= 3; i++) {
 		for (int j = 1; j <= 3; j++) {
@@ -140,24 +170,27 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	int rand_pt_1_v = rand() % 640 + 1;
 	int rand_pt_2_v = rand() % 640 + 1;
 	int rand_pt_3_v = rand() % 640 + 1;
-	int pt_1_pix=px(rand_pt_1_u,rand_pt_1_v);
-	int pt_2_pix=px(rand_pt_2_u,rand_pt_2_v);
-	int pt_3_pix=px(rand_pt_3_u,rand_pt_3_v);
+	int pt_1_pix = px(rand_pt_1_u, rand_pt_1_v);
+	int pt_2_pix = px(rand_pt_2_u, rand_pt_2_v);
+	int pt_3_pix = px(rand_pt_3_u, rand_pt_3_v);
 //	rand_pt_1=rand_pt_2=rand_pt_3=150000;
 
 	if (cloudCache != NULL && cloudCache->points.size() == 307200) {
-	}else{
+	} else {
 		return;
 	}
 
 	bool three_correct_values = 0;
-	int tries=0;
-	int pt_1_x=300;int pt_2_x=320;int pt_3_x=340;
-		int pt_1_y=260;int pt_2_y=220;int pt_3_y=240;
+	int tries = 0;
+	int pt_1_x = 300;
+	int pt_2_x = 320;
+	int pt_3_x = 340;
+	int pt_1_y = 260;
+	int pt_2_y = 220;
+	int pt_3_y = 240;
 
-	while (three_correct_values!=1){
-		tries +=1;
-
+	while (three_correct_values != 1) {
+		tries += 1;
 
 //		rand_pt_1_u = rand() % 480 + 1;
 //		rand_pt_2_u = rand() % 480 + 1;
@@ -171,23 +204,28 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 		rand_pt_1_v = pt_1_y;
 		rand_pt_2_v = pt_2_y;
 		rand_pt_3_v = pt_3_y;
-		pt_1_pix=px(rand_pt_1_u,rand_pt_1_v);
-		pt_2_pix=px(rand_pt_2_u,rand_pt_2_v);
-		pt_3_pix=px(rand_pt_3_u,rand_pt_3_v);
+		pt_1_pix = px(rand_pt_1_u, rand_pt_1_v);
+		pt_2_pix = px(rand_pt_2_u, rand_pt_2_v);
+		pt_3_pix = px(rand_pt_3_u, rand_pt_3_v);
 
-
-	if(tries>1000){
-		std::cout << "1000 tries" << std::endl;
-		three_correct_values=1;
-	}
-	if (isnan(cloudCache->points[pt_1_pix].x) || isnan(cloudCache->points[pt_1_pix].y) || isnan(cloudCache->points[pt_1_pix].z)
-			|| isnan(cloudCache->points[pt_2_pix].x) || isnan(cloudCache->points[pt_2_pix].y) || isnan(cloudCache->points[pt_2_pix].z)
-			|| isnan(cloudCache->points[pt_3_pix].x) || isnan(cloudCache->points[pt_3_pix].y) || isnan(cloudCache->points[pt_3_pix].z)){
-		//std::cout << "NAN VALUES" << std::endl;
-		//return;
-		continue;
-	}
-	//std::cout << "X value: "<<cloudCache->points[pt_1_pix].x << std::endl;
+		if (tries > 1000) {
+			std::cout << "1000 tries" << std::endl;
+			three_correct_values = 1;
+		}
+		if (isnan(cloudCache->points[pt_1_pix].x)
+				|| isnan(cloudCache->points[pt_1_pix].y)
+				|| isnan(cloudCache->points[pt_1_pix].z)
+				|| isnan(cloudCache->points[pt_2_pix].x)
+				|| isnan(cloudCache->points[pt_2_pix].y)
+				|| isnan(cloudCache->points[pt_2_pix].z)
+				|| isnan(cloudCache->points[pt_3_pix].x)
+				|| isnan(cloudCache->points[pt_3_pix].y)
+				|| isnan(cloudCache->points[pt_3_pix].z)) {
+			//std::cout << "NAN VALUES" << std::endl;
+			//return;
+			continue;
+		}
+		//std::cout << "X value: "<<cloudCache->points[pt_1_pix].x << std::endl;
 //	if (fabs(cloudCache->points[pt_1_pix].x)<0.1 || fabs(cloudCache->points[pt_1_pix].y)<0.1 || fabs(cloudCache->points[pt_1_pix].z)<0.1
 //				|| fabs(cloudCache->points[pt_2_pix].x)<0.1 || fabs(cloudCache->points[pt_2_pix].y)<0.1 || fabs(cloudCache->points[pt_2_pix].z)<0.1
 //				|| fabs(cloudCache->points[pt_3_pix].x)<0.1 || fabs(cloudCache->points[pt_3_pix].y)<0.1 || fabs(cloudCache->points[pt_3_pix].z)<0.1){
@@ -203,40 +241,65 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 //				continue;
 //			}
 //	std::cout << "Got 3 good values" << std::endl;
-	three_correct_values=1;
+		three_correct_values = 1;
 	}
 
 	cv::Point3d pt_1(cloudCache->points[pt_1_pix].x,
-			cloudCache->points[pt_1_pix].y,
-			cloudCache->points[pt_1_pix].z);
+			cloudCache->points[pt_1_pix].y, cloudCache->points[pt_1_pix].z);
 	cv::Point3d pt_2(cloudCache->points[pt_2_pix].x,
-			cloudCache->points[pt_2_pix].y,
-			cloudCache->points[pt_2_pix].z);
+			cloudCache->points[pt_2_pix].y, cloudCache->points[pt_2_pix].z);
 	cv::Point3d pt_3(cloudCache->points[pt_3_pix].x,
-			cloudCache->points[pt_3_pix].y,
-			cloudCache->points[pt_3_pix].z);
+			cloudCache->points[pt_3_pix].y, cloudCache->points[pt_3_pix].z);
 
-	cv::Mat temp = cv::Mat(3, 3, CV_64F);;
+	cv::Mat temp = cv::Mat(3, 3, CV_64F);
+	;
 	//temp.at<double>(1,1);
 
-	temp.at<double>(0,0)=pt_1.x;temp.at<double>(0,1)=pt_1.y;temp.at<double>(0,2)=pt_1.z;
-	temp.at<double>(1,0)=pt_2.x;temp.at<double>(1,1)=pt_2.y;temp.at<double>(1,2)=pt_2.z;
-	temp.at<double>(2,0)=pt_3.x;temp.at<double>(2,1)=pt_3.y;temp.at<double>(2,2)=pt_3.z;
-	cv::Mat temp_A = cv::Mat(3, 3, CV_64F);;
+	temp.at<double>(0, 0) = pt_1.x;
+	temp.at<double>(0, 1) = pt_1.y;
+	temp.at<double>(0, 2) = pt_1.z;
+	temp.at<double>(1, 0) = pt_2.x;
+	temp.at<double>(1, 1) = pt_2.y;
+	temp.at<double>(1, 2) = pt_2.z;
+	temp.at<double>(2, 0) = pt_3.x;
+	temp.at<double>(2, 1) = pt_3.y;
+	temp.at<double>(2, 2) = pt_3.z;
+	cv::Mat temp_A = cv::Mat(3, 3, CV_64F);
+	;
 	//temp.at<double>(1,1);
-	temp_A.at<double>(0,0)=1.0;temp_A.at<double>(0,1)=pt_1.y;temp_A.at<double>(0,2)=pt_1.z;
-	temp_A.at<double>(1,0)=1.0;temp_A.at<double>(1,1)=pt_2.y;temp_A.at<double>(1,2)=pt_2.z;
-	temp_A.at<double>(2,0)=1.0;temp_A.at<double>(2,1)=pt_3.y;temp_A.at<double>(2,2)=pt_3.z;
-	cv::Mat temp_B = cv::Mat(3, 3, CV_64F);;
+	temp_A.at<double>(0, 0) = 1.0;
+	temp_A.at<double>(0, 1) = pt_1.y;
+	temp_A.at<double>(0, 2) = pt_1.z;
+	temp_A.at<double>(1, 0) = 1.0;
+	temp_A.at<double>(1, 1) = pt_2.y;
+	temp_A.at<double>(1, 2) = pt_2.z;
+	temp_A.at<double>(2, 0) = 1.0;
+	temp_A.at<double>(2, 1) = pt_3.y;
+	temp_A.at<double>(2, 2) = pt_3.z;
+	cv::Mat temp_B = cv::Mat(3, 3, CV_64F);
+	;
 	//temp.at<double>(1,1);
-	temp_B.at<double>(0,0)=pt_1.x;temp_B.at<double>(0,1)=1.0;temp_B.at<double>(0,2)=pt_1.z;
-	temp_B.at<double>(1,0)=pt_2.x;temp_B.at<double>(1,1)=1.0;temp_B.at<double>(1,2)=pt_2.z;
-	temp_B.at<double>(2,0)=pt_3.x;temp_B.at<double>(2,1)=1.0;temp_B.at<double>(2,2)=pt_3.z;
-	cv::Mat temp_C = cv::Mat(3, 3, CV_64F);;
+	temp_B.at<double>(0, 0) = pt_1.x;
+	temp_B.at<double>(0, 1) = 1.0;
+	temp_B.at<double>(0, 2) = pt_1.z;
+	temp_B.at<double>(1, 0) = pt_2.x;
+	temp_B.at<double>(1, 1) = 1.0;
+	temp_B.at<double>(1, 2) = pt_2.z;
+	temp_B.at<double>(2, 0) = pt_3.x;
+	temp_B.at<double>(2, 1) = 1.0;
+	temp_B.at<double>(2, 2) = pt_3.z;
+	cv::Mat temp_C = cv::Mat(3, 3, CV_64F);
+	;
 	//temp.at<double>(1,1);
-	temp_C.at<double>(0,0)=pt_1.x;temp_C.at<double>(0,1)=pt_1.y;temp_C.at<double>(0,2)=1.0;
-	temp_C.at<double>(1,0)=pt_2.x;temp_C.at<double>(1,1)=pt_2.y;temp_C.at<double>(1,2)=1.0;
-	temp_C.at<double>(2,0)=pt_3.x;temp_C.at<double>(2,1)=pt_3.y;temp_C.at<double>(2,2)=1.0;
+	temp_C.at<double>(0, 0) = pt_1.x;
+	temp_C.at<double>(0, 1) = pt_1.y;
+	temp_C.at<double>(0, 2) = 1.0;
+	temp_C.at<double>(1, 0) = pt_2.x;
+	temp_C.at<double>(1, 1) = pt_2.y;
+	temp_C.at<double>(1, 2) = 1.0;
+	temp_C.at<double>(2, 0) = pt_3.x;
+	temp_C.at<double>(2, 1) = pt_3.y;
+	temp_C.at<double>(2, 2) = 1.0;
 //
 //
 //	printf(" Pontos que originam Matrix temp: \n");
@@ -252,101 +315,121 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 //	         }
 //	         printf("\n");
 //	}
-	double d=1.0;
-	double D=cv::determinant(temp);
+	double d = 1.0;
+	double D = cv::determinant(temp);
 //	std::cout << "Determinant:" << D << std::endl;
-	double a=(-d/D)*cv::determinant(temp_A);
+	double a = (-d / D) * cv::determinant(temp_A);
 //	std::cout << "Determinant A:" << cv::determinant(temp_A) << std::endl;
-	double b=(-d/D)*cv::determinant(temp_B);
-	double c=(-d/D)*cv::determinant(temp_C);
+	double b = (-d / D) * cv::determinant(temp_B);
+	double c = (-d / D) * cv::determinant(temp_C);
 
-
-
-	cv::Point3d plane_eq(a,b,c);
+	cv::Point3d plane_eq(a, b, c);
 
 //	std::cout << "Values: "<< plane_eq.x <<'\t'<< plane_eq.y <<'\t'<< plane_eq.z << std::endl;
 	int temp_pixnum = px(320, 240);
 	cloudCache->points[temp_pixnum].z;
 	double x_temp = (double) cloudCache->points[temp_pixnum].x;
 	double y_temp = (double) cloudCache->points[temp_pixnum].y;
-	double z_temp= (double)cloudCache->points[temp_pixnum].z;
+	double z_temp = (double) cloudCache->points[temp_pixnum].z;
 
 //	std::cout << "center XYZ: "<<x_temp<< '\t'<<y_temp<< '\t'<<z_temp<< std::endl;
 //	std::cout << "error: " << fabs(1.0+x_temp*plane_eq.x+y_temp*plane_eq.y+z_temp*plane_eq.z) << std::endl;
 
-	int plane_count=0;
+	int plane_count = 0;
 
+	std::vector<cv::Point3d> points_in_plane;
+	cv::Point3d improved_plane = plane_eq;
 
+	for (int iteration = 0; iteration < 1; iteration++) {
 
+		double t_iteration = (double) getTickCount();
+		points_in_plane.clear();
 
-
-	if (cloudCache != NULL && cloudCache->points.size() == 307200) {
+		if (cloudCache != NULL && cloudCache->points.size() == 307200) {
 			for (int y = 0; y < 480; y++) {
 				for (int x = 0; x < 640; x++) {
 					int pixnum = px(x, y);
 					cloudCache->points[pixnum].z;
-					double x_temp= (double)cloudCache->points[pixnum].x;
-					double y_temp= (double)cloudCache->points[pixnum].y;
-					double z_temp= (double)cloudCache->points[pixnum].z;
+					double x_temp = (double) cloudCache->points[pixnum].x;
+					double y_temp = (double) cloudCache->points[pixnum].y;
+					double z_temp = (double) cloudCache->points[pixnum].z;
 
-					if ((abs(pt_1_x-x)<10 && abs(pt_1_y-y)<10) ||
-						(abs(pt_2_x-x)<10 && abs(pt_2_y-y)<10) ||
-						(abs(pt_3_x-x)<10 && abs(pt_3_y-y)<10)  ){
+					if ((abs(pt_1_x - x) < 10 && abs(pt_1_y - y) < 10)
+							|| (abs(pt_2_x - x) < 10 && abs(pt_2_y - y) < 10)
+							|| (abs(pt_3_x - x) < 10 && abs(pt_3_y - y) < 10)) {
 
 						cv_ptr->image.data[3 * pixnum + 0] = 0;
 						cv_ptr->image.data[3 * pixnum + 1] = 255;
 						cv_ptr->image.data[3 * pixnum + 2] = 0;
 
-
 					}
 
-					cv::Point3d current_point(x_temp,y_temp,z_temp);
+					cv::Point3d current_point(x_temp, y_temp, z_temp);
 					// PAINTS INVALID VALUES AS BLUE
 					if (isnan(cloudCache->points[pixnum].z)) {
-									//	cv_ptr->image.data[3 * pixnum + 0] = 255;
-									//	cv_ptr->image.data[3 * pixnum + 1] = 0;
-									//	cv_ptr->image.data[3 * pixnum + 2] = 0;
-										continue;
-									}
+						cv_ptr->image.data[3 * pixnum + 0] = 255;
+						cv_ptr->image.data[3 * pixnum + 1] = 0;
+						cv_ptr->image.data[3 * pixnum + 2] = 0;
+						continue;
+					}
 
-
-	//				if (rand() % 1900 + 1 < 2) {
-	//
-	//					std::cout << "Current point:" << std::endl;
-	//					std::cout << current_point.x << ", " << current_point.y
-	//							<< ", " << current_point.z << std::endl;
-	//					std::cout << "Current plane:" << std::endl;
-	//					std::cout << plane_eq.x << ", " << plane_eq.y << ", "
-	//							<< plane_eq.z << std::endl;
-	//
-	//				}
-					if(fabs(1.0+current_point.dot(plane_eq))<error_allowed){
+					//				if (rand() % 1900 + 1 < 2) {
+					//
+					//					std::cout << "Current point:" << std::endl;
+					//					std::cout << current_point.x << ", " << current_point.y
+					//							<< ", " << current_point.z << std::endl;
+					//					std::cout << "Current plane:" << std::endl;
+					//					std::cout << plane_eq.x << ", " << plane_eq.y << ", "
+					//							<< plane_eq.z << std::endl;
+					//
+					//				}
+					if (fabs(1.0 + current_point.dot(improved_plane))
+							< error_allowed) {
 //						cv_ptr->image.data[3 * pixnum + 0] = 0;
 //						cv_ptr->image.data[3 * pixnum + 1] = 0;
 //						cv_ptr->image.data[3 * pixnum + 2] = 255;
-						plane_count +=1;
+						plane_count += 1;
+						points_in_plane.push_back(current_point);
 
 					}
 
-	//				cv::Point3d current_point(a,b,c);
-	//				if (isnan(cloudCache->points[pixnum].z)) {
-	//					cv_ptr->image.data[3 * pixnum + 0] = 0;
-	//					cv_ptr->image.data[3 * pixnum + 1] = 0;
-	//					cv_ptr->image.data[3 * pixnum + 2] = 0;
-	//				}
+					//				cv::Point3d current_point(a,b,c);
+					//				if (isnan(cloudCache->points[pixnum].z)) {
+					//					cv_ptr->image.data[3 * pixnum + 0] = 0;
+					//					cv_ptr->image.data[3 * pixnum + 1] = 0;
+					//					cv_ptr->image.data[3 * pixnum + 2] = 0;
+					//				}
 				}
 			}
 		}
 
+		if (points_in_plane.size() > 3) {
+			improved_plane = plane_calc_least_squares(points_in_plane);
+			std::cout << "\n\n\nOld plane: " << plane_eq << std::endl;
+			std::cout << "new plane: " << improved_plane << std::endl;
+		}
 
-	if (cloudCache != NULL && cloudCache->points.size() == 307200 && plane_count>307200/100) {
+		t_iteration = ((double) getTickCount() - t_iteration)
+				/ getTickFrequency();
+		std::cout << "Times passed in seconds for one iteration: "
+				<< t_iteration << std::endl;
+
+	}
+
+	std::cout << "final plane: " << improved_plane << std::endl;
+	std::cout << "\n\n\n\n\n\n\n\n\n\n\n " << std::endl;
+
+	double t_iteration = (double) getTickCount();
+
+	if (cloudCache != NULL && cloudCache->points.size() == 307200
+			&& plane_count > 307200 / 100 && points_in_plane.size() > 3) {
 		for (int y = 0; y < 480; y++) {
 			for (int x = 0; x < 640; x++) {
 				int pixnum = px(x, y);
 				cloudCache->points[pixnum].z;
-				double x_temp= (double)cloudCache->points[pixnum].x;
-				double y_temp= (double)cloudCache->points[pixnum].y;
-				double z_temp= (double)cloudCache->points[pixnum].z;
+				double x_temp = (double) cloudCache->points[pixnum].x;
+				double y_temp = (double) cloudCache->points[pixnum].y;
+				double z_temp = (double) cloudCache->points[pixnum].z;
 
 //				if (x==539 && y==379){
 //
@@ -356,7 +439,7 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 //
 //				}
 
-				cv::Point3d current_point(x_temp,y_temp,z_temp);
+				cv::Point3d current_point(x_temp, y_temp, z_temp);
 
 //				if (isnan(cloudCache->points[pixnum].z)) {
 //									cv_ptr->image.data[3 * pixnum + 0] = 255;
@@ -364,16 +447,16 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 //									cv_ptr->image.data[3 * pixnum + 2] = 0;
 //									continue;
 //								}
-				if(fabs(x_temp)>1000.0 || fabs(y_temp)>1000.0 || fabs(z_temp)>1000.0){
-										continue;
-									}
+				if (fabs(x_temp) > 1000.0 || fabs(y_temp) > 1000.0
+						|| fabs(z_temp) > 1000.0) {
+					continue;
+				}
 //									if(fabs(x_temp)<0.1 || fabs(y_temp)<0.1 || fabs(z_temp)<0.1){
 //										continue;
 //									}
-									if(isnan(x_temp) || isnan(y_temp) || isnan(z_temp) ){
-										continue;
-									}
-
+				if (isnan(x_temp) || isnan(y_temp) || isnan(z_temp)) {
+					continue;
+				}
 
 //				if (rand() % 1900 + 1 < 2) {
 //
@@ -395,11 +478,11 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 //				std::cout << "Dot product plus one: " << 1.0+current_point.dot(plane_eq) << std::endl;
 				}
 
-				if(fabs(1.0+current_point.dot(plane_eq))<error_allowed){
+				if (fabs(1.0 + current_point.dot(plane_eq)) < error_allowed) {
 					// PRINT PLANE FOUND
-//					cv_ptr->image.data[3 * pixnum + 0] = 0;
-//					cv_ptr->image.data[3 * pixnum + 1] = 0;
-//					cv_ptr->image.data[3 * pixnum + 2] = 255;
+					cv_ptr->image.data[3 * pixnum + 0] = 0;
+					cv_ptr->image.data[3 * pixnum + 1] = 0;
+					cv_ptr->image.data[3 * pixnum + 2] = 255;
 				}
 
 //				cv::Point3d current_point(a,b,c);
@@ -411,56 +494,129 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 			}
 		}
 	}
-	
+
+	if (cloudCache != NULL && cloudCache->points.size() == 307200
+			&& plane_count > 307200 / 100) {
+		for (int y = 0; y < 480; y++) {
+			for (int x = 0; x < 640; x++) {
+				int pixnum = px(x, y);
+				cloudCache->points[pixnum].z;
+				double x_temp = (double) cloudCache->points[pixnum].x;
+				double y_temp = (double) cloudCache->points[pixnum].y;
+				double z_temp = (double) cloudCache->points[pixnum].z;
+
+//				if (x==539 && y==379){
+//
+//					std::cout << "\nX:" << cloudCache->points[pixnum].x <<
+//							"\tY:" << cloudCache->points[pixnum].y <<
+//							"\tZ:" << cloudCache->points[pixnum].z << std::endl;
+//
+//				}
+
+				cv::Point3d current_point(x_temp, y_temp, z_temp);
+
+//				if (isnan(cloudCache->points[pixnum].z)) {
+//									cv_ptr->image.data[3 * pixnum + 0] = 255;
+//									cv_ptr->image.data[3 * pixnum + 1] = 0;
+//									cv_ptr->image.data[3 * pixnum + 2] = 0;
+//									continue;
+//								}
+				if (fabs(x_temp) > 1000.0 || fabs(y_temp) > 1000.0
+						|| fabs(z_temp) > 1000.0) {
+					continue;
+				}
+//									if(fabs(x_temp)<0.1 || fabs(y_temp)<0.1 || fabs(z_temp)<0.1){
+//										continue;
+//									}
+				if (isnan(x_temp) || isnan(y_temp) || isnan(z_temp)) {
+					continue;
+				}
+
+//				if (rand() % 1900 + 1 < 2) {
+//
+//					std::cout << "Current point:" << std::endl;
+//					std::cout << current_point.x << ", " << current_point.y
+//							<< ", " << current_point.z << std::endl;
+//					std::cout << "Current plane:" << std::endl;
+//					std::cout << plane_eq.x << ", " << plane_eq.y << ", "
+//							<< plane_eq.z << std::endl;
+//
+//				}
+				if (rand() % 19000 + 1 < 2) {
+//				std::cout << "Current point:" << std::endl;
+//				std::cout << current_point.x << ", " << current_point.y
+//				<< ", " << current_point.z << std::endl;
+//				std::cout << "Current plane:" << std::endl;
+//				std::cout << plane_eq.x << ", " << plane_eq.y << ", "
+//				<< plane_eq.z << std::endl;
+//				std::cout << "Dot product plus one: " << 1.0+current_point.dot(plane_eq) << std::endl;
+				}
+
+				if (fabs(1.0 + current_point.dot(improved_plane))
+						< error_allowed) {
+					// PRINT PLANE FOUND
+					originalImage.data[3 * pixnum + 0] = 0;
+					originalImage.data[3 * pixnum + 1] = 0;
+					originalImage.data[3 * pixnum + 2] = 255;
+				}
+
+//				cv::Point3d current_point(a,b,c);
+//				if (isnan(cloudCache->points[pixnum].z)) {
+//					cv_ptr->image.data[3 * pixnum + 0] = 0;
+//					cv_ptr->image.data[3 * pixnum + 1] = 0;
+//					cv_ptr->image.data[3 * pixnum + 2] = 0;
+//				}
+			}
+		}
+	}
+
+//	t_plane = ((double)getTickCount() - t_plane)/getTickFrequency();
+//	    std::cout << "Times passed in seconds for ALL: " << t_plane << std::endl;
+
 //	for (size_t i = 0; i < inliers->indices.size(); ++i) {
 //		cv_ptr->image.data[3 * inliers->indices[i] + 0] = 0;
 //		cv_ptr->image.data[3 * inliers->indices[i] + 1] = 0;
 //		cv_ptr->image.data[3 * inliers->indices[i] + 2] = 255;
 //	}
-	
-	
-	int terminate=PointIndicesVector.size();
-	
-	 for (int plane_points = 0; plane_points < terminate; plane_points++) {
-	
-		pcl::PointIndices good_inliers;	
-		good_inliers=PointIndicesVector.back();
-		PointIndicesVector.pop_back();
-		int B,G,R;
-		if (plane_points==0){
-			B=255;G=0;R=0;
-		}
-		if (plane_points==1){
-					B=0;G=255;R=0;
-				}
-		if (plane_points==2){
-					B=0;G=0;R=255;
-				}
-		if (plane_points==3){
-							B=120;G=120;R=120;
-						}
-		
-		for (size_t i = 0; i < good_inliers.indices.size (); ++i){
-			cv_ptr->image.data[3 * good_inliers.indices[i] + 0] = B;
-			cv_ptr->image.data[3 * good_inliers.indices[i] + 1] = G;
-			cv_ptr->image.data[3 * good_inliers.indices[i] + 2] = R;
-		}
-	
-	 }
+
+//	int terminate=PointIndicesVector.size();
+//
+//	 for (int plane_points = 0; plane_points < terminate; plane_points++) {
+//
+//		pcl::PointIndices good_inliers;
+//		good_inliers=PointIndicesVector.back();
+//		PointIndicesVector.pop_back();
+//		int B,G,R;
+//		if (plane_points==0){
+//			B=255;G=0;R=0;
+//		}
+//		if (plane_points==1){
+//					B=0;G=255;R=0;
+//				}
+//		if (plane_points==2){
+//					B=0;G=0;R=255;
+//				}
+//		if (plane_points==3){
+//							B=120;G=120;R=120;
+//						}
+//
+//		for (size_t i = 0; i < good_inliers.indices.size (); ++i){
+////			cv_ptr->image.data[3 * good_inliers.indices[i] + 0] = B;
+////			cv_ptr->image.data[3 * good_inliers.indices[i] + 1] = G;
+////			cv_ptr->image.data[3 * good_inliers.indices[i] + 2] = R;
+//		}
+//
+//	 }
 
 //	std::cout << pt_1.x << ", " << pt_1.y << ", " << pt_1.z<< std::endl;
 //	std::cout << pt_2.x << ", " << pt_2.y << ", " << pt_2.z<< std::endl;
 //	std::cout << pt_1.dot(pt_2) << std::endl;
 
+	t = ((double) getTickCount() - t) / getTickFrequency();
+	std::cout << "Times passed in seconds for ALL: " << t << std::endl;
 
-
-	for (int i = 0; i < lines.size(); i++) {
-		Vec4i v = lines[i];
-		//line(cv_ptr->image, Point(v[0], v[1]), Point(v[2], v[3]),
-				//Scalar(0, 255, 0), 3, 8);
-	}
 	cv::imshow(WINDOW, cv_ptr->image);
-	//cv::imshow(WINDOW2, originalImage);
+	cv::imshow(WINDOW2, originalImage);
 	cv::waitKey(3);
 }
 
@@ -473,83 +629,115 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 		delete (cloudCache);
 	}
 	cloudCache = new PointCloud<PointXYZ>(cloud);
-	
-	  bool run_me=true;
-	  int iteration=0;
-	  
-	  std::cerr << "\n\n\nNEW FRAME\n\n" << std::endl;
-	  
-	  PointIndicesVector.clear();
-	  
-	  while (run_me){
-	  iteration++;
-	  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-	  pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-	    
-	    
-	  
-	  // Create the segmentation object
-	  pcl::SACSegmentation<pcl::PointXYZ> seg;
-	  // Optional
-	  seg.setOptimizeCoefficients (true);
-	  // Mandatory
-	  seg.setModelType (pcl::SACMODEL_PLANE);
-	  seg.setMethodType (pcl::SAC_RANSAC);
-	  seg.setDistanceThreshold (error_allowed);
 
-	  seg.setInputCloud (cloud.makeShared ());
-	  seg.segment (*inliers, *coefficients);
+	bool run_me = true;
+	int iteration = 0;
 
-	  
-	  std::cerr << "\n\n\nNumber of indexes:" << inliers->indices.size() << std::endl;
-	  	  if (inliers->indices.size () == 0)
-	  	  {
-	  		  
-	  	    PCL_ERROR ("Could not estimate a planar model for the given dataset.");
-	  	    iteration=4;
-	  	  }
-	  	  else{
+	std::cerr
+			<< "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNEW FRAME\n\n"
+			<< std::endl;
 
-	  //PointIndicesVector.push_back(*inliers);
-	  
-	  pcl::PointIndices good_inliers;
-	  good_inliers=*inliers;
-	  PointIndicesVector.push_back(good_inliers);
-	  
-	    
-	  
-	  for (int to_eliminate = 0; to_eliminate < good_inliers.indices.size(); to_eliminate=to_eliminate+1) {
-		  cloud.points[good_inliers.indices[to_eliminate]].x=0.0/0.0;
-		  cloud.points[good_inliers.indices[to_eliminate]].y=0.0/0.0;
-		  cloud.points[good_inliers.indices[to_eliminate]].z=0.0/0.0;
-	  }
-	  
-	  
-	  
+//	  double t = (double)getTickCount();
+//	  // do something ...
+//	  t = ((double)getTickCount() - t)/getTickFrequency();
+//  	  cout << "Times passed in seconds: " << t << endl;
+
+//	  PointIndicesVector.clear();
+//
+//	  while (run_me){
+//	  iteration++;
+//
+//	  double t = (double)getTickCount();
+//	  double t_total = (double)getTickCount();
+//
+//	  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+//	  pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+//
+//
+//	 	  // Create the segmentation object
+//	  pcl::SACSegmentation<pcl::PointXYZ> seg;
+//	  // Optional
+//	  seg.setOptimizeCoefficients (true);
+//	  // Mandatory
+//	  seg.setModelType (pcl::SACMODEL_PLANE);
+//	  seg.setMethodType (pcl::SAC_RANSAC);//SAC_RANSAC     PROSAC has acceptable results.
+////	  const static int SAC_RANSAC = 0;
+////	 47  const static int SAC_LMEDS = 1;
+////	 48  const static int SAC_MSAC = 2;
+////	 49  const static int SAC_RRANSAC = 3;
+////	 50  const static int SAC_RMSAC = 4;
+////	 51  const static int SAC_MLESAC = 5;
+////	 52  const static int SAC_PROSAC = 6;
+//	  seg.setDistanceThreshold (error_allowed);
+//	  std::cout << seg.getMaxIterations() << std::endl;
+////  	  seg.setMaxIterations(50);
+//	  seg.setMaxIterations(1);
+//  	  std::cout << seg.getMaxIterations() << std::endl;
+//
+//
+//	  seg.setInputCloud (cloud.makeShared ());
+//	  seg.segment (*inliers, *coefficients);
+//
+//	  t = ((double)getTickCount() - t)/getTickFrequency();
+//	  cout << "Times passed in seconds for RANSAC: " << t << endl;
+//
+//
 //	  std::cerr << "\n\n\nNumber of indexes:" << inliers->indices.size() << std::endl;
-//	  if (inliers->indices.size () == 0)
-//	  {
-//		  
-//	    PCL_ERROR ("Could not estimate a planar model for the given dataset.");
-//	    iteration=4;
+//	  	  if (inliers->indices.size () == 0)
+//	  	  {
+//
+//	  	    PCL_ERROR ("Could not estimate a planar model for the given dataset.");
+//	  	    iteration=4;
+//	  	  }
+//	  	  else{
+//
+//	  //PointIndicesVector.push_back(*inliers);
+//
+//	  pcl::PointIndices good_inliers;
+//	  good_inliers=*inliers;
+//	  PointIndicesVector.push_back(good_inliers);
+//
+//	  t = (double)getTickCount();
+//
+//	  for (int to_eliminate = 0; to_eliminate < good_inliers.indices.size(); to_eliminate=to_eliminate+1) {
+//		  cloud.points[good_inliers.indices[to_eliminate]].x=0.0/0.0;
+//		  cloud.points[good_inliers.indices[to_eliminate]].y=0.0/0.0;
+//		  cloud.points[good_inliers.indices[to_eliminate]].z=0.0/0.0;
 //	  }
-
-//	  std::cerr << "Model coefficients: " << coefficients->values[0] << " " 
-//	                                      << coefficients->values[1] << " "
-//	                                      << coefficients->values[2] << " " 
-//	                                      << coefficients->values[3] << std::endl;
-	  std::cerr << "Model coefficients (Rui form): " << coefficients->values[0]/coefficients->values[3] << " " 
-	  	                                      << coefficients->values[1]/coefficients->values[3] << " "
-	  	                                      << coefficients->values[2]/coefficients->values[3] << " " 
-	  	                                      << "1" << std::endl;
-	  
-	  	  }
-	  
-	  if (iteration==4){
-		  run_me=false;}
-	  
-	  
-	  }
+//
+//
+//	  t = ((double)getTickCount() - t)/getTickFrequency();
+//	 	  cout << "Times passed in seconds for NANing: " << t << endl;
+//	 	 t_total = ((double)getTickCount() - t_total)/getTickFrequency();
+//	 	 	 	  cout << "Times passed in seconds for ALL: " << t_total << endl;
+//
+//
+//
+//
+////	  std::cerr << "\n\n\nNumber of indexes:" << inliers->indices.size() << std::endl;
+////	  if (inliers->indices.size () == 0)
+////	  {
+////
+////	    PCL_ERROR ("Could not estimate a planar model for the given dataset.");
+////	    iteration=4;
+////	  }
+//
+////	  std::cerr << "Model coefficients: " << coefficients->values[0] << " "
+////	                                      << coefficients->values[1] << " "
+////	                                      << coefficients->values[2] << " "
+////	                                      << coefficients->values[3] << std::endl;
+//	  std::cerr << "Model coefficients (Rui form): " << coefficients->values[0]/coefficients->values[3] << " "
+//	  	                                      << coefficients->values[1]/coefficients->values[3] << " "
+//	  	                                      << coefficients->values[2]/coefficients->values[3] << " "
+//	  	                                      << "1" << std::endl;
+//
+//	  	  }
+//
+//	  if (iteration>1){
+//		  run_me=false;}
+//
+//
+//	  }
 //
 //	  std::cerr << "Model inliers: " << inliers->indices.size () << std::endl;
 //	  for (size_t i = 0; i < inliers->indices.size (); ++i)
@@ -557,10 +745,6 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 //	                                               << cloud.points[inliers->indices[i]].y << " "
 //	                                               << cloud.points[inliers->indices[i]].z << std::endl;
 
-	
-	
-	
-	
 	/*
 	 float xMin = 0, xMax = 0;
 	 for(int i=0; i<cloud.points.size(); i++){
