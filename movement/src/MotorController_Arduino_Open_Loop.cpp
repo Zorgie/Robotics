@@ -3,6 +3,7 @@
 #include <differential_drive/PWM.h>
 #include "movement/wheel_speed.h"
 #include "movement/wheel_distance.h"
+#include "movement/controller_calib.h" // For calibration of controller of motors
 #include "RobotPosition.h"
 
 using namespace differential_drive;
@@ -25,6 +26,7 @@ ros::Subscriber desired_speed_sub;
 ros::Publisher pwm_pub;
 ros::Publisher wheel_distance_pub;
 ros::Publisher robot_pose_pub;
+ros::Publisher controller_calib_pub;
 
 Encoders encoders_global;                 //Last read encoder values
 movement::wheel_speed wheel_speed_global; //Current desired wheel speed
@@ -52,6 +54,7 @@ int main(int argc, char **argv) {
     //create published variables
 	PWM pwm_command;                                    
 	movement::wheel_distance wheel_distance_traveled;  
+	movement::controller_calib controller_calib;
 
     //stop until first command arrives
 	wheel_speed_global.W1 = 0.0;
@@ -74,6 +77,7 @@ int main(int argc, char **argv) {
 	pwm_pub             = n.advertise<PWM>("/motion/PWM", 1);
 	wheel_distance_pub  = n.advertise<movement::wheel_distance>("/wheel_distance", 100);
 	robot_pose_pub      = n.advertise<movement::robot_pose>("/robot_pose",100);
+	controller_calib_pub = n.advertise<movement::controller_calib>("/controller_calib",100);
 
 	ros::Rate loop_rate(UPDATE_RATE);
 
@@ -164,6 +168,9 @@ int main(int argc, char **argv) {
 		// publsih pwm commands and the robot pose
 		pwm_pub.publish(pwm_command);
 		robot_pose_pub.publish(current_robot_pose);
+		controller_calib.desired=wheel_speed_global.W1;
+		controller_calib.velocity=(encoders_global.delta_encoder1*UPDATE_RATE)/360.0;
+		controller_calib_pub.publish(controller_calib);
 
 	}
 
