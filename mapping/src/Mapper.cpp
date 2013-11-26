@@ -82,15 +82,21 @@ mapping::robot_pose Mapper::calibratePos(irsensors::floatarray currentIR) {
 	Point2d curPos = Point2d(currentPose.x, currentPose.y);
 	if (validIR(currentIR.ch[5], currentIR.ch[6])) {
 		distanceLeft += 0.09;
-		Point2d wallPos = nav.pointConversion(curPos,Point2d(0,+distanceLeft),currentPose.theta);
-		nav.extendWall(wallPos.x,wallPos.y,horizontal);
-		syncPosL = nav.getCalibratedPos(curPos,wallPos);
+		double dLF = currentIR.ch[6] + 0.09;
+		double dLB = currentIR.ch[5] + 0.09;
+		Point2d wallPosF = nav.pointConversion(curPos,Point2d(0.08,dLF),currentPose.theta);
+		Point2d wallPosB = nav.pointConversion(curPos,Point2d(-0.09,dLB),currentPose.theta);
+		nav.extendWall(wallPosF.x,wallPosF.y,horizontal);
+		nav.extendWall(wallPosB.x,wallPosB.y,horizontal);
 	}
 	if (validIR(currentIR.ch[0], currentIR.ch[1])) {
 		distanceRight += 0.09;
-		Point2d wallPos = nav.pointConversion(curPos,Point2d(0,-distanceRight), currentPose.theta);
-		nav.extendWall(wallPos.x,wallPos.y,horizontal);
-		syncPosR = nav.getCalibratedPos(curPos,wallPos);
+		double dRF = currentIR.ch[0] + 0.09;
+		double dRB = currentIR.ch[1] + 0.09;
+		Point2d wallPosF = nav.pointConversion(curPos,Point2d(0.08,-dRF), currentPose.theta);
+		Point2d wallPosB = nav.pointConversion(curPos,Point2d(-0.07,-dRB), currentPose.theta);
+		nav.extendWall(wallPosF.x,wallPosF.y,horizontal);
+		nav.extendWall(wallPosB.x,wallPosB.y,horizontal);
 	}
 	if(validIR(currentIR.ch[7],currentIR.ch[7])){
 		distanceFront+=0.09;

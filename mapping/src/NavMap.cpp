@@ -172,9 +172,9 @@ Point2d NavMap::getCalibratedPos(Point2d approximatePos,
 		Wall w = walls[i];
 		if (w.horizontal == horizontal)
 			continue;
-		if(norm(Point2d(w.x1,w.y1) - Point2d(w.x2,w.y2)) < WALL_MIN_LENGTH){
-			continue;
-		}
+//		if(norm(Point2d(w.x1,w.y1) - Point2d(w.x2,w.y2)) < WALL_MIN_LENGTH){
+//			continue;
+//		}
 		Point2f intersect;
 		if (intersection(Point2d(w.x1, w.y1), Point2d(w.x2, w.y2), p, o,
 				intersect)) {
