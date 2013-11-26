@@ -13,6 +13,8 @@ ros::Publisher ir_pub;
 
 irsensors::floatarray output_average;
 irsensors::floatarray output_median;
+double average_1=0.0;
+double average_2=0.0;
 
 std::vector<float> sensor_1_hist;
 std::vector<float> sensor_2_hist;
@@ -78,18 +80,18 @@ float voltageToRange(float V){
 	return range;
 }
 
-float voltageToRange_red_long(float V){
-	float M =  0.0186;                  //p1
-	float B = -0.1116;                  //p2
-	float K =  0.01;                    //K
+float voltageToRange_red(float V){
+	float M =  0.0338;
+	float B =  0.5689;
+	float K =  0.01;
     
 	float  range = (1/(M*V+B))-K;
 	return range;
 }
 
 float voltageToRange_black(float V){
-	float M =  0.0383;                    
-	float B = -0.4276;                    
+	float M =  0.0337;
+	float B =  0.0983;
 	float K =  0.01;                      
     
 	float  range = (1/(M*V+B))-K;
@@ -97,36 +99,36 @@ float voltageToRange_black(float V){
 }
 
 float voltageToRange_white(float V){
-	float M = 0.0312;                       
-	float B = 0.4565;                       
-	float K = 0.01;                         
+	float M =  0.0373;
+	float B =  -0.4953;
+	float K =  0.01;
     
 	float  range = (1/(M*V+B))-K;
 	return range;
 }
 
 float voltageToRange_green(float V){
-	float M = 0.0319;
-	float B = 0.8255;
-	float K = 0.01;
-    
-	float  range = (1/(M*V+B))-K;
-	return range;
-}
-
-float voltageToRange_orange(float V){
-	float M = 0.0331;  
-	float B = 0.6342;  
-	float K = 0.01;
+	float M =  0.0442;
+	float B =  -0.1647;
+	float K =  0.01;
     
 	float  range = (1/(M*V+B))-K;
 	return range;
 }
 
 float voltageToRange_blue(float V){
-	float M = 0.0326;
-	float B = 0.5670;
-	float K = 0.01;
+	float M =  0.0328;
+	float B =  0.3003;
+	float K =  0.01;
+    
+	float  range = (1/(M*V+B))-K;
+	return range;
+}
+
+float voltageToRange_orange(float V){
+	float M =  0.0344;
+	float B =  0.2421;
+	float K =  0.01;
     
 	float  range = (1/(M*V+B))-K;
 	return range;
@@ -137,37 +139,35 @@ void ir_transformation(const differential_drive::AnalogC &input){
 	irsensors::floatarray output;
     
     // Use only the last tau samples for the average.
-	float tau = 5.0;
+	double tau = 10.0;
 
 	// Multiplying by 0.01 to transform centimeters into meters.
-	output.ch[0] = voltageToRange_green(input.ch1);//voltageToRange_orange(input.ch1);
-	output.ch[1] = voltageToRange_white(input.ch2)+0.01;//voltageToRange_blue(input.ch2);
-	output.ch[2] = 0.01*voltageToRange(input.ch3);
-	output.ch[3] = 0.01*voltageToRange(input.ch4);
-	output.ch[4] = 0.01*voltageToRange(input.ch5);
-	output.ch[5] = voltageToRange_blue(input.ch6);//voltageToRange_white(input.ch6);
-	output.ch[6] = voltageToRange_orange(input.ch7);//voltageToRange_green(input.ch7);
-    
-	//using short range sensor in the front at the moment
-	if (input.ch8<30){ //this is a value very far away, that can cause singularity in the mapping
-		// function, and come out as a close front wall
-		output.ch[7] = voltageToRange_black(30);
-	}else{
-		output.ch[7] = voltageToRange_black(input.ch8);
-	}
+	output.ch[0] = voltageToRange_green(input.ch1); // right front green
+	output.ch[1] = voltageToRange_white(input.ch2); // right back white
+	output.ch[2] = voltageToRange_red(input.ch3); // frontal left red
+	output.ch[3] = 0.0/0.0;
+	output.ch[4] = 0.0/0.0;
+	output.ch[5] = voltageToRange_blue(input.ch6); // left back blue
+	output.ch[6] = voltageToRange_orange(input.ch7); // left front orange
+	output.ch[7] = voltageToRange_black(input.ch8); // frontal right black
+    // Frontal right ch8
+	// Frontal left ch3
+	// Right front ch1
+	// Right back ch2
+	// Left front ch7
+	// Left back ch6
 
-	std::cout << "\n 0: \t" << output.ch[0] << std::endl;
-	std::cout << "1: \t" << output.ch[1] << std::endl;
-	std::cout << "5: \t" << output.ch[5] << std::endl;
-	std::cout << "6: \t" << output.ch[6] << std::endl;
-	std::cout << "7: \t" << output.ch[7] << "raw: \t" << input.ch8 << std::endl;
+
+
+	average_1=round(((tau-1.0)*average_1+1.0*((double)input.ch6))/tau);
+	average_2=round(((tau-1.0)*average_2+1.0*((double)input.ch7))/tau);
 
 	for (int i = 0; i < 7; i++) {
 		output_average.ch[i]=(float)((((tau-1.0)/tau)*output_average.ch[i])+((1.0/tau)*output.ch[i]));
 	}
 
     //short range sensors:
-	for (int i = 0; i < 7; i++) {
+	for (int i = 0; i < 8; i++) {
 		if (output_average.ch[i] > 0.25) {
 			output_average.ch[i] = 0.25;
 		}
@@ -175,13 +175,6 @@ void ir_transformation(const differential_drive::AnalogC &input){
 			output_average.ch[i] = 0.05;
 		}
 	}
-
-    //long range sensor at channel 7 (DO WE NEED TO CHANGE THAT AS WE PUT A SHORT RANGED ONE NOW?)
-    if (output.ch[7] < 0.04 || output.ch[7] > 0.40) {
-            output_average.ch[7] = 0.0 / 0.0;
-    } else {
-            output_average.ch[7]=(float)((((tau-1.0)/tau)*output_average.ch[7])+((1.0/tau)*output.ch[7]));
-    }
 		
     
 	for (int i = 0; i < 8; i++) {
@@ -230,6 +223,11 @@ void ir_transformation(const differential_drive::AnalogC &input){
 		sensor_2_hist.pop_back();
 		median_2=ComputeVectorMedian(sensor_2_hist);
 	}
+	sensor_3_hist.insert(it_3,output.ch[2]);
+	if (sensor_3_hist.size()==vector_size){
+		sensor_3_hist.pop_back();
+		median_3=ComputeVectorMedian(sensor_3_hist);
+	}
 	sensor_6_hist.insert(it_6,output.ch[5]);
 	if (sensor_6_hist.size()==vector_size){
 		sensor_6_hist.pop_back();
@@ -246,13 +244,15 @@ void ir_transformation(const differential_drive::AnalogC &input){
 		median_8=ComputeVectorMedian(sensor_8_hist);
 	}
 
-	printf("\n\n\n");
-	printf("Printing vector8:\n");
-	for (int n = 0; n < sensor_8_hist.size(); n++) {
-		printf("%f \t",sensor_8_hist[n]);
-	}
-	printf("\n");
-	printf("Median8: %f \n",median_8);
+	std::cout << "\n\n\n" << std::endl;
+	std::cout << "median frontal right " << median_8 << std::endl;
+	std::cout << "median frontal left " << median_3 << std::endl;
+	std::cout << "median left back " << median_6 << std::endl;
+	std::cout << "median left front " << median_7 << std::endl;
+	std::cout << "median right back " << median_2 << std::endl;
+	std::cout << "median right front " << median_1 << std::endl;
+
+
 
 	output_median.ch[0]=median_1;
 	output_median.ch[1]=median_2;

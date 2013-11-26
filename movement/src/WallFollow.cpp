@@ -5,6 +5,7 @@
  *      Author: Lucas Taubert
  */
 
+
 #include "WallFollow.h"
 #include <cmath>
 #include <stdlib.h>
