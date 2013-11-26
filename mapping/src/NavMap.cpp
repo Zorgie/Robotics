@@ -17,7 +17,7 @@ vector<int> NavMap::getNeighbours(int nodeId) {
 
 void NavMap::addWall(double x1, double y1, double x2, double y2) {
 	double snapped;
-	if (x2 - x1 > y2 - y1) {
+	if (fabs(x2 - x1) > fabs(y2 - y1)) {
 		// Horizontal wall
 		snapped = y1 + (y2 - y1) / 2;
 		walls.push_back( { min(x1, x2), snapped, max(x1, x2), snapped, true });
@@ -29,19 +29,39 @@ void NavMap::addWall(double x1, double y1, double x2, double y2) {
 }
 
 void NavMap::extendWall(double x, double y, bool horizontal) {
-	printf("Extending wall to (%.2f, %.2f). Wall segments: %d\n", x, y, walls.size());
 	double closest = 100000;
 	int index = -1;
 	int align = -1;
 	Point2d ep(x, y);
 	for (int i = 0; i < walls.size(); i++) {
 		Wall w = walls[i];
-		printf("Wall: (%.2f, %.2f), (%.2f, %.2f)\n", w.x1, w.y1, w.x2, w.y2);
 		if (w.horizontal != horizontal)
 			continue;
+		printf("WY: (%.2f, %.2f)\n",w.y1, w.y2);
+		double dist;
+		if(horizontal){
+			if(x >=w.x1 && x <= w.x2){
+				dist = fabs(w.y1-y);
+				if(dist < closest){
+					index = i;
+					align = 0;
+					closest = dist;
+					continue;
+				}
+			}
+		}else{
+			if(y >= w.y1 && y <= w.y2){ // WHY
+				dist = fabs(w.x1-x);
+				if(dist < closest){
+					index = i;
+					align = 0;
+					closest = dist;
+					continue;
+				}
+			}
+		}
 		Point2d wp(w.x1, w.y1);
-		double dist = norm(wp - ep);
-		printf("Norm calc: %.5f\n", dist);
+		dist = norm(wp - ep);
 		if (dist < closest) {
 			index = i;
 			align = 1;
@@ -49,7 +69,6 @@ void NavMap::extendWall(double x, double y, bool horizontal) {
 		}
 		wp = Point2d(w.x2, w.y2);
 		dist = norm(wp - ep);
-		printf("Norm calc: %.5f\n", dist);
 		if (dist < closest) {
 			index = i;
 			align = 2;
@@ -57,23 +76,23 @@ void NavMap::extendWall(double x, double y, bool horizontal) {
 		}
 	}
 	if (closest > WALL_SNAP_DISTANCE) {
+		cerr << "Closest is "<< closest << endl;
 		if (horizontal)
 			addWall(x, y, x + 0.01, y);
 		else
 			addWall(x, y, x, y + 0.01);
 		return;
 	}
-	printf("Found extension, dist: %.2f\n", closest);
 	if (align == 1) {
 		if (horizontal) // Horizontal wall
-			walls[index].x1 = x;
+			walls[index].x1 = min(x,walls[index].x1);
 		else // Vertical wall
-			walls[index].y1 = y;
-	} else {
-		if (horizontal)// Horizontal wall
-			walls[index].x2 = x;
-		else// Vertical wall
-			walls[index].y2 = y;
+			walls[index].y1 = min(y,walls[index].y1);
+	} else if(align == 2){
+		if (horizontal) // Horizontal wall
+			walls[index].x2 = max(x,walls[index].x2);
+		else // Vertical wall
+			walls[index].y2 = max(y,walls[index].y2);
 	}
 }
 
@@ -131,12 +150,15 @@ void NavMap::draw(Mat& img) {
 	// TODO Fix general case of sizing.
 	for (int i = 0; i < walls.size(); i++) {
 		Wall w = walls[i];
-		line(img, Point((int)(200 + 100*w.x1), (int)(200 + 100*w.y1)), Point((int)(200 + 100*w.x2), (int)(200 + 100*w.y2)),
+		if(norm(Point2d(w.x1,w.y1) - Point2d(w.x2,w.y2)) < WALL_MIN_LENGTH){
+			continue;
+		}
+		line(img, Point((int)(200 - 100*w.x1), (int)(200 + 100*w.y1)), Point((int)(200 - 100*w.x2), (int)(200 + 100*w.y2)),
 				(w.horizontal ? black : grey), 3, 8);
 	}
 	// Drawing nodes.
 	for (int i = 0; i < nodes.size(); i++) {
-		circle(img, Point((int)(200 + 100*nodes[i].x), (int)(200 + 100*nodes[i].y)), 5,
+		circle(img, Point((int)(200 - 100*nodes[i].x), (int)(200 + 100*nodes[i].y)), 5,
 				nodeColors[nodes[i].type % colorCount], 3, 8);
 	}
 }
@@ -150,6 +172,9 @@ Point2d NavMap::getCalibratedPos(Point2d approximatePos,
 		Wall w = walls[i];
 		if (w.horizontal == horizontal)
 			continue;
+		if(norm(Point2d(w.x1,w.y1) - Point2d(w.x2,w.y2)) < WALL_MIN_LENGTH){
+			continue;
+		}
 		Point2f intersect;
 		if (intersection(Point2d(w.x1, w.y1), Point2d(w.x2, w.y2), p, o,
 				intersect)) {

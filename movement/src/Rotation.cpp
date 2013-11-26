@@ -13,7 +13,10 @@ Rotation::Rotation() {
 Rotation::~Rotation() {
 }
 
-void Rotation::initiate_rotation(float degrees) {
+void Rotation::initiate_rotation(float degrees) {//degrees are received in degrees
+	double radians = degrees * M_PI / 180;
+
+
 	degrees_turned = 0;
 	degrees_target = degrees;
 }

@@ -13,14 +13,13 @@
 #include <cstdio>
 #include <cmath>
 #include "NavMap.h"
+#include "Mapper.h"
 #include "ImageConverter.h"
 #include "PlaneDetector.h"
 
 namespace enc = sensor_msgs::image_encodings;
 
-static const char WINDOW[] = "Original Window";
 static const char WINDOW2[] = "Process Window";
-static const char WINDOW3[] = "Plane Window";
 Scalar colors[] = { Scalar(100, 0, 0), Scalar(100, 100, 0), Scalar(0, 100, 0),
 		Scalar(0, 0, 100), Scalar(0, 100, 100), Scalar(100, 100, 100), Scalar(
 				200, 0, 0), Scalar(0, 200, 0), Scalar(0, 0, 200), Scalar(200,
@@ -72,9 +71,18 @@ bool hasLeft(double x, double y) {
 	return false;
 }
 
+NavMap demoInit(){
+	NavMap nav;
+	nav.addWall(0,0,0,1);
+	nav.addWall(0.3,0,0.3,0.7);
+	nav.addWall(0,1,0.15,1);
+	return nav;
+}
+
+
 int main(int argc, char** argv) {
 
-	ros::init(argc, argv, "image_converter");
+	ros::init(argc, argv, "Mapping");
 	ros::NodeHandle nh_;
 
 	//image_transport::ImageTransport it_ = nh_;
@@ -82,37 +90,13 @@ int main(int argc, char** argv) {
 			&imgCallback);
 	ros::Subscriber dSub = nh_.subscribe("/camera/depth_registered/points", 1,
 			&depthCallback);
-	cv::namedWindow(WINDOW);
 
-	NavMap nav;
-	double currentFacing = -M_PI/4;
 	Scalar black = Scalar(0, 0, 0);
-	Mat img(480, 640, CV_8UC3, Scalar(255, 255, 255));
+	Mapper mapper;
 
-	//Adding fake walls.
-	nav.addWall(0,0,0,1);
-	nav.addWall(0.3,0,0.3,0.7);
-	nav.addWall(0,1,0.15,1);
-
-	bool swept = false;
-
-	double curX = 0.15;
-	double curY = 0.85;
-	ros::Rate rr(100);
 	while (ros::ok()) {
-		curX+=0.001;
-		if(hasLeft(curX,curY)){
-			nav.extendWall(curX,curY-0.15,true);
-		}
-		if(hasRight(curX,curY)){
-			nav.extendWall(curX,curY+0.15,true);
-		}
-		nav.draw(img);
-		circle(img, Point((int)(200+100*curX), (int)(200+100*curY)), 2, black, 3, 8);
-		cv::imshow(WINDOW, img);
 		cv::waitKey(3);
 		ros::spinOnce();
-		rr.sleep();
 	}
 	return 0;
 }

@@ -43,11 +43,12 @@ movement::robot_pose RobotPosition::step(
 	x = x + cos(theta) * V;
 	y = y + sin(theta) * V;
 	theta = theta
-			+ (-wheel_distance_traveled1 - wheel_distance_traveled2) / 0.213; //0.213 = wheel distance?
+			+ (-wheel_distance_traveled1 - wheel_distance_traveled2) / 0.203; //0.213 = wheel distance?
 
 	robot_pose.x = x;
 	robot_pose.y = y;
 	robot_pose.theta = theta;
+	std::cerr << theta*180.0/M_PI << std::endl;
 
 	return robot_pose;
 }

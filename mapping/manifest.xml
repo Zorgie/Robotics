@@ -16,6 +16,7 @@
   <depend package="sensor_msgs"/>
   <depend package="pcl"/>
   <depend package="pcl_ros"/> 
+  <depend package="irsensors"/>
   <export>
   	<cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib"/>
 </export>

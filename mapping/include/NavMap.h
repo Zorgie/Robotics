@@ -32,7 +32,8 @@ private:
 	vector<Node> nodes;
 	bool intersection(Point2f o1, Point2f p1, Point2f o2, Point2f p2,
             Point2f &r);
-	const static double WALL_SNAP_DISTANCE = 0.1;
+	const static double WALL_SNAP_DISTANCE = 0.2;
+	const static double WALL_MIN_LENGTH = 0.03;
 public:
 	NavMap(){}
 	virtual ~NavMap(){}
