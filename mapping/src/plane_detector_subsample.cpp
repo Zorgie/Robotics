@@ -19,8 +19,8 @@
 namespace enc = sensor_msgs::image_encodings;
 
 static const char WINDOW[] = "Original Window";
-static const char WINDOW2[] = "Process Window";
-static const char WINDOW3[] = "Plane Window";
+static const char WINDOW2[] = "Binary Window";
+static const char WINDOW3[] = "Eroded Window";
 Scalar colors[] = { Scalar(100, 0, 0), Scalar(100, 100, 0), Scalar(0, 100, 0),
 		Scalar(0, 0, 100), Scalar(0, 100, 100), Scalar(100, 100, 100), Scalar(
 				200, 0, 0), Scalar(0, 200, 0), Scalar(0, 0, 200), Scalar(200,
@@ -63,17 +63,14 @@ int main(int argc, char** argv) {
 	NavMap nav;
 	double currentX = 200;
 	double currentY = 200;
-	double currentFacing = -M_PI/4;
+	double currentFacing = -M_PI / 4;
 	Scalar black = Scalar(0, 0, 0);
 	Mat img(480, 640, CV_8UC3, Scalar(255, 255, 255));
 	bool swept = false;
 
-
-
-
 	while (ros::ok()) {
 
-		cv::imshow(WINDOW, img);
+		//cv::imshow(WINDOW, img);
 		cv::waitKey(3);
 		ros::spinOnce();
 	}
@@ -102,13 +99,14 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	cv::GaussianBlur(originalImage, modImage, cv::Size(3, 3), 8, 3);
 
 	Mat binary_img(480, 640, CV_8UC1, Scalar(255));
+	Mat depth_invalidity(480, 640, CV_8UC1, Scalar(0));
 
 //	PlaneDetector pd;
 //	vector<Vec4i> lines = ic.getHoughLines(modImage);
 //	vector<Point3d> planes = pd.getPlanes(modImage, *cloudCache, lines);
 //
-	
-	if (valid_cloud.size()>0) {
+
+	if (valid_cloud.size() > 0) {
 		for (int y = 0; y < 480; y++) {
 			for (int x = 0; x < 640; x++) {
 				int pixnum = px(x, y);
@@ -117,25 +115,52 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 				//			std::cout << "Print point" << std::endl;
 				//			std::cout << valid_cloud.points[pixnum].z << std::endl;
 				if (!valid_cloud[pixnum]) {
-					binary_img.at<uchar>(y,x)=0;
+					binary_img.at<uchar>(y, x) = 0;
 					modImage.data[3 * pixnum] = 0;
 					modImage.data[3 * pixnum + 1] = 0;
 					modImage.data[3 * pixnum + 2] = 0;
-					continue;
+					//continue;
+				}
+				if (isnan(cloudCache[pixnum].z)) {
+					depth_invalidity.at<uchar>(y, x) = 255;
 				}
 			}
 		}
 	}
 //	line(modImage,Point(0,200),Point(640,200),Scalar(0,0,0),5,3);
 
+	for (int y = 0; y < 480; y++) {
+		for (int x = 0; x < 640; x++) {
+			if (depth_invalidity.at<uchar>(y, x) == 255) {
+				int pixnum = px(x, y);
+				originalImage.data[3 * pixnum] = 0;
+				originalImage.data[3 * pixnum + 1] = 0;
+				originalImage.data[3 * pixnum + 2] = 0;
+			}
+		}
+	}
 
-	Mat element = getStructuringElement(MORPH_RECT, Size(5,5));
+	cv::imshow(WINDOW2, depth_invalidity); //originalImage
+	Mat element = getStructuringElement(MORPH_RECT, Size(10, 10));
 	/// Apply the erosion operation
-	erode(binary_img,modImage,element);
-	dilate(modImage,modImage,element);
-	
-	cv::imshow(WINDOW2, binary_img);
-	cv::imshow(WINDOW3, modImage);
+	//dilate(depth_invalidity, depth_invalidity, element);
+	medianBlur(depth_invalidity,depth_invalidity,5);
+	dilate(depth_invalidity, depth_invalidity, element);
+
+	for (int y = 0; y < 480; y++) {
+		for (int x = 0; x < 640; x++) {
+			if (depth_invalidity.at<uchar>(y, x)==255) {
+				int pixnum = px(x, y);
+				originalImage.data[3 * pixnum] = 0;
+				originalImage.data[3 * pixnum + 1] = 0;
+				originalImage.data[3 * pixnum + 2] = 0;
+			}
+		}
+	}
+
+	cv::imshow(WINDOW, depth_invalidity);//originalImage
+	//cv::imshow(WINDOW2, binary_img);
+	//cv::imshow(WINDOW3, modImage);
 	cv::waitKey(3);
 }
 
@@ -152,9 +177,7 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 	pd.read_cloud(cloudCache);
 	pd.find_planes();
 
-	valid_cloud=pd.valid_cloud();
+	valid_cloud = pd.valid_cloud();
 	valid_cloud.size();
-	
-
 
 }
