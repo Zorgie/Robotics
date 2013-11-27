@@ -40,6 +40,8 @@ cv::Point3d PlaneDetector_Subsample::getPlane(std::vector<cv::Point3d> points) {
 		std::cerr
 				<< "WARNING: Giving less than three points for least squares plane computation."
 				<< std::endl;
+		cv::Point3d plane_eq(0.0,0.0,0.0);
+		return plane_eq;
 	}
 	cv::Mat A = cv::Mat::zeros(points.size(), 3, CV_64F);
 	cv::Mat b = cv::Mat::zeros(points.size(), 1, CV_64F);
@@ -65,85 +67,147 @@ void PlaneDetector_Subsample::find_planes() {
 
 	bool run = true;
 
-	int it_num=0;
+	std::vector<cv::Point3d> planes;
+	std::vector<int> plane_counts;
+
+
 	double t = (double)cv::getTickCount();
 	// do something ...
 
-	while (run) {
-		
-		int invalid_count=0;
-		
-		it_num++;
-		//std::cout << "Iteration # " << it_num << std::endl;
-		
-		for (int i = 0; i < sub_image.size(); i++) {
-			if (isnan(sub_image[i].z)){
-			invalid_count++;
-			}
-		}
+	int plane_it = 0;
 
-		if (invalid_count>((double)sub_image.size())*0.95){
-			std::cout << "Breaking loop, invalid count: " << invalid_count << " out of " << sub_image.size() << std::endl;
-			run=false;
-			continue;
-		}
-		if (it_num>25){
-			std::cout << "Breaking loop, iteration: " << it_num << std::endl;
-			run=false;
-			continue;
-		}
-		
-		std::vector<cv::Point3d> rand_pts;
-		rand_pts.clear();
+	while (plane_it < 3) {
+		plane_it++;
+		planes.clear();
+		plane_counts.clear();
 
+		int it_num=0;
 
-		while (rand_pts.size() < 3) { // Finding 3 random points
-			int rand_pt = rand() % sub_image.size() + 1;
-			if (isnan(sub_image[rand_pt].z)) {
-				// Invalid point
-			} else {
-				cv::Point3d temp_point;
-				temp_point.x = (double) sub_image[rand_pt].x;
-				temp_point.y = (double) sub_image[rand_pt].y;
-				temp_point.z = (double) sub_image[rand_pt].z;
-				rand_pts.push_back(temp_point);
-			}
-		}
+		while (run) {
 
-		cv::Point3d current_plane;
+			int invalid_count = 0;
+			cv::Point3d dummy_point(1.0, 1.0, 1.0);
 
-		current_plane = PlaneDetector_Subsample::getPlane(rand_pts);
-		int in_plane_count = 0;
-		std::vector<cv::Point3d> pts_in_plane;
-		pts_in_plane.clear();
-		for (int i = 0; i < sub_image.size(); i++) {
-			cv::Point3d temp_point;
-			temp_point.x = sub_image[i].x;temp_point.y = sub_image[i].y;temp_point.z = sub_image[i].z;
-			if (fabs(current_plane.dot(temp_point) + 1.0) < DIST_EPSILON) {
-				in_plane_count++;
-				pts_in_plane.push_back(temp_point);
-			}
-		}
-//		std::cout << "Found " << in_plane_count << " points in a plane"
-//				<< std::endl;
-		if (in_plane_count > ((double)sub_image.size())*0.1) {
-			current_plane = PlaneDetector_Subsample::getPlane(pts_in_plane);
+			it_num++;
+			//std::cout << "Iteration # " << it_num << std::endl;
+
 			for (int i = 0; i < sub_image.size(); i++) {
-				cv::Point3d temp_point;
-				temp_point.x = sub_image[i].x;temp_point.y = sub_image[i].y;temp_point.z = sub_image[i].z;
-				if (fabs(current_plane.dot(temp_point) + 1.0) < DIST_EPSILON) {
-					sub_image[i].x = 0.0 / 0.0;
-					sub_image[i].y = 0.0 / 0.0;
-					sub_image[i].z = 0.0 / 0.0;
-					//sub_image[i].z = 0.0;
+				if (isnan(sub_image[i].z)) {
+					invalid_count++;
 				}
 			}
 
+			if (invalid_count > ((double) sub_image.size()) * 0.95) {
+				std::cout << "Breaking loop, invalid count: " << invalid_count
+						<< " out of " << sub_image.size() << std::endl;
+				run = false;
+				continue;
+			}
+			if (it_num > 250) {
+				std::cout << "Breaking loop, iteration: " << it_num
+						<< std::endl;
+				run = false;
+				continue;
+			}
+
+			std::vector<cv::Point3d> rand_pts;
+			rand_pts.clear();
+
+			int rand_1 = -1;
+			int rand_2 = -1;
+
+			int rand_pt;
+			while (rand_pts.size() < 3) { // Finding 3 random points
+
+				do {
+					rand_pt = rand() % sub_image.size() + 1;
+				} while (rand_pt == rand_1 || rand_pt == rand_2);
+				if (rand_1 == -1) {
+					rand_1 = rand_pt;
+				} else if (rand_2 == -1) {
+					rand_2 = rand_pt;
+				}
+
+				if (isnan(sub_image[rand_pt].z)) {
+					// Invalid point
+				} else {
+					cv::Point3d temp_point;
+					temp_point.x = (double) sub_image[rand_pt].x;
+					temp_point.y = (double) sub_image[rand_pt].y;
+					temp_point.z = (double) sub_image[rand_pt].z;
+					rand_pts.push_back(temp_point);
+				}
+			}
+
+			cv::Point3d current_plane;
+
+			current_plane = PlaneDetector_Subsample::getPlane(rand_pts);
+			if (current_plane.dot(dummy_point) == 0.0) {
+				std::cout
+						<< "At line 134 (after choosing the three random points)"
+						<< std::endl;
+				continue;
+			}
+			int in_plane_count = 0;
+			std::vector<cv::Point3d> pts_in_plane;
+			pts_in_plane.clear();
+			for (int i = 0; i < sub_image.size(); i++) {
+				cv::Point3d temp_point;
+				temp_point.x = sub_image[i].x;
+				temp_point.y = sub_image[i].y;
+				temp_point.z = sub_image[i].z;
+				if (fabs(current_plane.dot(temp_point) + 1.0) < DIST_EPSILON) {
+					in_plane_count++;
+					pts_in_plane.push_back(temp_point);
+				}
+
+			}
+
+			current_plane = PlaneDetector_Subsample::getPlane(pts_in_plane);
+			if (current_plane.dot(dummy_point) == 0.0) {
+				std::cout << "At line 153 (for plane improving)" << std::endl;
+				continue;
+			}
+
+			planes.push_back(current_plane);
+			plane_counts.push_back(in_plane_count);
+
+//		std::cout << "Found " << in_plane_count << " points in a plane"
+//				<< std::endl;
+
 		}
 
+		// Find the biggest plane and remove it
+		int max_i = 0;
+		for (int i = 0; i < plane_counts.size(); i++) {
+			if (plane_counts[i] > plane_counts[max_i]) {
+				max_i = i;
+			}
+		}
+		std::cout << "SEMICOLON: " << planes[max_i]
+								<< std::endl;
+		std::cout << "Biggest plane: " << planes[max_i]
+						<< std::endl;
+		std::cout << "Points in the biggest plane " << plane_counts[max_i]
+				<< std::endl;
+
+		run = true;
+
+		for (int i = 0; i < sub_image.size(); i++) {
+			cv::Point3d temp_point;
+			temp_point.x = sub_image[i].x;
+			temp_point.y = sub_image[i].y;
+			temp_point.z = sub_image[i].z;
+			if (fabs(planes[max_i].dot(temp_point) + 1.0) < DIST_EPSILON) {
+				sub_image[i].x = 0.0 / 0.0;
+				sub_image[i].y = 0.0 / 0.0;
+				sub_image[i].z = 0.0 / 0.0;
+			}
+
+		}
 	}
 
-	t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+	t = ((double) cv::getTickCount() - t) / cv::getTickFrequency();
 	std::cout << "Times passed in seconds: " << t << std::endl;
 }
 

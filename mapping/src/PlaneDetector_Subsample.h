@@ -36,7 +36,7 @@ public:
 	cv::Point3d getPlane(std::vector<cv::Point3d> points);
 	std::vector<bool> valid_cloud();
 	static const double DIST_EPSILON = 0.03;
-	static const int sub_rate = 2;
+	static const int sub_rate = 4;
 
 
 };
