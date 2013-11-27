@@ -28,6 +28,7 @@ Scalar colors[] = { Scalar(100, 0, 0), Scalar(100, 100, 0), Scalar(0, 100, 0),
 image_transport::Publisher image_pub_;
 ImageConverter ic;
 pcl::PointCloud<pcl::PointXYZ> cloudCache;
+std::vector<bool> valid_cloud;
 vector<Vec4i> houghLineCache;
 PlaneDetector_Subsample pd;
 
@@ -100,50 +101,60 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 
 	cv::GaussianBlur(originalImage, modImage, cv::Size(3, 3), 8, 3);
 
-
+	Mat binary_img(480, 640, CV_8UC1, Scalar(255));
 
 //	PlaneDetector pd;
 //	vector<Vec4i> lines = ic.getHoughLines(modImage);
 //	vector<Point3d> planes = pd.getPlanes(modImage, *cloudCache, lines);
 //
-//	for (int y = 0; y < 480; y++) {
-//		for (int x = 0; x < 640; x++) {
-//			int pixnum = px(x, y);
-//			PointXYZ pix = cloudCache->points[pixnum];
-//			if(isnan(pix.z)){
-//				modImage.data[3 * pixnum] = 0;
-//				modImage.data[3 * pixnum + 1] = 0;
-//				modImage.data[3 * pixnum + 2] = 0;
-//				continue;
-//			}
-//			for (int i = 0; i < planes.size(); i++) {
-//				if (pd.pointOnPlane(Point3d(pix.x, pix.y, pix.z), planes[i])
-//						< 0.03) {
-//					modImage.data[3 * pixnum] = colors[i].val[0];
-//					modImage.data[3 * pixnum + 1] = colors[i].val[1];
-//					modImage.data[3 * pixnum + 2] = colors[i].val[2];
-//				}
-//			}
-//		}
-//	}
+	
+	if (valid_cloud.size()>0) {
+		for (int y = 0; y < 480; y++) {
+			for (int x = 0; x < 640; x++) {
+				int pixnum = px(x, y);
+				//pcl::PointXYZ pix = valid_cloud.points[pixnum];
+				//if (isnan(pix.z)) {
+				//			std::cout << "Print point" << std::endl;
+				//			std::cout << valid_cloud.points[pixnum].z << std::endl;
+				if (!valid_cloud[pixnum]) {
+					binary_img.at<uchar>(y,x)=0;
+					modImage.data[3 * pixnum] = 0;
+					modImage.data[3 * pixnum + 1] = 0;
+					modImage.data[3 * pixnum + 2] = 0;
+					continue;
+				}
+			}
+		}
+	}
 //	line(modImage,Point(0,200),Point(640,200),Scalar(0,0,0),5,3);
 
-//	cv::imshow(WINDOW, originalImage);
-	cv::imshow(WINDOW2, modImage);
-//	cv::waitKey(3);
+
+	Mat element = getStructuringElement(MORPH_RECT, Size(5,5));
+	/// Apply the erosion operation
+	erode(binary_img,modImage,element);
+	dilate(modImage,modImage,element);
+	
+	cv::imshow(WINDOW2, binary_img);
+	cv::imshow(WINDOW3, modImage);
+	cv::waitKey(3);
 }
 
 void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
-	using namespace pcl;
+
 	using namespace std;
-	PointCloud<PointXYZ> cloud;
+	pcl::PointCloud<pcl::PointXYZ> cloud;
 	fromROSMsg(pcloud, cloud);
 //	if (cloudCache != NULL) {
 //		delete (cloudCache);
 //	}
 	cloudCache = cloud;
+	std::cout << "\n\n\nDepth callback" << std::endl;
 	pd.read_cloud(cloudCache);
 	pd.find_planes();
+
+	valid_cloud=pd.valid_cloud();
+	valid_cloud.size();
+	
 
 
 }
