@@ -21,18 +21,22 @@
 class PlaneDetector_Subsample{
 private:
 	pcl::PointCloud<pcl::PointXYZ> image;
-	pcl::PointCloud<pcl::PointXYZ> sub_image;
+	std::vector<pcl::PointXYZ> sub_image;
 public:
 	int px(int x, int y) {
 		return y * 640 + x;
 	}
+	int px_sub(int x, int y) {
+			return y * (640/sub_rate) + x;
+		}
 	PlaneDetector_Subsample();
 	virtual ~PlaneDetector_Subsample();
 	void read_cloud(pcl::PointCloud<pcl::PointXYZ> original_image);
 	void find_planes();
 	cv::Point3d getPlane(std::vector<cv::Point3d> points);
-	static const double DIST_EPSILON = 0.05;
-	static const int sub_rate = 4;
+	std::vector<bool> valid_cloud();
+	static const double DIST_EPSILON = 0.03;
+	static const int sub_rate = 2;
 
 
 };

@@ -5,6 +5,7 @@
  *      Author: Lucas Taubert
  */
 
+
 #include "WallFollow.h"
 #include <cmath>
 #include <stdlib.h>
@@ -17,10 +18,11 @@ void WallFollow::init() {
 	error_theta              = 0;
 	integral_error_theta     = 0;
 	proportional_error_theta = 0;
-	fixed_speed              = 0.27778;
+	//fixed_speed              = 0.27778;
+	fixed_speed              = 0.4;
 	pGain                    = 0.5;
 	iGain                    = 0.25;
-    desired_distance_to_wall = 0.07;
+	desired_distance_to_wall = 0.07;
 
 	desired_wheel_speed.W1   = 0.0;
 	desired_wheel_speed.W2   = 0.0;

@@ -24,7 +24,6 @@
 #include "Go_straight.h"
 #include "Stop.h"
 #include "WallAlign.h"
-#include "NavMap.h"
 #include "movement/robot_pose.h"
 
 using namespace differential_drive;
@@ -62,7 +61,6 @@ static Rotation rotation;
 static Go_straight go_straight;
 static Stop stop;
 static WallAlign wall_align;
-static NavMap nav;
 
 static movement::robot_pose poseCache;
 
@@ -85,66 +83,6 @@ void robotPoseUpdate(const movement::robot_pose& p) {
 	poseCache.x = p.x;
 	poseCache.y = p.y;
 	poseCache.theta = p.theta;
-}
-
-movement::robot_pose calibratePos(bool left) {
-	std::cerr << "Calibirating" << std::endl;
-	movement::robot_pose pose_diff;
-	pose_diff.x = 0;
-	pose_diff.y = 0;
-	pose_diff.theta = 0;
-	if (poseCache.x == 0 && poseCache.y == 0 && poseCache.theta == 0)
-		return pose_diff;
-
-	int thetaSnap = round(poseCache.theta / (2 * M_PI) * 4);
-	thetaSnap = (thetaSnap + 4) % 4;
-	double sensor1, sensor2;
-	{
-		// front alignment.
-		sensor1 = ir_readings_processed_global.ch[7];
-		sensor2 = ir_readings_processed_global.ch[4];
-	}
-
-	double distance;
-	if (left) {
-		sensor1 = ir_readings_processed_global.ch[5];
-		sensor2 = ir_readings_processed_global.ch[6];
-	} else {
-		sensor1 = ir_readings_processed_global.ch[0];
-		sensor2 = ir_readings_processed_global.ch[1];
-	}
-	if (isnan(sensor1) || isnan(sensor2)) {
-		return pose_diff;
-	}
-	distance = (sensor1 + sensor2) / 2;
-	if (left)
-		distance = -distance;
-
-	if (thetaSnap == 0) { // Going right
-		nav.extendWall(poseCache.x, poseCache.y - distance, true);
-		cv::Point p = nav.getCalibratedPos(cv::Point(poseCache.x, poseCache.y),
-				cv::Point(0, -distance));
-		//pose_diff.y = p.y;
-	} else if (thetaSnap == 1) { // Going up
-		nav.extendWall(poseCache.x + distance, poseCache.y, false);
-		cv::Point p = nav.getCalibratedPos(cv::Point(poseCache.x, poseCache.y),
-				cv::Point(distance, 0));
-		//pose_diff.x = p.x;
-	} else if (thetaSnap == 2) { // Going left
-		nav.extendWall(poseCache.x, poseCache.y + distance, true);
-		cv::Point p = nav.getCalibratedPos(cv::Point(poseCache.x, poseCache.y),
-				cv::Point(0, distance));
-		//pose_diff.y = p.y;
-
-	} else if (thetaSnap == 3) { // Going down
-		nav.extendWall(poseCache.x - distance, poseCache.y, false);
-		cv::Point p = nav.getCalibratedPos(cv::Point(poseCache.x, poseCache.y),
-				cv::Point(-distance, 0));
-		//pose_diff.x = p.x;
-	}
-	//pose_diff.theta = M_PI * 2 * (double) thetaSnap / 4 - poseCache.theta;
-	std::cerr << "Calibration complete: " << pose_diff.x << ", " << pose_diff.y << std::endl;
-	return pose_diff;
 }
 
 //get desired wheel speed according to current robot action
@@ -178,15 +116,9 @@ void act() {
 		break;
 	case FOLLOW_LEFT_WALL:
 		desired_speed = wall_follow.step(ir_readings_processed_global, 1);
-		pose = calibratePos(true);
-		if (pose.x != 0 || pose.y != 0 || pose.theta != 0)
-			robot_pos_calibrated.publish(pose);
 		break;
 	case FOLLOW_RIGHT_WALL:
 		desired_speed = wall_follow.step(ir_readings_processed_global, 0);
-		pose = calibratePos(false);
-		if (pose.x != 0 || pose.y != 0 || pose.theta != 0)
-			robot_pos_calibrated.publish(pose);
 		break;
 
 	case IDLE_STATE:
@@ -203,6 +135,7 @@ void act() {
 void movement_state_update(const navigation::movement_state &mvs) {
 
 	CURRENT_STATE = (robot_action) mvs.movement_state;
+	double target_rot;
 
 	switch (CURRENT_STATE) {
 	case GO_STRAIGHT_INF:
@@ -217,12 +150,20 @@ void movement_state_update(const navigation::movement_state &mvs) {
 
 	case TURN_LEFT_90:
 		printf("TURN_LEFT_90\n");
-		rotation.initiate_rotation(90);
+		target_rot = M_PI / 2 + poseCache.theta;
+		target_rot = (target_rot) / (2 * M_PI) * 4;
+		target_rot = round(target_rot);
+		target_rot = 2*M_PI * target_rot/4;
+		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI);
 		break;
 
 	case TURN_RIGHT_90:
 		printf("TURN_RIGHT_90\n");
-		rotation.initiate_rotation(-90);
+		target_rot = -M_PI / 2 + poseCache.theta;
+		target_rot = (target_rot) / (2 * M_PI) * 4;
+		target_rot = round(target_rot);
+		target_rot = 2*M_PI * target_rot/4;
+		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI);
 		break;
 
 	case FOLLOW_LEFT_WALL:
@@ -265,8 +206,6 @@ int main(int argc, char **argv) {
 	go_straight = Go_straight();
 	stop = Stop();
 	wall_align = WallAlign();
-	cv::Mat mapImage(480, 640, CV_8UC3, cv::Scalar(255, 255, 255));
-	cv::namedWindow(WINDOW);
 
 	//init publishers
 	desired_speed_pub = n.advertise<movement::wheel_speed>("/desired_speed", 1);
@@ -277,8 +216,6 @@ int main(int argc, char **argv) {
 		ros::spinOnce();
 		loop_rate.sleep();
 		act();
-		nav.draw(mapImage);
-		cv::imshow(WINDOW, mapImage);
 		cv::waitKey(3);
 	}
 }
