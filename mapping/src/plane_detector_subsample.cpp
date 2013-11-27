@@ -28,6 +28,7 @@ Scalar colors[] = { Scalar(100, 0, 0), Scalar(100, 100, 0), Scalar(0, 100, 0),
 image_transport::Publisher image_pub_;
 ImageConverter ic;
 pcl::PointCloud<pcl::PointXYZ> cloudCache;
+Mat rgbCache(640, 480, CV_8UC3, Scalar(255, 255, 255));
 std::vector<bool> valid_cloud;
 vector<Vec4i> houghLineCache;
 PlaneDetector_Subsample pd;
@@ -93,6 +94,7 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	const cv_bridge::CvImagePtr cv_ptr = ic.getImage(msg);
 	Mat originalImage = cv_ptr->image.clone();
 	Mat modImage = cv_ptr->image.clone();
+	rgbCache = cv_ptr->image.clone();
 
 	Mat mapImage(640, 480, CV_8UC3, Scalar(255, 255, 255));
 
@@ -174,7 +176,7 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 //	}
 	cloudCache = cloud;
 	std::cout << "\n\n\nDepth callback" << std::endl;
-	pd.read_cloud(cloudCache);
+	pd.read_cloud(cloudCache,rgbCache);
 	pd.find_planes();
 
 	valid_cloud = pd.valid_cloud();

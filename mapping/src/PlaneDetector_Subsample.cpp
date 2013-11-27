@@ -14,24 +14,38 @@ PlaneDetector_Subsample::~PlaneDetector_Subsample() {
 	// TODO Auto-generated destructor stub
 }
 
-void PlaneDetector_Subsample::read_cloud(pcl::PointCloud<pcl::PointXYZ> original_image){
+void PlaneDetector_Subsample::read_cloud(
+		pcl::PointCloud<pcl::PointXYZ> original_image,cv::Mat rgbCache) {
 
-	image=original_image;
+	image = original_image;
+	rgb_image=rgbCache;
 	sub_image.clear();
+	sub_r_image.clear();
+	sub_g_image.clear();
+	sub_b_image.clear();
+
 	std::cout << "Got image in Plane class" << std::endl;
 
-	for (int y=0; y<480; y=y+sub_rate){//100*sub_rate){
-		for (int x=0; x<640; x=x+sub_rate){//+100*sub_rate){
-			int pixnum = px(x,y);
+	for (int y = 0; y < 480; y = y + sub_rate) { //100*sub_rate){
+		for (int x = 0; x < 640; x = x + sub_rate) { //+100*sub_rate){
+			int pixnum = px(x, y);
 			pcl::PointXYZ point = image.points[pixnum];
 			//std::cout << image.points[pixnum].z << std::endl;
 			//std::cout << image.points[pixnum].x << image.points[pixnum].y << image.points[pixnum].z << std::endl;
 			sub_image.push_back(point);
+			sub_r_image.push_back((int)rgb_image.data[3*pixnum+0]);
+			sub_g_image.push_back((int)rgb_image.data[3*pixnum+1]);
+			sub_b_image.push_back((int)rgb_image.data[3*pixnum+2]);
+
+			//sub_r_image.push_back((int)rgb_image.data[3*pixnum+0]);
 		}
 	}
+
+	std::cout << (int)rgb_image.data[0] << std::endl;
+
 	std::cout << "Original image size " << image.size() << std::endl;
 	std::cout << "Subsampled image size " << sub_image.size() << std::endl;
-	
+
 }
 
 cv::Point3d PlaneDetector_Subsample::getPlane(std::vector<cv::Point3d> points) {
@@ -40,7 +54,7 @@ cv::Point3d PlaneDetector_Subsample::getPlane(std::vector<cv::Point3d> points) {
 		std::cerr
 				<< "WARNING: Giving less than three points for least squares plane computation."
 				<< std::endl;
-		cv::Point3d plane_eq(0.0,0.0,0.0);
+		cv::Point3d plane_eq(0.0, 0.0, 0.0);
 		return plane_eq;
 	}
 	cv::Mat A = cv::Mat::zeros(points.size(), 3, CV_64F);
@@ -63,25 +77,34 @@ cv::Point3d PlaneDetector_Subsample::getPlane(std::vector<cv::Point3d> points) {
 
 void PlaneDetector_Subsample::find_planes() {
 
-	srand (time(NULL));
+	srand(time(NULL));
 
 	bool run = true;
 
 	std::vector<cv::Point3d> planes;
 	std::vector<int> plane_counts;
 
-
-	double t = (double)cv::getTickCount();
+	double t = (double) cv::getTickCount();
 	// do something ...
 
 	int plane_it = 0;
 
-	while (plane_it < 3) {
+	bool plane_finding = true;
+
+	while (plane_finding) {
+
 		plane_it++;
 		planes.clear();
 		plane_counts.clear();
 
-		int it_num=0;
+		int it_num = 0;
+
+		int removed_count = 0;
+		for (int i = 0; i < sub_image.size(); i++) {
+			if (isnan(sub_image[i].z)) {
+				removed_count++;
+			}
+		}
 
 		while (run) {
 
@@ -184,14 +207,16 @@ void PlaneDetector_Subsample::find_planes() {
 				max_i = i;
 			}
 		}
-		std::cout << "SEMICOLON: " << planes[max_i]
-								<< std::endl;
-		std::cout << "Biggest plane: " << planes[max_i]
-						<< std::endl;
+		std::cout << "SEMICOLON: " << planes[max_i] << std::endl;
+		std::cout << "Biggest plane: " << planes[max_i] << std::endl;
 		std::cout << "Points in the biggest plane " << plane_counts[max_i]
 				<< std::endl;
 
 		run = true;
+
+		double r_average=0;
+		double g_average=0;
+		double b_average=0;
 
 		for (int i = 0; i < sub_image.size(); i++) {
 			cv::Point3d temp_point;
@@ -202,27 +227,64 @@ void PlaneDetector_Subsample::find_planes() {
 				sub_image[i].x = 0.0 / 0.0;
 				sub_image[i].y = 0.0 / 0.0;
 				sub_image[i].z = 0.0 / 0.0;
+
+				r_average+=(double)sub_r_image[i];
+				g_average+=(double)sub_g_image[i];
+				b_average+=(double)sub_b_image[i];
+
 			}
 
 		}
+
+		r_average/=plane_counts[max_i];
+		g_average/=plane_counts[max_i];
+		b_average/=plane_counts[max_i];
+
+		std::cout << "Biggest plane RGB: " << r_average << "\t"
+				<< g_average << "\t"
+				<< b_average << std::endl;
+
+		/* PIXEL DELETE MADE BY PAUL - DID NOT MAKE A LOT OF SENSE BECAUSE WE SHOULD DO THIS
+		 * AFTER THE WHOLE WALL REMOVAL PROCESS
+		for(int i = 0;i < sub_image.size();i++){
+			double dx = fabs(sub_image[i].x-r_average);
+			double dy = fabs(sub_image[i].y-g_average);
+			double dz = fabs(sub_image[i].z-b_average);
+			double distance = sqrt(dx*dx+dy*dy+dz*dz);
+			if(distance < 1){
+				std::cout << "CANCELD" << std::endl;
+				sub_image[i].x = 0.0 / 0.0;
+				sub_image[i].y = 0.0 / 0.0;
+				sub_image[i].z = 0.0 / 0.0;
+			}
+		}*/
+
+
+		if (removed_count > sub_image.size() * 0.9) {
+			plane_finding = false;
+		}
+		if (plane_it > 6) {
+			plane_finding = false;
+		}
+
 	}
 
 	t = ((double) cv::getTickCount() - t) / cv::getTickFrequency();
 	std::cout << "Times passed in seconds: " << t << std::endl;
 }
 
-std::vector<bool> PlaneDetector_Subsample::valid_cloud(){
-	
+std::vector<bool> PlaneDetector_Subsample::valid_cloud() {
+
 	std::vector<bool> validity_cloud;
 	validity_cloud.clear();
-	
-	for (int y=0; y<480; y++) {
-		for (int x=0; x<640; x++) {
-			int pix_sub_num=px_sub(x/sub_rate,y/sub_rate);
+
+	for (int y = 0; y < 480; y++) {
+		for (int x = 0; x < 640; x++) {
+			int pix_sub_num = px_sub(x / sub_rate, y / sub_rate);
 			validity_cloud.push_back(!isnan(sub_image[pix_sub_num].z));
 		}
 	}
-	
+
 	return validity_cloud;
-	
+
 }
