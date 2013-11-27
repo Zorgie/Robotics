@@ -24,6 +24,8 @@ private:
 	std::vector<int> sub_r_image;
 	std::vector<int> sub_g_image;
 	std::vector<int> sub_b_image;
+	std::vector<cv::Point3d> colors_to_remove;
+	std::vector<cv::Point3d> colors_to_remove_std;
 	pcl::PointCloud<pcl::PointXYZ> image;
 	std::vector<pcl::PointXYZ> sub_image;
 public:

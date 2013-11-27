@@ -146,7 +146,7 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	Mat element = getStructuringElement(MORPH_RECT, Size(10, 10));
 	/// Apply the erosion operation
 	//dilate(depth_invalidity, depth_invalidity, element);
-	medianBlur(depth_invalidity,depth_invalidity,5);
+//	medianBlur(binary_img,binary_img,9);
 	dilate(depth_invalidity, depth_invalidity, element);
 
 	for (int y = 0; y < 480; y++) {
@@ -160,8 +160,20 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 		}
 	}
 
+	vector<vector<Point> > contours;
+	RNG rng(12345);
+
+	cv::findContours(binary_img, contours, CV_RETR_EXTERNAL,
+			CV_CHAIN_APPROX_NONE);
+	for (int i = 0; i < contours.size(); i++) {
+		cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0, 255),
+				rng.uniform(0, 255));
+		cv::drawContours(binary_img, contours, i, color);
+	}
+
+
 //	cv::imshow(WINDOW, depth_invalidity);//originalImage
-	//cv::imshow(WINDOW2, binary_img);
+	cv::imshow(WINDOW2, binary_img);
 	cv::imshow(WINDOW3, modImage);
 	cv::waitKey(3);
 }
