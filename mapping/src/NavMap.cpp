@@ -146,6 +146,15 @@ void NavMap::draw(Mat& img) {
 	Scalar nodeColors[] = { Scalar(255, 0, 0), Scalar(0, 255, 0), Scalar(0, 0,
 			255) };
 	int colorCount = 3;
+
+	if (objects.size()==0){
+		Object new_object;
+		new_object.type=1;//"AVOCADO";
+		new_object.x=-1;
+		new_object.y=-1;
+		objects.push_back(new_object);
+	}
+
 	// Drawing walls.
 	// TODO Fix general case of sizing.
 	for (int i = 0; i < walls.size(); i++) {
@@ -161,6 +170,13 @@ void NavMap::draw(Mat& img) {
 		circle(img, Point((int)(200 - 100*nodes[i].x), (int)(200 + 100*nodes[i].y)), 5,
 				nodeColors[nodes[i].type % colorCount], 3, 8);
 	}
+	// Drawing objects.
+	for (int i = 0; i < objects.size(); i++) {
+	putText(img, "AVOCADO",Point((int)(200 - 100*(-1)), (int)(200 + 100*(-1))),
+			FONT_HERSHEY_SIMPLEX, 0.25, Scalar(0,0,255)); // B G R
+//			int thickness=1, int lineType=8, bool bottomLeftOrigin=false )
+	}
+
 }
 
 Point2d NavMap::getCalibratedPos(Point2d approximatePos,

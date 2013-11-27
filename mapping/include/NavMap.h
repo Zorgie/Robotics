@@ -24,12 +24,17 @@ typedef struct Wall{
 	double x1, y1, x2, y2;
 	bool horizontal;
 };
+typedef struct Object{
+	double x, y;
+	int type;
+};
 
 class NavMap {
 private:
 	map<int, vector<int> > neighbours;
 	vector<Wall> walls;
 	vector<Node> nodes;
+	vector<Object> objects;
 	bool intersection(Point2f o1, Point2f p1, Point2f o2, Point2f p2,
             Point2f &r);
 	const static double WALL_SNAP_DISTANCE = 0.2;
