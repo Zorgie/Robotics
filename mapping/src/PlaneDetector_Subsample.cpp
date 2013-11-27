@@ -66,7 +66,9 @@ void PlaneDetector_Subsample::find_planes() {
 	bool run = true;
 
 	int it_num=0;
-	
+	double t = (double)cv::getTickCount();
+	// do something ...
+
 	while (run) {
 		
 		int invalid_count=0;
@@ -80,7 +82,7 @@ void PlaneDetector_Subsample::find_planes() {
 			}
 		}
 
-		if (invalid_count>((double)sub_image.size())*0.8){
+		if (invalid_count>((double)sub_image.size())*0.95){
 			std::cout << "Breaking loop, invalid count: " << invalid_count << " out of " << sub_image.size() << std::endl;
 			run=false;
 			continue;
@@ -95,18 +97,15 @@ void PlaneDetector_Subsample::find_planes() {
 		rand_pts.clear();
 
 
-//		std::cout << "Got here1!" << std::endl;
 		while (rand_pts.size() < 3) { // Finding 3 random points
 			int rand_pt = rand() % sub_image.size() + 1;
-//			std::cout << "Got here2!" << std::endl;
-			isnan(sub_image[rand_pt].z);
-//			std::cout << isnan(sub_image.points[rand_pt].z) << std::endl;
-//			std::cout << "Got here3!" << std::endl;
 			if (isnan(sub_image[rand_pt].z)) {
 				// Invalid point
 			} else {
 				cv::Point3d temp_point;
-				temp_point.x = (double)sub_image[rand_pt].x;	temp_point.y = (double)sub_image[rand_pt].y;	temp_point.z = (double)sub_image[rand_pt].z;
+				temp_point.x = (double) sub_image[rand_pt].x;
+				temp_point.y = (double) sub_image[rand_pt].y;
+				temp_point.z = (double) sub_image[rand_pt].z;
 				rand_pts.push_back(temp_point);
 			}
 		}
@@ -127,11 +126,8 @@ void PlaneDetector_Subsample::find_planes() {
 		}
 //		std::cout << "Found " << in_plane_count << " points in a plane"
 //				<< std::endl;
-		std::cout << sub_image.size() << std::endl;
 		if (in_plane_count > ((double)sub_image.size())*0.1) {
-			std::cout << "More than fourth_of_screen points" << std::endl;
 			current_plane = PlaneDetector_Subsample::getPlane(pts_in_plane);
-			std::cout << current_plane << std::endl;
 			for (int i = 0; i < sub_image.size(); i++) {
 				cv::Point3d temp_point;
 				temp_point.x = sub_image[i].x;temp_point.y = sub_image[i].y;temp_point.z = sub_image[i].z;
@@ -146,6 +142,9 @@ void PlaneDetector_Subsample::find_planes() {
 		}
 
 	}
+
+	t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+	std::cout << "Times passed in seconds: " << t << std::endl;
 }
 
 std::vector<bool> PlaneDetector_Subsample::valid_cloud(){
@@ -159,8 +158,6 @@ std::vector<bool> PlaneDetector_Subsample::valid_cloud(){
 			validity_cloud.push_back(!isnan(sub_image[pix_sub_num].z));
 		}
 	}
-	
-	std::cout << "Resized image size: " << validity_cloud.size() << std::endl;
 	
 	return validity_cloud;
 	

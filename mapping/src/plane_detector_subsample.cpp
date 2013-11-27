@@ -140,7 +140,7 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 		}
 	}
 
-	cv::imshow(WINDOW2, depth_invalidity); //originalImage
+//	cv::imshow(WINDOW2, depth_invalidity); //originalImage
 	Mat element = getStructuringElement(MORPH_RECT, Size(10, 10));
 	/// Apply the erosion operation
 	//dilate(depth_invalidity, depth_invalidity, element);
@@ -158,9 +158,9 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 		}
 	}
 
-	cv::imshow(WINDOW, depth_invalidity);//originalImage
+//	cv::imshow(WINDOW, depth_invalidity);//originalImage
 	//cv::imshow(WINDOW2, binary_img);
-	//cv::imshow(WINDOW3, modImage);
+	cv::imshow(WINDOW3, modImage);
 	cv::waitKey(3);
 }
 
