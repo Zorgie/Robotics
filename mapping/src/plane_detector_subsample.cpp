@@ -163,18 +163,106 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	vector<vector<Point> > contours;
 	RNG rng(12345);
 
+	/*
 	cv::findContours(binary_img, contours, CV_RETR_EXTERNAL,
 			CV_CHAIN_APPROX_NONE);
 	for (int i = 0; i < contours.size(); i++) {
 		cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0, 255),
 				rng.uniform(0, 255));
 		cv::drawContours(binary_img, contours, i, color);
+	}*/
+
+	int nrOfWhitePixels = 0;
+	//binary 0/1 image from binary 0/255 image
+	Mat binary(480, 640, CV_8UC1, Scalar(1));
+	for (int y = 0; y < 480; y++) {
+		for (int x = 0; x < 640; x++) {
+			if (binary_img.at<uchar>(y, x) == 0) {
+				binary.at<uchar>(y, x) = 0;
+			} else {
+				if (y > 240) {
+					nrOfWhitePixels++;
+				}
+				binary.at<uchar>(y, x) = 1;
+			}
+
+		}
+	}
+
+	//cout << "\n\nNR OF WHITE PIXELS:" << nrOfWhitePixels << endl;
+	if(nrOfWhitePixels > 1500 && nrOfWhitePixels < 3000){
+		cout << "OBJECT DETECTED" << endl;
+	}
+
+	std::vector<std::vector <cv::Point> > blobs;
+	blobs.clear();
+
+	cv::Mat label_image;
+	binary.convertTo(label_image, CV_32FC1);
+	int label_count = 2;
+
+
+	for (int y = 0; y < 480; y++) {
+				for (int x = 0; x < 640; x++) {
+					if(binary_img.at<uchar>(y, x) == 0){
+						label_image.at<uchar> (y,x)= 0;
+					}
+					else
+					{
+						label_image.at<uchar> (y,x)= 1;
+					}
+
+				}
+		}
+
+	imshow("Label Image",label_image);
+
+	for (int y = 0; y < binary.rows; y++) {
+		for (int x = 0; x < binary.cols; x++) {
+			if ((int) label_image.at<uchar>(y, x) != 1) {
+				//cout << "PIXEL IMAGE VALUE: " << (int)label_image.at<uchar>(y, x) << endl;
+				continue;
+			}
+
+			cv::Rect rect;
+			cv::floodFill(label_image, cv::Point(x, y), cv::Scalar(label_count),
+					&rect, cv::Scalar(0), cv::Scalar(0), 4);
+
+			std::vector<cv::Point> blob;
+
+			for (int i = rect.y; i < (rect.y + rect.height); i++) {
+				for (int j = rect.x; j < (rect.x + rect.width); j++) {
+					if ((int) label_image.at<uchar>(i, j) != label_count) {
+						continue;
+					}
+
+					blob.push_back(cv::Point(j, i));
+				}
+			}
+
+			blobs.push_back(blob);
+
+			label_count++;
+
+		}
+	}
+
+
+	Mat blobImage(640, 480, CV_8UC3, Scalar(0, 0, 0));
+	for(int i = 0;i < blobs.size();i++){
+		for(int j = 0;j < blobs[i].size();j++){
+			int pixnum = px(blobs[i][j].x, blobs[i][j].y);
+			originalImage.data[3 * pixnum] = 1*(i+1);
+			originalImage.data[3 * pixnum + 1] = 0;
+			originalImage.data[3 * pixnum + 2] = 255-1*(i+1);
+		}
 	}
 
 
 //	cv::imshow(WINDOW, depth_invalidity);//originalImage
 	cv::imshow(WINDOW2, binary_img);
 	cv::imshow(WINDOW3, modImage);
+	cv::imshow("blobImage",originalImage);
 	cv::waitKey(3);
 }
 
@@ -187,9 +275,10 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 //		delete (cloudCache);
 //	}
 	cloudCache = cloud;
-	std::cout << "\n\n\nDepth callback" << std::endl;
 	pd.read_cloud(cloudCache,rgbCache);
 	pd.find_planes();
+
+	int testnum = px(100, 450);
 
 	valid_cloud = pd.valid_cloud();
 	valid_cloud.size();
