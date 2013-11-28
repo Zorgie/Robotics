@@ -154,7 +154,8 @@ void movement_state_update(const navigation::movement_state &mvs) {
 		target_rot = (target_rot) / (2 * M_PI) * 4;
 		target_rot = round(target_rot);
 		target_rot = 2*M_PI * target_rot/4;
-		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI);
+		//rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI);
+		rotation.initiate_rotation(90.0);
 		break;
 
 	case TURN_RIGHT_90:
@@ -163,7 +164,8 @@ void movement_state_update(const navigation::movement_state &mvs) {
 		target_rot = (target_rot) / (2 * M_PI) * 4;
 		target_rot = round(target_rot);
 		target_rot = 2*M_PI * target_rot/4;
-		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI);
+		//rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI);
+		rotation.initiate_rotation(-90.0);
 		break;
 
 	case FOLLOW_LEFT_WALL:

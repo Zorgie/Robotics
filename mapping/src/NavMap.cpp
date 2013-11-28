@@ -37,7 +37,6 @@ void NavMap::extendWall(double x, double y, bool horizontal) {
 		Wall w = walls[i];
 		if (w.horizontal != horizontal)
 			continue;
-		printf("WY: (%.2f, %.2f)\n",w.y1, w.y2);
 		double dist;
 		if(horizontal){
 			if(x >=w.x1 && x <= w.x2){
@@ -147,14 +146,6 @@ void NavMap::draw(Mat& img) {
 			255) };
 	int colorCount = 3;
 
-	if (objects.size()==0){
-		Object new_object;
-		new_object.type=1;//"AVOCADO";
-		new_object.x=-1;
-		new_object.y=-1;
-		objects.push_back(new_object);
-	}
-
 	// Drawing walls.
 	// TODO Fix general case of sizing.
 	for (int i = 0; i < walls.size(); i++) {
@@ -172,8 +163,8 @@ void NavMap::draw(Mat& img) {
 	}
 	// Drawing objects.
 	for (int i = 0; i < objects.size(); i++) {
-	putText(img, "AVOCADO",Point((int)(200 - 100*(-1)), (int)(200 + 100*(-1))),
-			FONT_HERSHEY_SIMPLEX, 0.25, Scalar(0,0,255)); // B G R
+	putText(img, "X",Point((int)(200 - 100*(objects[i].x)), (int)(200 + 100*(objects[i].y))),
+			FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,255)); // B G R
 //			int thickness=1, int lineType=8, bool bottomLeftOrigin=false )
 	}
 

@@ -7,6 +7,8 @@
 
 #include "PlaneDetector_Subsample.h"
 
+using namespace std;
+
 PlaneDetector_Subsample::PlaneDetector_Subsample() {
 }
 
@@ -15,10 +17,10 @@ PlaneDetector_Subsample::~PlaneDetector_Subsample() {
 }
 
 void PlaneDetector_Subsample::read_cloud(
-		pcl::PointCloud<pcl::PointXYZ> original_image,cv::Mat rgbCache) {
+		pcl::PointCloud<pcl::PointXYZ> original_image, cv::Mat rgbCache) {
 
 	image = original_image;
-	rgb_image=rgbCache;
+	rgb_image = rgbCache;
 	sub_image.clear();
 	sub_r_image.clear();
 	sub_g_image.clear();
@@ -33,9 +35,9 @@ void PlaneDetector_Subsample::read_cloud(
 			//std::cout << image.points[pixnum].z << std::endl;
 			//std::cout << image.points[pixnum].x << image.points[pixnum].y << image.points[pixnum].z << std::endl;
 			sub_image.push_back(point);
-			sub_r_image.push_back((int)rgb_image.data[3*pixnum+0]);
-			sub_g_image.push_back((int)rgb_image.data[3*pixnum+1]);
-			sub_b_image.push_back((int)rgb_image.data[3*pixnum+2]);
+			sub_r_image.push_back((int) rgb_image.data[3 * pixnum + 0]);
+			sub_g_image.push_back((int) rgb_image.data[3 * pixnum + 1]);
+			sub_b_image.push_back((int) rgb_image.data[3 * pixnum + 2]);
 
 			//sub_r_image.push_back((int)rgb_image.data[3*pixnum+0]);
 		}
@@ -85,7 +87,6 @@ void PlaneDetector_Subsample::find_planes() {
 	std::vector<int> plane_counts;
 
 	double t = (double) cv::getTickCount();
-	// do something ...
 
 	int plane_it = 0;
 
@@ -119,6 +120,7 @@ void PlaneDetector_Subsample::find_planes() {
 					invalid_count++;
 				}
 			}
+			//cout << "3" << endl;
 
 			if (invalid_count > ((double) sub_image.size()) * 0.95) {
 //				std::cout << "Breaking loop, invalid count: " << invalid_count
@@ -126,6 +128,7 @@ void PlaneDetector_Subsample::find_planes() {
 				run = false;
 				continue;
 			}
+			//cout << "4" << endl;
 			if (it_num > 250) {
 //				std::cout << "Breaking loop, iteration: " << it_num
 //						<< std::endl;
@@ -200,65 +203,101 @@ void PlaneDetector_Subsample::find_planes() {
 
 		}
 
-		// Find the biggest plane and remove it
-		int max_i = 0;
-		for (int i = 0; i < plane_counts.size(); i++) {
-			if (plane_counts[i] > plane_counts[max_i]) {
-				max_i = i;
+		if (planes.size() != 0) {
+
+			//cout << "6" << endl;
+			// Find the biggest plane and remove it
+			int max_i = 0;
+			for (int i = 0; i < plane_counts.size(); i++) {
+				if (plane_counts[i] > plane_counts[max_i]) {
+					max_i = i;
+				}
 			}
-		}
+			//cout << "7" << endl;
 //		std::cout << "SEMICOLON: " << planes[max_i] << std::endl;
 //		std::cout << "Biggest plane: " << planes[max_i] << std::endl;
 //		std::cout << "Points in the biggest plane " << plane_counts[max_i]
 //				<< std::endl;
 
-		run = true;
+			run = true;
 
-		double r_average=0;
-		double g_average=0;
-		double b_average=0;
+			double r_average = 0;
+			double g_average = 0;
+			double b_average = 0;
 
-		for (int i = 0; i < sub_image.size(); i++) {
-			cv::Point3d temp_point;
-			temp_point.x = sub_image[i].x;
-			temp_point.y = sub_image[i].y;
-			temp_point.z = sub_image[i].z;
-			if (fabs(planes[max_i].dot(temp_point) + 1.0) < DIST_EPSILON) {
-				sub_image[i].x = 0.0 / 0.0;
-				sub_image[i].y = 0.0 / 0.0;
-				sub_image[i].z = 0.0 / 0.0;
+			//cout << "8" << endl;
 
-				r_average+=(double)sub_r_image[i];
-				g_average+=(double)sub_g_image[i];
-				b_average+=(double)sub_b_image[i];
+			for (int i = 0; i < sub_image.size(); i++) {
+
+				//cout << "8.1" << endl;
+
+				cv::Point3d temp_point;
+				temp_point.x = sub_image[i].x;
+				temp_point.y = sub_image[i].y;
+				temp_point.z = sub_image[i].z;
+
+				//cout << "8.2" << endl;
+
+				bool cond = fabs(planes[max_i].dot(temp_point) + 1.0)
+						< DIST_EPSILON;
+
+				//cout << "CONDITION PASSED " << endl;
+
+				if (fabs(planes[max_i].dot(temp_point) + 1.0) < DIST_EPSILON) {
+					//cout << "8.2.1" << endl;
+					sub_image[i].x = 0.0 / 0.0;
+					sub_image[i].y = 0.0 / 0.0;
+					sub_image[i].z = 0.0 / 0.0;
+
+					//cout << "8.3" << endl;
+
+					r_average += (double) sub_r_image[i];
+					g_average += (double) sub_g_image[i];
+					b_average += (double) sub_b_image[i];
+
+				}
+
+				//cout << "8.4" << endl;
 
 			}
 
-		}
+			//cout << "9" << endl;
 
-		r_average/=plane_counts[max_i];
-		g_average/=plane_counts[max_i];
-		b_average/=plane_counts[max_i];
+			r_average /= plane_counts[max_i];
+			g_average /= plane_counts[max_i];
+			b_average /= plane_counts[max_i];
+
+			//cout << "10" << endl;
 
 //		std::cout << "Biggest plane RGB: " << r_average << "\t"
 //				<< g_average << "\t"
 //				<< b_average << std::endl;
 
-		/* PIXEL DELETE MADE BY PAUL - DID NOT MAKE A LOT OF SENSE BECAUSE WE SHOULD DO THIS
-		 * AFTER THE WHOLE WALL REMOVAL PROCESS
-		for(int i = 0;i < sub_image.size();i++){
-			double dx = fabs(sub_image[i].x-r_average);
-			double dy = fabs(sub_image[i].y-g_average);
-			double dz = fabs(sub_image[i].z-b_average);
-			double distance = sqrt(dx*dx+dy*dy+dz*dz);
-			if(distance < 1){
-				std::cout << "CANCELD" << std::endl;
-				sub_image[i].x = 0.0 / 0.0;
-				sub_image[i].y = 0.0 / 0.0;
-				sub_image[i].z = 0.0 / 0.0;
-			}
-		}*/
+			/* PIXEL DELETE MADE BY PAUL - DID NOT MAKE A LOT OF SENSE BECAUSE WE SHOULD DO THIS
+			 * AFTER THE WHOLE WALL REMOVAL PROCESS
+			 for(int i = 0;i < sub_image.size();i++){
+			 double dx = fabs(sub_image[i].x-r_average);
+			 double dy = fabs(sub_image[i].y-g_average);
+			 double dz = fabs(sub_image[i].z-b_average);
+			 double distance = sqrt(dx*dx+dy*dy+dz*dz);
+			 if(distance < 1){
+			 std::cout << "CANCELD" << std::endl;
+			 sub_image[i].x = 0.0 / 0.0;
+			 sub_image[i].y = 0.0 / 0.0;
+			 sub_image[i].z = 0.0 / 0.0;
+			 }
+			 }*/
+		} else {
+			for (int i = 0; i < sub_image.size(); i++) {
 
+					sub_image[i].x = 0.0 / 0.0;
+					sub_image[i].y = 0.0 / 0.0;
+					sub_image[i].z = 0.0 / 0.0;
+
+			}
+
+//			plane_it = 7;
+		}
 
 		if (removed_count > sub_image.size() * 0.9) {
 			plane_finding = false;
@@ -266,6 +305,8 @@ void PlaneDetector_Subsample::find_planes() {
 		if (plane_it > 6) {
 			plane_finding = false;
 		}
+
+		//cout << "11" << endl;
 
 	}
 

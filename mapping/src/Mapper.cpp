@@ -47,6 +47,37 @@ void Mapper::irCallback(const irsensors::floatarray& msg){
 	cv::waitKey(3);
 }
 
+void Mapper::addObject(double x, double y){
+	Object new_object;
+	std::cerr << "Found an object" << std::endl;
+
+	new_object.x=currentPose.x+x*cos(currentPose.theta)-y*sin(currentPose.theta);
+	new_object.y=currentPose.y+x*sin(currentPose.theta)+y*cos(currentPose.theta);
+//	world.x = origin.x + cos(angle)*relativePos.x - sin(angle)*relativePos.y;
+//	world.y = origin.y + sin(angle)*relativePos.x + cos(angle)*relativePos.y;
+	new_object.type=-1;
+
+	bool new_object_bool = true;
+
+	for (int i = 0; i < nav.objects.size(); i++) {
+		double distance = sqrt(
+				(new_object.x - nav.objects[i].x)
+						* (new_object.x - nav.objects[i].x)
+						+ (new_object.y - nav.objects[i].y)
+								* (new_object.y - nav.objects[i].y));
+		if (distance < 0.2) {
+			new_object_bool = false;
+		}
+
+	}
+
+	if (new_object_bool) {
+
+		nav.objects.push_back(new_object);
+
+	}
+}
+
 void Mapper::depthCallback(const sensor_msgs::PointCloud2& pcloud){
 
 }

@@ -30,7 +30,8 @@ typedef struct Object{
 };
 
 class NavMap {
-private:
+//private:
+public:
 	map<int, vector<int> > neighbours;
 	vector<Wall> walls;
 	vector<Node> nodes;
@@ -39,7 +40,7 @@ private:
             Point2f &r);
 	const static double WALL_SNAP_DISTANCE = 0.2;
 	const static double WALL_MIN_LENGTH = 0.03;
-public:
+//public:
 	NavMap(){}
 	virtual ~NavMap(){}
 

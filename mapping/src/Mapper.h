@@ -38,6 +38,7 @@ public:
 	void irCallback(const irsensors::floatarray& msg);
 	void depthCallback(const sensor_msgs::PointCloud2& pcloud);
 	void poseCallback(const mapping::robot_pose& p);
+	void addObject(double x, double y);
 	mapping::robot_pose calibratePos(irsensors::floatarray currentIR);
 };
 
