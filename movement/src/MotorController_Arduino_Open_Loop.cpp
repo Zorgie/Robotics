@@ -36,6 +36,7 @@ void desired_speed_update(const movement::wheel_speed::ConstPtr &msg){
     //reverse W1 as W1 is mounted backwards
 	wheel_speed_global.W1 = (-1.0)*msg->W1;
 	wheel_speed_global.W2 = msg->W2;
+
 }
 
 
@@ -88,8 +89,13 @@ int main(int argc, char **argv) {
 	double integral_error_2     = 0.0;
 	double proportional_error_1 = 0.0;
 	double proportional_error_2 = 0.0;
-	double pGain                = 50.0; //50.0
-	double iGain                = 100.0; //100.0
+	double pGain,iGain;
+	n.setParam("/pGain", 50.0); // 100 in the pGain causes oscillations.
+	n.setParam("/iGain", 400.0); // this makes the response really fast.
+	n.getParam("/pGain", pGain);
+	n.getParam("/iGain", iGain);
+//	double pGain                = 50.0; //50.0
+//	double iGain                = 100.0; //100.0
 
 
 	movement::robot_pose current_robot_pose;
@@ -97,6 +103,9 @@ int main(int argc, char **argv) {
 	while(ros::ok()){
 		ros::spinOnce();
 		loop_rate.sleep();
+
+		n.getParam("/pGain", pGain);
+		n.getParam("/iGain", iGain);
 
 		current_robot_pose=robot_position.step(encoders_global);
 		std::cout   << "X: " << current_robot_pose.x << "\t"
@@ -106,6 +115,7 @@ int main(int argc, char **argv) {
 		// Computing the error: Error=Desired_Speed-Real_Speed
 		error_1 = wheel_speed_global.W1-((encoders_global.delta_encoder1*UPDATE_RATE)/360.0);
 		error_2 = wheel_speed_global.W2-((encoders_global.delta_encoder2*UPDATE_RATE)/360.0);
+		std::cout << "W1:" << wheel_speed_global.W1 << "W2:" << wheel_speed_global.W2 << std::endl;
         
 		wheel_distance_traveled.distance1=-(encoders_global.delta_encoder1/360.0)*(PI*wheel_diameter);
         
@@ -122,11 +132,17 @@ int main(int argc, char **argv) {
 		integral_error_1 = integral_error_1+(error_1/UPDATE_RATE);
 		integral_error_2 = integral_error_2+(error_2/UPDATE_RATE);
 
-		if (fabs(integral_error_1) > 1.0){
-			integral_error_1 = (fabs(integral_error_1)/integral_error_1)*1.0;
+		double max_wind_up=0.5;
+
+
+		if (fabs(integral_error_1) > max_wind_up){
+			integral_error_1 = (fabs(integral_error_1)/integral_error_1)*max_wind_up;
+			std::cout << "\033[1;33mJust anti-winded up!\033[0m\n"<<std::endl; // yellow
+
 		}
-		if (fabs(integral_error_2) > 1.0){
-			integral_error_2 = (fabs(integral_error_2)/integral_error_2)*1.0;
+		if (fabs(integral_error_2) > max_wind_up){
+			integral_error_2 = (fabs(integral_error_2)/integral_error_2)*max_wind_up;
+			std::cout << "\033[1;33mJust anti-winded up!\033[0m\n"<<std::endl;
 		}
 
 		// Gain Values
@@ -134,7 +150,7 @@ int main(int argc, char **argv) {
 		pwm_command.PWM1=(int)(pGain*proportional_error_1+iGain*integral_error_1);
 		pwm_command.PWM2=(int)(pGain*proportional_error_2+iGain*integral_error_2);
 
-		if(wheel_speed_global.W1==0.0 && wheel_speed_global.W1==0.0){
+		if(wheel_speed_global.W1==0.0 && wheel_speed_global.W2==0.0){
 					pwm_command.PWM1=0;
 					pwm_command.PWM2=0;
 					integral_error_1=0;
@@ -152,10 +168,26 @@ int main(int argc, char **argv) {
 		//pwm_command.PWM2=40; // right wheel (positive vales make it go back)
 
 		// Ensuring that the wheels do not move too fast
-		if (pwm_command.PWM1>155)  {pwm_command.PWM1=155;  ROS_INFO("Just saturated the PWM!");};
-		if (pwm_command.PWM2>155)  {pwm_command.PWM2=155;  ROS_INFO("Just saturated the PWM!");};
-		if (pwm_command.PWM1<-155) {pwm_command.PWM1=-155; ROS_INFO("Just saturated the PWM!");};
-		if (pwm_command.PWM2<-155) {pwm_command.PWM2=-155; ROS_INFO("Just saturated the PWM!");};
+		if (pwm_command.PWM1 > 155) {
+			pwm_command.PWM1 = 155;
+			std::cout << "\033[1;31mJust saturated the PWM!\033[0m\n"
+					<< std::endl; // red
+		};
+		if (pwm_command.PWM2 > 155) {
+			pwm_command.PWM2 = 155;
+			std::cout << "\033[1;31mJust saturated the PWM!\033[0m\n"
+								<< std::endl; // red
+		};
+		if (pwm_command.PWM1 < -155) {
+			pwm_command.PWM1 = -155;
+			std::cout << "\033[1;31mJust saturated the PWM!\033[0m\n"
+								<< std::endl; // red
+		};
+		if (pwm_command.PWM2 < -155) {
+			pwm_command.PWM2 = -155;
+			std::cout << "\033[1;31mJust saturated the PWM!\033[0m\n"
+								<< std::endl; // red
+		};
 
 		// Ensuring (again, redundant) that PWM is in the acceptable range.
 		if (pwm_command.PWM1>255)  pwm_command.PWM1=255;
