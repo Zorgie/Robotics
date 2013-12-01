@@ -41,7 +41,7 @@ void update_movement_state(const irsensors::floatarray &processed_ir_readings) {
     //tell the current robot state
     switch(movement_brain.get_current_movement_state()){
 		case GO_STRAIGHT:
-			printf("Go straigh \n");
+			printf("GO_STRAIGHT \n");
 			break;
 		case FOLLOW_RIGHT:
 			printf("FOLLOW_RIGHT \n");

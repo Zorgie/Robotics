@@ -122,6 +122,10 @@ void act() {
 	std::cout << estimated_pose->y << std::endl;
 	std::cout << estimated_pose->theta * (180.0 / M_PI) << std::endl;
 
+	// By default we want the Robot stopped
+	desired_speed.W1 = 0.0;
+	desired_speed.W2 = 0.0;
+
 	switch (CURRENT_STATE) {
 	case GO_STRAIGHT_INF:
 		desired_speed = go_straight.step(wheel_distance_traveled_global);
@@ -154,9 +158,15 @@ void act() {
 				estimated_pose);
 		break;
 
+	case WAIT_X:
+		stop.step(wheel_distance_traveled_global);
+//		desired_speed.W1 = 0.0;
+//		desired_speed.W2 = 0.0;
+		break;
 	case IDLE_STATE:
-		desired_speed.W1 = 0.0;
-		desired_speed.W2 = 0.0;
+		stop.step(wheel_distance_traveled_global);
+//		desired_speed.W1 = 0.0;
+//		desired_speed.W2 = 0.0;
 		break;
 	}
 
