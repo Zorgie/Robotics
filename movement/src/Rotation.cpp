@@ -13,8 +13,11 @@ Rotation::Rotation() {
 Rotation::~Rotation() {
 }
 
-void Rotation::initiate_rotation(float degrees) {//degrees are received in degrees
-	double radians = degrees * M_PI / 180;
+void Rotation::initiate_rotation(float degrees,movement::robot_pose *pose_estimate) {//degrees are received in degrees
+	double radians = degrees * M_PI / 180.0;
+	std::cout << "\033[1;35mIncreasing angle estimate by...\033[0m\n";
+	std::cout << radians << "or corresponding degrees: " << degrees << std::endl;
+	pose_estimate->theta+=radians;
 
 
 	degrees_turned = 0;
@@ -27,7 +30,7 @@ movement::wheel_speed Rotation::step(movement::wheel_distance& distance_traveled
 	movement::wheel_speed speed;
 
 	float average_wheel_distance=0.5*(distance_traveled.distance1-distance_traveled.distance2);
-	degrees_turned += (360.0*average_wheel_distance)/(PI*0.213); // 0.213 Wheel axis length
+	degrees_turned += (360.0*average_wheel_distance)/(PI*0.203); // 0.213 Wheel axis length [OLD]
 	printf("Degrees turned: %f \n",degrees_turned);
 
 	//distance_walked += distance_traveled.distance1;

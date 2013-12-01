@@ -63,6 +63,10 @@ static Stop stop;
 static WallAlign wall_align;
 
 static movement::robot_pose poseCache;
+movement::robot_pose *estimated_pose;
+
+// Vector containing last two elements
+std::vector<movement::robot_pose> pose_hist;
 
 void ir_readings_update(const irsensors::floatarray &msg) {
 	ir_readings_processed_global = msg;
@@ -91,6 +95,33 @@ void act() {
 	movement::wheel_speed desired_speed;
 	movement::robot_pose pose;
 
+	std::vector<movement::robot_pose>::iterator it;
+
+	pose_hist.pop_back(); // Remove oldest element (last in list)
+	it = pose_hist.begin();
+	pose_hist.insert(it, poseCache); // Insert newest element (at beginning of list)
+
+	double delta_x = pose_hist[0].x - pose_hist[1].x;
+	double delta_y = pose_hist[0].y - pose_hist[1].y;
+
+	double lin_dist = sqrt((delta_x * delta_x) + (delta_y * delta_y));
+
+	estimated_pose->x = estimated_pose->x
+			+ lin_dist * cos(estimated_pose->theta);
+	estimated_pose->y = estimated_pose->y
+			+ lin_dist * sin(estimated_pose->theta);
+
+	std::cout << "\n\n\n" << std::endl;
+	std::cout << "\033[1;32mPure encoder readings\033[0m\n"; // green
+	std::cout << poseCache.x << std::endl;
+	std::cout << poseCache.y << std::endl;
+	std::cout << poseCache.theta * (180.0 / M_PI) << std::endl;
+
+	std::cout << "\033[1;33mEstimated pose\033[0m\n"; // yellow
+	std::cout << estimated_pose->x << std::endl;
+	std::cout << estimated_pose->y << std::endl;
+	std::cout << estimated_pose->theta * (180.0 / M_PI) << std::endl;
+
 	switch (CURRENT_STATE) {
 	case GO_STRAIGHT_INF:
 		desired_speed = go_straight.step(wheel_distance_traveled_global);
@@ -115,10 +146,12 @@ void act() {
 		}
 		break;
 	case FOLLOW_LEFT_WALL:
-		desired_speed = wall_follow.step(ir_readings_processed_global, 1);
+		desired_speed = wall_follow.step(ir_readings_processed_global, 1,
+				estimated_pose);
 		break;
 	case FOLLOW_RIGHT_WALL:
-		desired_speed = wall_follow.step(ir_readings_processed_global, 0);
+		desired_speed = wall_follow.step(ir_readings_processed_global, 0,
+				estimated_pose);
 		break;
 
 	case IDLE_STATE:
@@ -150,22 +183,32 @@ void movement_state_update(const navigation::movement_state &mvs) {
 
 	case TURN_LEFT_90:
 		printf("TURN_LEFT_90\n");
+		std::cout << "\033[1;32mWant to rotate\033[0m\n"; // green
+		std::cout << "90.0" << std::endl;
 		target_rot = M_PI / 2 + poseCache.theta;
 		target_rot = (target_rot) / (2 * M_PI) * 4;
 		target_rot = round(target_rot);
-		target_rot = 2*M_PI * target_rot/4;
-		//rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI);
-		rotation.initiate_rotation(90.0);
+		target_rot = 2 * M_PI * target_rot / 4;
+		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI,
+				estimated_pose);
+		std::cout << "\033[1;33mWill rotate\033[0m\n"; // yellow
+		std::cout << (target_rot - poseCache.theta) * 180 / M_PI << std::endl;
+		//rotation.initiate_rotation(90.0);
 		break;
 
 	case TURN_RIGHT_90:
 		printf("TURN_RIGHT_90\n");
+		std::cout << "\033[1;32mWant to rotate\033[0m\n"; // green
+		std::cout << "-90.0" << std::endl;
 		target_rot = -M_PI / 2 + poseCache.theta;
 		target_rot = (target_rot) / (2 * M_PI) * 4;
 		target_rot = round(target_rot);
-		target_rot = 2*M_PI * target_rot/4;
-		//rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI);
-		rotation.initiate_rotation(-90.0);
+		target_rot = 2 * M_PI * target_rot / 4;
+		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI,
+				estimated_pose);
+		std::cout << "\033[1;33mWill rotate\033[0m\n"; // yellow
+		std::cout << (target_rot - poseCache.theta) * 180 / M_PI << std::endl;
+		//rotation.initiate_rotation(-90.0);
 		break;
 
 	case FOLLOW_LEFT_WALL:
@@ -213,6 +256,18 @@ int main(int argc, char **argv) {
 	desired_speed_pub = n.advertise<movement::wheel_speed>("/desired_speed", 1);
 	requested_action_performed_pub = n.advertise<navigation::movement_state>(
 			"/movement/requested_action_performed", 1);
+
+	// Initialize pose historic
+	movement::robot_pose initial_pose;
+	initial_pose.x = 0.0;
+	initial_pose.y = 0.0;
+	initial_pose.theta = 0.0;
+	pose_hist.push_back(initial_pose);
+	pose_hist.push_back(initial_pose);
+
+	// Initialize pointer
+	estimated_pose = new movement::robot_pose;
+	*estimated_pose = initial_pose;
 
 	while (ros::ok()) {
 		ros::spinOnce();

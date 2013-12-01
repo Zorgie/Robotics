@@ -10,6 +10,7 @@
 
 #include "ros/ros.h"
 #include "movement/wheel_speed.h"
+#include "movement/robot_pose.h"
 #include <irsensors/floatarray.h>
 
 class WallFollow {
@@ -26,12 +27,13 @@ private:
 	movement::wheel_speed desired_wheel_speed;
 	// Front right, back right, front left, back left, front middle.
 	const static int SENSORS[];
-	const static float SENSOR_DISTANCE = 0.15;//0.08; //0.09
+	const static float SENSOR_DISTANCE = 0.168;//0.15;//0.08; //0.09 Actually it's different on
+	// each side, so I just used the average
 public:
 	WallFollow() {
 	}
 	void init();
-	movement::wheel_speed step(irsensors::floatarray,int side);
+	movement::wheel_speed step(irsensors::floatarray,int side, movement::robot_pose *pose_estimate);
 	virtual ~WallFollow(){}
 };
 

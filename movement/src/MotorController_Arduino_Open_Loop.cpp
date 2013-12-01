@@ -94,6 +94,7 @@ int main(int argc, char **argv) {
 	n.setParam("/iGain", 400.0); // this makes the response really fast.
 	n.getParam("/pGain", pGain);
 	n.getParam("/iGain", iGain);
+//	n.setParam("/iGain", 100.0);
 //	double pGain                = 50.0; //50.0
 //	double iGain                = 100.0; //100.0
 
