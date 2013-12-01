@@ -18,7 +18,7 @@ void WallFollow::init() {
 	integral_error_theta = 0;
 	proportional_error_theta = 0;
 	//fixed_speed              = 0.27778;
-	fixed_speed = 0.4;
+	fixed_speed = 0.0;
 	pGain = 0.5;
 	iGain = 0.25;
 	desired_distance_to_wall = 0.07;
@@ -85,6 +85,19 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 			error_distance = 0.0; // Only interested on not being very close to the wall
 		}
 	}
+
+	if (fabs(error_theta) < 0.15) {
+		fixed_speed+=0.0125;
+	}else{
+		fixed_speed-=0.025;
+	}
+	if (fixed_speed < 0.27778) {
+		fixed_speed = 0.27778;
+	}
+	if (fixed_speed > 1.0) {
+		fixed_speed = 1.0;
+	}
+
 
 	if (isnan(error_theta)) {
 		// Desired speeds for the wheels;
