@@ -1,0 +1,2 @@
+mkdir -p bin
+cd build && cmake -Wdev -DCMAKE_TOOLCHAIN_FILE=`rospack find rosbuild`/rostoolchain.cmake  ..
