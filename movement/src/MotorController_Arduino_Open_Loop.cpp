@@ -30,9 +30,13 @@ ros::Publisher controller_calib_pub;
 
 Encoders encoders_global; //Last read encoder values
 movement::wheel_speed wheel_speed_global; //Current desired wheel speed
+movement::wheel_speed prev_wheel_speed_global; //Previous desired wheel speed
 
 void desired_speed_update(const movement::wheel_speed::ConstPtr &msg) {
 	//reverse W1 as W1 is mounted backwards
+
+	prev_wheel_speed_global=wheel_speed_global;
+
 	wheel_speed_global.W1 = (-1.0) * msg->W1;
 	wheel_speed_global.W2 = msg->W2;
 
@@ -159,7 +163,17 @@ int main(int argc, char **argv) {
 		pwm_command.PWM2 = (int) (pGain * proportional_error_2
 				+ iGain * integral_error_2);
 
-		if (wheel_speed_global.W1 == 0.0 && wheel_speed_global.W2 == 0.0) {
+		bool started_rotation = false;
+
+		if(prev_wheel_speed_global.W1/fabs(prev_wheel_speed_global.W1)!=wheel_speed_global.W1/fabs(wheel_speed_global.W1)){
+			started_rotation=true
+		}
+		if(prev_wheel_speed_global.W2/fabs(prev_wheel_speed_global.W2)!=wheel_speed_global.W2/fabs(wheel_speed_global.W2)){
+			started_rotation=true
+		}
+
+
+		if ((wheel_speed_global.W1 == 0.0 && wheel_speed_global.W2 == 0.0) || started_rotation) {
 			pwm_command.PWM1 = 0;
 			pwm_command.PWM2 = 0;
 			integral_error_1 = 0;
