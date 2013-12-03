@@ -25,7 +25,7 @@ private:
 public:
 	Rotation();
 	virtual ~Rotation();
-	void initiate_rotation(float degrees, movement::robot_pose *pose_estimate);
+	void initiate_rotation(float degrees, movement::robot_pose &pose_estimate);
 	movement::wheel_speed step(movement::wheel_distance& distance_traveled);
 	bool isFinished();
 };

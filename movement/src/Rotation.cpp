@@ -13,11 +13,14 @@ Rotation::Rotation() {
 Rotation::~Rotation() {
 }
 
-void Rotation::initiate_rotation(float degrees,movement::robot_pose *pose_estimate) {//degrees are received in degrees
+void Rotation::initiate_rotation(float degrees,movement::robot_pose &pose_estimate) {//degrees are received in degrees
 	double radians = degrees * M_PI / 180.0;
+	double rounded_radians = radians/(M_PI/2.0);
+	rounded_radians=round(rounded_radians);
+	rounded_radians=rounded_radians*(M_PI/2.0);
 	std::cout << "\033[1;35mIncreasing angle estimate by...\033[0m\n";
 	std::cout << radians << "or corresponding degrees: " << degrees << std::endl;
-	pose_estimate->theta+=radians;
+	pose_estimate.theta+=rounded_radians;
 
 
 	degrees_turned = 0;

@@ -63,7 +63,8 @@ static Stop stop;
 static WallAlign wall_align;
 
 static movement::robot_pose poseCache;
-movement::robot_pose *estimated_pose;
+//movement::robot_pose *estimated_pose;
+movement::robot_pose estimated_pose;
 
 // Vector containing last two elements
 std::vector<movement::robot_pose> pose_hist;
@@ -106,10 +107,10 @@ void act() {
 
 	double lin_dist = sqrt((delta_x * delta_x) + (delta_y * delta_y));
 
-	estimated_pose->x = estimated_pose->x
-			+ lin_dist * cos(estimated_pose->theta);
-	estimated_pose->y = estimated_pose->y
-			+ lin_dist * sin(estimated_pose->theta);
+	estimated_pose.x = estimated_pose.x
+			+ lin_dist * cos(estimated_pose.theta);
+	estimated_pose.y = estimated_pose.y
+			+ lin_dist * sin(estimated_pose.theta);
 
 	std::cout << "\n\n\n" << std::endl;
 	std::cout << "\033[1;32mPure encoder readings\033[0m\n"; // green
@@ -118,9 +119,9 @@ void act() {
 	std::cout << poseCache.theta * (180.0 / M_PI) << std::endl;
 
 	std::cout << "\033[1;33mEstimated pose\033[0m\n"; // yellow
-	std::cout << estimated_pose->x << std::endl;
-	std::cout << estimated_pose->y << std::endl;
-	std::cout << estimated_pose->theta * (180.0 / M_PI) << std::endl;
+	std::cout << estimated_pose.x << std::endl;
+	std::cout << estimated_pose.y << std::endl;
+	std::cout << estimated_pose.theta * (180.0 / M_PI) << std::endl;
 
 	// By default we want the Robot stopped
 	desired_speed.W1 = 0.0;
@@ -171,6 +172,7 @@ void act() {
 	}
 
 	desired_speed_pub.publish(desired_speed);
+	robot_pos_calibrated.publish(estimated_pose);
 
 }
 
@@ -183,7 +185,7 @@ void movement_state_update(const navigation::movement_state &mvs) {
 	switch (CURRENT_STATE) {
 	case GO_STRAIGHT_INF:
 		printf("GO_STRAIGHT_INF\n");
-		go_straight.initiate_go_straight(10.0, true);
+		go_straight.initiate_go_straight(2.0, true); // Infinity equals two meters.
 		break;
 
 	case GO_STRAIGHT_X:
@@ -199,8 +201,10 @@ void movement_state_update(const navigation::movement_state &mvs) {
 		target_rot = (target_rot) / (2 * M_PI) * 4;
 		target_rot = round(target_rot);
 		target_rot = 2 * M_PI * target_rot / 4;
-		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI,
-				estimated_pose);
+//		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI,
+//				estimated_pose);
+		rotation.initiate_rotation((target_rot - estimated_pose.theta) * 180 / M_PI,
+						estimated_pose);
 		std::cout << "\033[1;33mWill rotate\033[0m\n"; // yellow
 		std::cout << (target_rot - poseCache.theta) * 180 / M_PI << std::endl;
 		//rotation.initiate_rotation(90.0);
@@ -214,7 +218,9 @@ void movement_state_update(const navigation::movement_state &mvs) {
 		target_rot = (target_rot) / (2 * M_PI) * 4;
 		target_rot = round(target_rot);
 		target_rot = 2 * M_PI * target_rot / 4;
-		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI,
+//		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI,
+//				estimated_pose);
+		rotation.initiate_rotation((target_rot - estimated_pose.theta) * 180 / M_PI,
 				estimated_pose);
 		std::cout << "\033[1;33mWill rotate\033[0m\n"; // yellow
 		std::cout << (target_rot - poseCache.theta) * 180 / M_PI << std::endl;
@@ -251,8 +257,6 @@ int main(int argc, char **argv) {
 			movement_state_update);
 	robot_pos = n.subscribe("/robot_pose", 1, robotPoseUpdate);
 
-	robot_pos_calibrated = n.advertise<movement::robot_pose>(
-			"/robot_pose_aligned", 5);
 
 	ros::Rate loop_rate(UPDATE_RATE);
 
@@ -266,6 +270,8 @@ int main(int argc, char **argv) {
 	desired_speed_pub = n.advertise<movement::wheel_speed>("/desired_speed", 1);
 	requested_action_performed_pub = n.advertise<navigation::movement_state>(
 			"/movement/requested_action_performed", 1);
+	robot_pos_calibrated = n.advertise<movement::robot_pose>(
+			"/robot_pose_aligned_NEW", 1);
 
 	// Initialize pose historic
 	movement::robot_pose initial_pose;
@@ -276,8 +282,9 @@ int main(int argc, char **argv) {
 	pose_hist.push_back(initial_pose);
 
 	// Initialize pointer
-	estimated_pose = new movement::robot_pose;
-	*estimated_pose = initial_pose;
+//	estimated_pose = new movement::robot_pose;
+//	*estimated_pose = initial_pose;
+	estimated_pose = initial_pose;
 
 	while (ros::ok()) {
 		ros::spinOnce();

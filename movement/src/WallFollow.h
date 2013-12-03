@@ -33,7 +33,7 @@ public:
 	WallFollow() {
 	}
 	void init();
-	movement::wheel_speed step(irsensors::floatarray,int side, movement::robot_pose *pose_estimate);
+	movement::wheel_speed step(irsensors::floatarray,int side, movement::robot_pose &pose_estimate);
 	virtual ~WallFollow(){}
 };
 

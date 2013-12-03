@@ -29,7 +29,7 @@ void WallFollow::init() {
 
 //side: right = 0,left = 1
 movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
-		int side, movement::robot_pose *pose_estimate) {
+		int side, movement::robot_pose &pose_estimate) {
 
 	float sensor_one = ir_readings.ch[SENSORS[2 * side]];
 	float sensor_two = ir_readings.ch[SENSORS[2 * side + 1]];
@@ -51,9 +51,9 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 
 		if (fabs(error_theta) < 0.3) { // Only improve if angle is small (more thrust-worthy)
 			//std::cout << "\033[1;33mEstimating angle...\033[0m\n"; // yellow
-			double wall_theta = pose_estimate->theta / (M_PI / 2.0);
+			double wall_theta = pose_estimate.theta / (M_PI / 2.0);
 			wall_theta = round(wall_theta) * (M_PI / 2.0);
-			pose_estimate->theta = wall_theta + error_theta;
+			pose_estimate.theta = wall_theta;// + error_theta;
 
 			//std::cout << *pose_estimate << std::endl;
 			//std::cout << "\033[1;32mAngle estimated...\033[0m\n"; // green
@@ -73,9 +73,9 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 
 		if (fabs(error_theta) < 0.3) { // Only improve if angle is small (more thrust-worthy)
 			//std::cout << "\033[1;33mEstimating angle...\033[0m\n"; // yellow
-			double wall_theta = pose_estimate->theta / (M_PI / 2.0);
+			double wall_theta = pose_estimate.theta / (M_PI / 2.0);
 			wall_theta = round(wall_theta) * (M_PI / 2.0);
-			pose_estimate->theta = wall_theta + error_theta;
+			pose_estimate.theta = wall_theta;// + error_theta;
 
 			//std::cout << *pose_estimate << std::endl;
 			//std::cout << "\033[1;32mAngle estimated...\033[0m\n"; // green
@@ -87,16 +87,17 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 	}
 
 	if (fabs(error_theta) < 0.15) {
-		fixed_speed+=0.0125;
+		fixed_speed+=0.00625;
 	}else{
-		fixed_speed-=0.025;
+		fixed_speed-=0.0125;
 	}
 	if (fixed_speed < 0.27778) {
 		fixed_speed = 0.27778;
 	}
-	if (fixed_speed > 1.0) {
-		fixed_speed = 1.0;
+	if (fixed_speed > 0.5) {
+		fixed_speed = 0.5;
 	}
+//	fixed_speed=0.27778; // Let's keep the robot slow and steady.
 
 
 	if (isnan(error_theta)) {

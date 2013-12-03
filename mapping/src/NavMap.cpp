@@ -34,8 +34,11 @@ void NavMap::addNode(double x, double y, int type) {
 
 	int newNodeId = nodes.size();
 	Node n = {newNodeId,x,y,type};
+
 	for (int i = 0; i < 4; i++) {
+
 		double wallDist = getDistanceToWall(Point2d(x, y), i);
+		//bool collision = getCalibratedPos(Point2d(x,y),Point2d(x,y),Point2d(x,y));// LUCAS I CHANGED THIS, BEST REGARDS RUI!
 		if(wallDist < 0.3){
 			n.walls[i] = true;
 		}else{

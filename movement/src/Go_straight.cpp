@@ -20,6 +20,7 @@ void Go_straight::initiate_go_straight(float distance, bool go_front) {
 	distance_moved = 0;
 	distance_target = distance;
 	direction_front = go_front;
+	SPEED = 0.27778;
 }
 
 bool Go_straight::isFinished(){
@@ -79,6 +80,8 @@ movement::wheel_speed Go_straight::step(movement::wheel_distance& distance_trave
 					speed.W2=0;
 			}
 		}
-
+	SPEED += 0.00625;
+	if (SPEED>0.5)
+		SPEED=0.5;
 	return speed;
 }

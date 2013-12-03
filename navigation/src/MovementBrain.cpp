@@ -19,31 +19,49 @@ MovementBrain::~MovementBrain(){
 }
 
 //receives float values of the IR sensor readings and updates the state_probability
-void MovementBrain::process_irsensor_readings(float s_front,
+void MovementBrain::process_irsensor_readings(float s_frontal_left,float s_frontal_right,
                              float s_right_f,float s_right_b,
                              float s_left_f,float s_left_b)
 {
 
 	//update average distances
+	avg_front_wall_distance = (s_frontal_left+s_frontal_right)/2;
 	avg_left_wall_distance  = (s_left_f+s_left_b)/2;
 	avg_right_wall_distance = (s_right_f+s_right_b)/2;
+
+//	std::cout << "\n s_frontal_left: \t" << s_frontal_left <<
+//			"\n s_frontal_right: \t" << s_frontal_right << std::endl;
+	std::cout << "\n avg_front_wall_distance: \t" << avg_front_wall_distance <<
+			"\n avg_left_wall_distance: \t" << avg_left_wall_distance <<
+			"\n avg_right_wall_distance: \t" << avg_right_wall_distance << std::endl;
     
     //thresholds[meters]: when does the front sensor think there is a wall?
-    const double c_front_thresh    = 0.20;
+    const double c_front_thresh    = 0.10;
     const double c_right_threshold = 0.20;
     const double c_left_threshold  = 0.20;
     const double c_update_prob     = 0.15;
     
     //FRONT UPDATE: Update probability that there is a wall in front of the robot
-    if(!isnan(s_front) && s_front < c_front_thresh){
-        state_probability[FRONT_WALL] += 0.5*c_update_prob;
+
+    if(!isnan(avg_front_wall_distance) && avg_front_wall_distance < c_front_thresh){
+    	double front_importance = 0;
+    	front_importance=0.5+4.0*(0.15-avg_front_wall_distance)/(0.10);
+    	state_probability[FRONT_WALL] += front_importance*c_update_prob;
+//        state_probability[FRONT_WALL] += 0.5*c_update_prob; // Paul's original implementation
+//        benchmark: 13 cycles to detect front wall
+    	if(avg_front_wall_distance < 0.05){
+    		// Almost crashing!
+    		state_probability[FRONT_WALL] = 2; // Make sure, we will be in Front Wall detected
+    	}
+
         if(state_probability[FRONT_WALL] > 1){state_probability[FRONT_WALL] = 1;}
     }
     else{
         state_probability[FRONT_WALL] -= c_update_prob;
         if(state_probability[FRONT_WALL] < 0){state_probability[FRONT_WALL] = 0;}
     }
-    
+
+
     //RIGHT UPDATE: Update probability that there is a right wall next to the robot
     bool s_right_f_valid = !isnan(s_right_f) && s_right_f < c_right_threshold;
 	bool s_right_b_valid = !isnan(s_right_b) && s_right_b < c_right_threshold;
@@ -91,6 +109,10 @@ void MovementBrain::process_irsensor_readings(float s_front,
     state_probability[LEFT_WALL]       /= normalize_sum_left;
     state_probability[NO_LEFT_WALL]    /= normalize_sum_left;
     state_probability[LEFT_INVALID]    /= normalize_sum_left;
+
+    std::cout << "Front prob: " << state_probability[FRONT_WALL] << std::endl;
+    std::cout << "Left prob: " << state_probability[FRONT_WALL] << std::endl;
+    std::cout << "No left prob: " << state_probability[NO_LEFT_WALL] << std::endl;
 }
 
 

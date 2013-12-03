@@ -36,7 +36,7 @@ public:
     MovementBrain();
     ~MovementBrain();
     
-    void process_irsensor_readings(float s_front,float s_right_f,float s_right_b,float s_left_f,float s_left_b);
+    void process_irsensor_readings(float s_frontal_left,float s_frontal_right ,float s_right_f,float s_right_b,float s_left_f,float s_left_b);
     bool make_state_decision();
     
     void set_current_movement_state(robot_movement_state);
@@ -66,6 +66,7 @@ private:
     
     bool actionPerformedTrigger;
 
+    double avg_front_wall_distance;
     double avg_left_wall_distance;
     double avg_right_wall_distance;
 

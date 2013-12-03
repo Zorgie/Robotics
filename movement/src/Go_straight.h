@@ -16,7 +16,7 @@
 
 class Go_straight {
 private:
-	const static float SPEED = 0.4;
+	double SPEED;
 	float distance_moved;
 	float distance_target;
 	bool  direction_front;
