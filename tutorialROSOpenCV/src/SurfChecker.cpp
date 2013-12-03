@@ -124,7 +124,7 @@ void SurfChecker::performSurf(Mat bgrImage){
 		}
 	}
 	cout << "------------------------------------------------------" << endl;
-	cout << "MAX GIRAFFE MATCHES: " << max_good_matches << endl;
+	//cout << "MAX GIRAFFE MATCHES: " << max_good_matches << endl;
 	averageGiraffeMatches += max_good_matches;
 
 
@@ -157,7 +157,7 @@ void SurfChecker::performSurf(Mat bgrImage){
 			//	cout << "GIRAFFE FOUND" << endl;
 			}
 		}
-		cout << "MAX ZEBRA MATCHES: " << max_good_matches << endl;
+		//cout << "MAX ZEBRA MATCHES: " << max_good_matches << endl;
 		averageZebraMatches += max_good_matches;
 
 
@@ -192,27 +192,26 @@ void SurfChecker::performSurf(Mat bgrImage){
 				//	cout << "GIRAFFE FOUND" << endl;
 				}
 			}
-			cout << "MAX TIGER MATCHES: " << max_good_matches << endl;
+			//cout << "MAX TIGER MATCHES: " << max_good_matches << endl;
 			averageTigerMatches += max_good_matches;
 
 
+
 			nrOfSurfsDone++;
-			averageGiraffeMatches /= nrOfSurfsDone;
-			averageTigerMatches   /= nrOfSurfsDone;
-			averageZebraMatches   /= nrOfSurfsDone;
+			cout << "Surf " << nrOfSurfsDone << " performed" << endl;
 }
 
 int SurfChecker::getNrOfSurfsDone(){
 	return nrOfSurfsDone;
 }
 double SurfChecker::getAvgGiraffeMatches(){
-	return averageGiraffeMatches;
+	return averageGiraffeMatches/nrOfSurfsDone;
 }
 double SurfChecker::getAvgTigerMatches(){
-	return averageTigerMatches;
+	return averageTigerMatches/nrOfSurfsDone;
 }
 double SurfChecker::getAvgZebraMatches(){
-	return averageZebraMatches;
+	return averageZebraMatches/nrOfSurfsDone;
 }
 
 void SurfChecker::reset(){

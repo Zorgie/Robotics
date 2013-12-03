@@ -24,14 +24,19 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include "opencv2/nonfree/nonfree.hpp"
-#include "ImageConverter.h"
 
 using namespace cv;
 
-Mat globalRGBImage;
+Mat globalImage;
 
 ImageConverter ic;
-void imgCallback(const sensor_msgs::ImageConstPtr& msg);
+
+void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
+	cout << "IMG RECEIVED" << endl;
+	const cv_bridge::CvImagePtr cv_ptr = ic.getImage(msg);
+	Mat originalImage = cv_ptr->image.clone();
+	globalImage = originalImage;
+}
 
 int main(int argc,char** argv)
 {
@@ -39,58 +44,101 @@ int main(int argc,char** argv)
 	ros::init(argc, argv, "matcher_simple_vid");
 	ros::NodeHandle nh_;
 	ros::Subscriber rgb_sub = nh_.subscribe("/camera/rgb/image_color", 1,
-				&imgCallback);
+				imgCallback);
 
-    Mat object = imread( "beercan.jpeg", CV_LOAD_IMAGE_GRAYSCALE );
-	//Mat object = imread("tiger3c.jpeg");
+	vector<Mat> objectImages;
+	string objectName = "giraffe";
+	int nrOfImages = 70;
+	string fileExtension = ".jpg";
 
-    if( !object.data )
-    {
-        std::cout<< "Error reading object " << std::endl;
-        return -1;
-    }
+
+	for(int i = 1;i <= nrOfImages;i++){
+		ostringstream convert;
+		convert << i;
+		string number = convert.str();
+
+
+
+		string fileToLoad = objectName + number + fileExtension;
+
+
+		Mat temp = imread(fileToLoad);
+
+		if(!temp.data){
+			std::cout<< "Error reading object " << fileToLoad << std::endl;
+			return -1;
+		}
+		cout << fileToLoad << " loaded successfully" << endl;
+		objectImages.push_back(temp);
+	}
+
+
+
+
 
     //Detect the keypoints using SURF Detector
     int minHessian = 600;
     double thresh = 0.6;
 
     SurfFeatureDetector detector( minHessian );
-    std::vector<KeyPoint> kp_object;
+    vector< vector<KeyPoint> > vectorOfKeypoints;
 
-    detector.detect( object, kp_object );
+
+
+    for(int i = 0; i < nrOfImages;i++){
+    	vector<KeyPoint> temp;
+        detector.detect( objectImages[i], temp);
+        vectorOfKeypoints.push_back(temp);
+    }
+
 
     //Calculate descriptors (feature vectors)
     SurfDescriptorExtractor extractor;
-    Mat des_object;
 
-    extractor.compute( object, kp_object, des_object );
+    vector<Mat> objectDescriptors;
+
+    for(int i = 0; i < nrOfImages;i++)
+    {
+    	 Mat temp;
+    	 extractor.compute( objectImages[i], vectorOfKeypoints[i], temp );
+    	 objectDescriptors.push_back(temp);
+    }
+
+
+
 
     FlannBasedMatcher matcher;
-
-    VideoCapture cap(0);
 
     namedWindow("Good Matches");
 
     std::vector<Point2f> obj_corners(4);
 
+    int currentImage = 0;
+
     //Get the corners from the object
-    obj_corners[0] = cvPoint(0,0);
-    obj_corners[1] = cvPoint( object.cols, 0 );
-    obj_corners[2] = cvPoint( object.cols, object.rows );
-    obj_corners[3] = cvPoint( 0, object.rows );
 
-    char key = 'a';
-    int framecount = 0;
-    while (key != 27)
+    ros::Rate loop_rate(1);
+    while (ros::ok())
     {
-        Mat frame;
-        cap >> frame;
+    	ros::spinOnce();
 
-        if (framecount < 5)
-        {
-            framecount++;
-            continue;
-        }
+    	currentImage++;
+    	if(currentImage == nrOfImages){
+    		currentImage = 0;
+    	}
+
+    	obj_corners[0] = cvPoint(0,0);
+    	obj_corners[1] = cvPoint( objectImages[currentImage].cols, 0 );
+    	obj_corners[2] = cvPoint( objectImages[currentImage].cols, objectImages[currentImage].rows );
+    	obj_corners[3] = cvPoint( 0, objectImages[currentImage].rows );
+
+
+    	Mat frame;
+    	if(globalImage.data)
+    		frame = globalImage;
+    	else
+    		continue;
+
 
         Mat des_image, img_matches;
         std::vector<KeyPoint> kp_image;
@@ -102,14 +150,18 @@ int main(int argc,char** argv)
         Mat H;
         Mat image;
 
-        cvtColor(frame, image, CV_RGB2GRAY);
-        image = frame;
+        cvtColor(frame, image, CV_BGR2GRAY);
+        //image = frame;
+
 
 
         detector.detect( image, kp_image );
         extractor.compute( image, kp_image, des_image );
 
-        matcher.knnMatch(des_object, des_image, matches, 2);
+        try{
+        matcher.knnMatch(objectDescriptors[currentImage], des_image, matches, 2);
+        }
+        catch(cv::Exception &e){continue;}
 
         for(int i = 0; i < min(des_image.rows-1,(int) matches.size()); i++) //THIS LOOP IS SENSITIVE TO SEGFAULTS
         {
@@ -120,15 +172,15 @@ int main(int argc,char** argv)
         }
 
         //Draw only "good" matches
-        drawMatches( object, kp_object, image, kp_image, good_matches, img_matches, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+        drawMatches( objectImages[currentImage], vectorOfKeypoints[currentImage], image, kp_image, good_matches, img_matches, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
-        if (good_matches.size() >= 12)
+        if (good_matches.size() >= 5)
         {
         	cout << "ZEBRA FOUND" << endl;
             for( int i = 0; i < good_matches.size(); i++ )
             {
                 //Get the keypoints from the good matches
-                obj.push_back( kp_object[ good_matches[i].queryIdx ].pt );
+                obj.push_back( vectorOfKeypoints[currentImage][ good_matches[i].queryIdx ].pt );
                 scene.push_back( kp_image[ good_matches[i].trainIdx ].pt );
             }
 
@@ -137,22 +189,17 @@ int main(int argc,char** argv)
             perspectiveTransform( obj_corners, scene_corners, H);
 
             //Draw lines between the corners (the mapped object in the scene image )
-            line( img_matches, scene_corners[0] + Point2f( object.cols, 0), scene_corners[1] + Point2f( object.cols, 0), Scalar(0, 255, 0), 4 );
-            line( img_matches, scene_corners[1] + Point2f( object.cols, 0), scene_corners[2] + Point2f( object.cols, 0), Scalar( 0, 255, 0), 4 );
-            line( img_matches, scene_corners[2] + Point2f( object.cols, 0), scene_corners[3] + Point2f( object.cols, 0), Scalar( 0, 255, 0), 4 );
-            line( img_matches, scene_corners[3] + Point2f( object.cols, 0), scene_corners[0] + Point2f( object.cols, 0), Scalar( 0, 255, 0), 4 );
+            line( img_matches, scene_corners[0] + Point2f( objectImages[currentImage].cols, 0), scene_corners[1] + Point2f( objectImages[currentImage].cols, 0), Scalar(0, 255, 0), 4 );
+            line( img_matches, scene_corners[1] + Point2f( objectImages[currentImage].cols, 0), scene_corners[2] + Point2f( objectImages[currentImage].cols, 0), Scalar( 0, 255, 0), 4 );
+            line( img_matches, scene_corners[2] + Point2f( objectImages[currentImage].cols, 0), scene_corners[3] + Point2f( objectImages[currentImage].cols, 0), Scalar( 0, 255, 0), 4 );
+            line( img_matches, scene_corners[3] + Point2f( objectImages[currentImage].cols, 0), scene_corners[0] + Point2f( objectImages[currentImage].cols, 0), Scalar( 0, 255, 0), 4 );
         }
 
         //Show detected matches
         imshow( "Good Matches", img_matches );
-
-        key = waitKey(1);
+        waitKey(10);
     }
     return 0;
 }
 
-void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
-	const cv_bridge::CvImagePtr cv_ptr = ic.getImage(msg);
-	Mat originalImage = cv_ptr->image.clone();
-	globalRGBImage = originalImage;
-}
+

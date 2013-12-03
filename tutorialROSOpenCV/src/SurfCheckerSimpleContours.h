@@ -30,6 +30,7 @@ public:
 	int getNrOfSurfsDone();
 	double getAvgElephantMatches();
 	double getAvgHippoMatches();
+	double getAvgLionMatches();
 
 	void reset();
 
@@ -39,16 +40,20 @@ private:
 
 	double averageElephantMatches;
 	double averageHippoMatches;
+	double averageLionMatches;
 
 
 	vector< vector<KeyPoint> > 	elephantKeypoints;
 	vector< vector<KeyPoint> > 	hippoKeypoints;
+	vector< vector<KeyPoint> > 	lionKeypoints;
 
 	vector<Mat> elephantDescriptors;
 	vector<Mat> hippoDescriptors;
+	vector<Mat> lionDescriptors;
 
 	int nrOfElephantImages;
 	int nrOfHippoImages;
+	int nrOfLionImages;
 
 	int minHessian; //Hessian values for surf feature detector
 	double good_match_threshold; //Threshold for "good matches"

@@ -33,9 +33,11 @@ public:
 	ObjectDetector();
 	virtual ~ObjectDetector();
 	void updateObjectProbability(cv::Mat);
-	object detectObject();
+	vector<object> detectObject();
 	bool isFinished();
 	void reset();
+
+	void printObjectName(object o);
 
 //private:
 	double objectProbabilities[NUMBER_OF_OBJECTS];

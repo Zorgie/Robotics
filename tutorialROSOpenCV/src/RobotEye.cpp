@@ -37,8 +37,14 @@ int main(int argc,char** argv)
     			detector.updateObjectProbability(globalImage);
     		else
     		{
+    			vector<object> result = detector.detectObject();
+    			cout << "DETECTION DONE: PROBABLY THIS IS A " << endl;
 
-
+    			for(int i = 0;i < result.size();i++){
+    				detector.printObjectName(result[i]);
+    				cout << " or it is a " << endl;
+    			}
+/*
     			cout << "DETECTION DONE ,RESULT: " << endl;
 
     			cout << "---------------------------------------------------" << endl;
@@ -59,7 +65,8 @@ int main(int argc,char** argv)
     			cout << "PEAR: " << detector.objectProbabilities[PEAR] << endl;
     			cout << "BANANA" << detector.objectProbabilities[BANANA] << endl;
     			cout << "ORANGE: " << detector.objectProbabilities[ORANGE] << endl;
-    			cout << "LION: " << detector.objectProbabilities[LION] << endl;
+    			cout << "LION: " << detector.objectProbabilities[LION] << endl;*/
+
 
 
     			detector.reset();

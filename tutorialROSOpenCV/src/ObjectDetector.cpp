@@ -8,7 +8,7 @@
 #include "ObjectDetector.h"
 #include <iostream>
 
-void printObjectName(object o){
+void ObjectDetector::printObjectName(object o){
 
 	switch(o){
 	case TIGER: cout << "TIGER" << endl; break;
@@ -29,6 +29,7 @@ void printObjectName(object o){
 	case BANANA: cout << "BANANA" << endl; break;
 	case ORANGE: cout << "ORANGE" << endl; break;
 	case LION: 	 cout << "LION" << endl;break;
+	case LEMON:  cout << "LEMON" << endl;break;
 	}
 }
 
@@ -48,7 +49,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 	switch(detectingPhase){
 		case CONTOURING:
 			//not enough contour votes?
-			if(contourChecker.getCurrentNumberOfVotes() < 20){
+			if(contourChecker.getCurrentNumberOfVotes() < 50){
 				contourChecker.updateComplexityEstimation(imgBGR);
 			}
 			else{
@@ -64,7 +65,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 
 			break;
 		case HIGH_CONTOUR_SURFING:
-			if(surfChecker.getNrOfSurfsDone() < 3){
+			if(surfChecker.getNrOfSurfsDone() < 10){
 				surfChecker.performSurf(imgBGR);
 			}
 			else{
@@ -86,7 +87,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 			break;
 
 		case SHAPING:
-			if(shapeChecker.nrOfVotes < 40){
+			if(shapeChecker.nrOfVotes < 50){
 				shapeChecker.updateShapeEstimation(imgBGR);
 			}
 			else
@@ -99,6 +100,8 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 					objectProbabilities[PAPRIKA] += 0.2;
 					objectProbabilities[ORANGE]  += 0.2;
 					objectProbabilities[AVOCADO]  += 0.2;
+					objectProbabilities[LEMON]   += 0.2;
+
 					detectingPhase = COLORING;
 
 				}
@@ -108,9 +111,10 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 					objectProbabilities[POTATO] += 0.2;
 					objectProbabilities[CARROT] += 0.2;
 					objectProbabilities[MELON]  += 0.2;
-					objectProbabilities[PEAR]   += 0.2;
 					objectProbabilities[BANANA] += 0.2;
 					objectProbabilities[CORN]   += 0.2;
+					objectProbabilities[PEAR]   += 0.2;
+
 					detectingPhase = COLORING;
 				}
 				else
@@ -130,7 +134,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 			break;
 		case COLORING:
 
-			if(colorDetector.getNumberOfIterations() < 3){
+			if(colorDetector.getNumberOfIterations() < 50){
 				cout << "COLORING STEP " << colorDetector.getNumberOfIterations() << endl;
 				colorDetector.updatePixelCount(imgBGR);
 			}
@@ -178,11 +182,10 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 		default:
 			break;
 	}
-
 }
 
 //just return the object with the highest probability
-object ObjectDetector::detectObject(){
+vector<object> ObjectDetector::detectObject(){
 	object bestGuess = static_cast<object>(0);
 	double highestProbability = objectProbabilities[0];
 	for(int i = 0;i < NUMBER_OF_OBJECTS;i++){
@@ -191,7 +194,18 @@ object ObjectDetector::detectObject(){
 			bestGuess = static_cast<object>(i);;
 		}
 	}
-	return bestGuess;
+
+	vector<object> result;
+
+	if (highestProbability >  0.3){
+		for(int i = 0;i < NUMBER_OF_OBJECTS;i++){
+			if(objectProbabilities[i] == highestProbability){
+				result.push_back(static_cast<object>(i));
+				cout << "PROBABLILTY: " << highestProbability << endl;
+			}
+		}
+	}
+	return result;
 }
 
 bool ObjectDetector::isFinished(){

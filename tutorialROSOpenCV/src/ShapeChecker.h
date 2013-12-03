@@ -10,6 +10,8 @@
 
 #include "cv.h"
 #include <vector>
+#include <opencv2/highgui/highgui.hpp>
+
 
 using namespace cv;
 
@@ -29,6 +31,8 @@ public:
 	int totalNrOfCircles;
 	int totalNrOfEllipses;
 	int nrOfVotes;
+
+	int countPixels(Scalar lower_bound,Scalar upper_bound,Mat &bgrImage);
 };
 
 

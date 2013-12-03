@@ -38,6 +38,7 @@ ColorDetector::ColorDetector() {
 	lowerColorBounds[PAPRIKA_GREEN]		=cv::Scalar(64,41,6);
 	lowerColorBounds[AVOCADO_GREEN]		=cv::Scalar(64,41,6);
 	lowerColorBounds[LION_YELLOW]       =cv::Scalar(6,89,41);
+	lowerColorBounds[LEMON_YELLOW]       =lowerColorBounds[BANANA_YELLOW];			//TODO: For now take banana yellow
 
 
 	lowerColorBounds[CARROT_ORANGE]		=cv::Scalar(5,50,155);
@@ -64,6 +65,7 @@ ColorDetector::ColorDetector() {
 	upperColorBounds[MELON_GREEN]		=cv::Scalar(69,145,193);
 	upperColorBounds[MELON_RED]			=cv::Scalar(13,101,183);
 	upperColorBounds[LION_YELLOW]		=cv::Scalar(31,254,217);
+	upperColorBounds[LEMON_YELLOW]       =upperColorBounds[BANANA_YELLOW];			//TODO: For now take banana yellow
 
 	reset();
 }
@@ -137,8 +139,6 @@ void ColorDetector::updatePixelCount(Mat bgrImage){
 
 	// DEBUGGING OUTPUT TO SHOW IT WORKS"
 	imshow("Masked Image in ColorDetection",maskedImage);
-	cout << "BANANA PIXELS: " << countPixels(lowerColorBounds[BANANA_YELLOW],upperColorBounds[BANANA_YELLOW],maskedImage) << endl;
-	cout << "BROCOLI PIXELS: " << countPixels(lowerColorBounds[BROCOLI_GREEN],upperColorBounds[BROCOLI_GREEN],maskedImage) << endl;
 	waitKey(3);
 
 
@@ -155,7 +155,6 @@ void ColorDetector::updatePixelCount(Mat bgrImage){
 		}
 
 	}
-	cout << "NUMBER OF TURNS ++" << endl;
 	nrOfTurns++;
 }
 
@@ -169,7 +168,6 @@ std::vector<object> ColorDetector::getProbableObjects(){
 	double threshold = 1000; //in average there must be at least - threshold pixels - so that the object is pushed to vector
 	for(int i = 0;i < NR_OF_COLORS;i++){
 		avgNrOfPixels = totalNrOfPixels[i]/nrOfTurns;
-		cout << "AVG PIXELS FOUND FOR COLOR " << i << ": " << avgNrOfPixels << endl;
 		if(avgNrOfPixels > threshold){
 			result.push_back(colorObjectMapping(static_cast<colors>(i)));
 		}
@@ -196,6 +194,7 @@ object ColorDetector::colorObjectMapping(colors objectColor){
 			case MELON_RED:			return MELON;
 			case AVOCADO_GREEN:		return AVOCADO;
 			case LION_YELLOW:		return LION;
+			case LEMON_YELLOW:		return LEMON;
 		}
 		std::cout << "ERROR in ColorDetection::colorObjectMapping - THE OBJECT COLOR DOES NOT EXIST!" << std::endl;
 		return static_cast<object>(-1);
