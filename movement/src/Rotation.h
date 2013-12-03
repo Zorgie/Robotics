@@ -10,6 +10,7 @@
 
 #include <movement/wheel_speed.h>
 #include <movement/wheel_distance.h>
+#include <movement/robot_pose.h>
 #include <differential_drive/Encoders.h>
 #include <cmath>
 
@@ -24,7 +25,7 @@ private:
 public:
 	Rotation();
 	virtual ~Rotation();
-	void initiate_rotation(float degrees);
+	void initiate_rotation(float degrees, movement::robot_pose &pose_estimate);
 	movement::wheel_speed step(movement::wheel_distance& distance_traveled);
 	bool isFinished();
 };

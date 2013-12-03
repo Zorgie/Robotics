@@ -16,6 +16,8 @@
 #include "ImageConverter.h"
 #include "PlaneDetector_Subsample.h"
 
+#include "mapping/object_detected_info.h"
+
 namespace enc = sensor_msgs::image_encodings;
 
 static const char WINDOW[] = "Original Window";
@@ -28,9 +30,12 @@ Scalar colors[] = { Scalar(100, 0, 0), Scalar(100, 100, 0), Scalar(0, 100, 0),
 image_transport::Publisher image_pub_;
 ImageConverter ic;
 pcl::PointCloud<pcl::PointXYZ> cloudCache;
+Mat rgbCache(640, 480, CV_8UC3, Scalar(255, 255, 255));
 std::vector<bool> valid_cloud;
 vector<Vec4i> houghLineCache;
 PlaneDetector_Subsample pd;
+
+ros::Publisher object_detected_info_pub;
 
 bool killProgram = false;
 
@@ -58,7 +63,10 @@ int main(int argc, char** argv) {
 			&imgCallback);
 	ros::Subscriber dSub = nh_.subscribe("/camera/depth_registered/points", 1,
 			&depthCallback);
-	cv::namedWindow(WINDOW);
+	//cv::namedWindow(WINDOW);
+
+	object_detected_info_pub = nh_.advertise<mapping::object_detected_info>(
+			"/mapping/objectDetectedInfo", 1);
 
 	NavMap nav;
 	double currentX = 200;
@@ -93,6 +101,7 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 	const cv_bridge::CvImagePtr cv_ptr = ic.getImage(msg);
 	Mat originalImage = cv_ptr->image.clone();
 	Mat modImage = cv_ptr->image.clone();
+	rgbCache = cv_ptr->image.clone();
 
 	Mat mapImage(640, 480, CV_8UC3, Scalar(255, 255, 255));
 
@@ -140,16 +149,16 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 		}
 	}
 
-	cv::imshow(WINDOW2, depth_invalidity); //originalImage
+//	cv::imshow(WINDOW2, depth_invalidity); //originalImage
 	Mat element = getStructuringElement(MORPH_RECT, Size(10, 10));
 	/// Apply the erosion operation
 	//dilate(depth_invalidity, depth_invalidity, element);
-	medianBlur(depth_invalidity,depth_invalidity,5);
+//	medianBlur(binary_img,binary_img,9);
 	dilate(depth_invalidity, depth_invalidity, element);
 
 	for (int y = 0; y < 480; y++) {
 		for (int x = 0; x < 640; x++) {
-			if (depth_invalidity.at<uchar>(y, x)==255) {
+			if (depth_invalidity.at<uchar>(y, x) == 255) {
 				int pixnum = px(x, y);
 				originalImage.data[3 * pixnum] = 0;
 				originalImage.data[3 * pixnum + 1] = 0;
@@ -158,26 +167,101 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg) {
 		}
 	}
 
-	cv::imshow(WINDOW, depth_invalidity);//originalImage
+	vector<vector<Point> > contours;
+	RNG rng(12345);
+
+	/*
+	 cv::findContours(binary_img, contours, CV_RETR_EXTERNAL,
+	 CV_CHAIN_APPROX_NONE);
+	 for (int i = 0; i < contours.size(); i++) {
+	 cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0, 255),
+	 rng.uniform(0, 255));
+	 cv::drawContours(binary_img, contours, i, color);
+	 }*/
+
+	double avg_x = 0;
+	double avg_y = 0;
+
+	int nrOfWhitePixels = 0;
+	//binary 0/1 image from binary 0/255 image
+	Mat binary(480, 640, CV_8UC1, Scalar(1));
+	for (int y = 0; y < 480; y++) {
+		for (int x = 0; x < 640; x++) {
+			if (binary_img.at<uchar>(y, x) == 0) {
+				binary.at<uchar>(y, x) = 0;
+			} else {
+				if (y > 240) {
+					nrOfWhitePixels++;
+					avg_x += x;
+					avg_y += y;
+				}
+				binary.at<uchar>(y, x) = 1;
+			}
+
+		}
+	}
+	avg_x /= nrOfWhitePixels;
+	avg_y /= nrOfWhitePixels;
+
+	mapping::object_detected_info object_on_image_message;
+	cout << "\n\nNR OF WHITE PIXELS:" << nrOfWhitePixels << endl;
+
+	if (nrOfWhitePixels > 1000 && nrOfWhitePixels < 4500) {
+		object_on_image_message.objectDetected = 1;
+		object_on_image_message.object_x = avg_x;
+		object_on_image_message.object_y = avg_y;
+	} else {
+		object_on_image_message.objectDetected = 0;
+		object_on_image_message.object_x = 0;
+		object_on_image_message.object_y = 0;
+	}
+	object_detected_info_pub.publish(object_on_image_message);
+
+	//draw a circle at the objects position
+	circle(originalImage, cv::Point((int) avg_x, (int) avg_y), 32.0,
+			Scalar(0, 0, 255), -1, 8);
+
+	std::vector<std::vector<cv::Point> > blobs;
+	blobs.clear();
+
+	//cv::imshow(WINDOW, depth_invalidity);//originalImage
 	//cv::imshow(WINDOW2, binary_img);
 	//cv::imshow(WINDOW3, modImage);
+
+	//cv::imshow("blobImage",originalImage);
 	cv::waitKey(3);
 }
 
 void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
-
+	std::cerr << "A" << std::endl;
 	using namespace std;
 	pcl::PointCloud<pcl::PointXYZ> cloud;
 	fromROSMsg(pcloud, cloud);
-//	if (cloudCache != NULL) {
-//		delete (cloudCache);
+	std::cerr << "B" << std::endl;
+//	if (cloudCache.size() > 0) {
+//		delete (&cloudCache);
 //	}
-	cloudCache = cloud;
-	std::cout << "\n\n\nDepth callback" << std::endl;
-	pd.read_cloud(cloudCache);
-	pd.find_planes();
 
-	valid_cloud = pd.valid_cloud();
-	valid_cloud.size();
+	cout << cloud.size() << endl;
+
+
+
+
+	cloudCache = cloud;
+	std::cerr << "C" << std::endl;
+	pd.read_cloud(cloudCache, rgbCache);
+	std::cerr << "D" << std::endl;
+	//if (!pd.isnan_cloud()) {
+		pd.find_planes(); // SEG FAULT HERE
+		std::cerr << "E" << std::endl;
+
+		int testnum = px(100, 450);
+
+		valid_cloud = pd.valid_cloud();
+		valid_cloud.size();
+	//}
+
+
+
 
 }

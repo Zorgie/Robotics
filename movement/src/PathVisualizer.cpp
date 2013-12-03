@@ -1,17 +1,23 @@
 #include "ros/ros.h"
 #include <visualization_msgs/Marker.h>
 #include "RobotPosition.h"
+#include "movement/robot_pose.h"
 
 #include <cmath>
 #include <vector>
+#include <stdlib.h>
 
-static movement::robot_pose global_current_robot_pose;
+movement::robot_pose global_rviz_current_robot_pose;
 static ros::Subscriber robot_pose_sub;
 
 static const int UPDATE_RATE = 50;
 
 void robot_pose_update(const movement::robot_pose &msg) {
-	global_current_robot_pose = msg;
+	global_rviz_current_robot_pose = msg;
+	std::cout << "Message contents" << std::endl;
+	std::cout << msg.x << std::endl;
+	std::cout << "Global contents" << std::endl;
+	std::cout << global_rviz_current_robot_pose.x << std::endl;
 }
 
 int main( int argc, char** argv )
@@ -19,11 +25,16 @@ int main( int argc, char** argv )
   ros::init(argc, argv, "points_and_lines");
   ros::NodeHandle n;
   ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 10);
-  robot_pose_sub = n.subscribe("/robot_pose", 1, robot_pose_update);
+  //robot_pose_sub = n.subscribe("/robot_pose", 1, robot_pose_update);
+  robot_pose_sub = n.subscribe("/robot_pose_aligned_NEW", 1, robot_pose_update);
 
   std::vector<movement::robot_pose> pose_history;
 
   ros::Rate r(UPDATE_RATE);
+
+  global_rviz_current_robot_pose.x=0;
+  global_rviz_current_robot_pose.y=0;
+  global_rviz_current_robot_pose.theta=0;
 
   float f = 0.0;
   while (ros::ok())
@@ -64,7 +75,19 @@ int main( int argc, char** argv )
 //
 //   }
 
-    pose_history.push_back(global_current_robot_pose);
+    pose_history.push_back(global_rviz_current_robot_pose);
+//    std::cout << 'X: ' << global_rviz_current_robot_pose.x
+//    		<< 'Y: ' << global_rviz_current_robot_pose.y
+//    		<< 'theta: ' << global_rviz_current_robot_pose.theta << std::endl;
+
+	std::cout << "Global contents for publishing" << std::endl;
+//	std::cout << global_rviz_current_robot_pose.x << std::endl;
+	std::cout << "X:" << std::endl;
+	std::cout << global_rviz_current_robot_pose.x << std::endl;
+	std::cout << "Y:" << std::endl;
+	std::cout << global_rviz_current_robot_pose.y << std::endl;
+	std::cout << "theta:" << std::endl;
+	std::cout << global_rviz_current_robot_pose.theta << std::endl;
 
     for (std::vector<movement::robot_pose>::iterator it = pose_history.begin();
         it != pose_history.end(); ++it){
@@ -73,6 +96,9 @@ int main( int argc, char** argv )
         p.x = it->x;
         p.y = it->y;
         p.z = 0.0;
+
+//            std::cout << 'X: ' << p.x
+//            		<< 'Y: ' << p.y << std::endl;
 
         points.points.push_back(p);
     }

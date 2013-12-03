@@ -18,7 +18,7 @@ ros::Publisher   movement_state_pub;
 const int UPDATE_RATE = 50;
 
 enum sensor {
-	FRONT_RIGHT = 0, BACK_RIGHT = 1, BACK_LEFT = 5, FRONT_LEFT = 6, FRONTAL_LEFT = 7, FRONTAL_RIGHT = 4
+	FRONT_RIGHT = 0, BACK_RIGHT = 1, BACK_LEFT = 5, FRONT_LEFT = 6, FRONTAL_LEFT = 2, FRONTAL_RIGHT = 7
 };
 
 void tell_action_performed(const navigation::movement_state &mvs){
@@ -29,19 +29,20 @@ void tell_action_performed(const navigation::movement_state &mvs){
 void update_movement_state(const irsensors::floatarray &processed_ir_readings) {
 
 	//store sensor readings from message to variables
-	float front = processed_ir_readings.ch[FRONTAL_LEFT];
+	float frontal_left = processed_ir_readings.ch[FRONTAL_LEFT];
+	float frontal_right = processed_ir_readings.ch[FRONTAL_RIGHT];
 	float front_right = processed_ir_readings.ch[FRONT_RIGHT];
 	float back_right = processed_ir_readings.ch[BACK_RIGHT];
 	float front_left = processed_ir_readings.ch[FRONT_LEFT];
 	float back_left = processed_ir_readings.ch[BACK_LEFT];
 
 	//update probabilistic array
-	movement_brain.process_irsensor_readings(front, front_right, back_right, front_left, back_left);
+	movement_brain.process_irsensor_readings(frontal_left , frontal_right , front_right, back_right, front_left, back_left);
 
     //tell the current robot state
     switch(movement_brain.get_current_movement_state()){
 		case GO_STRAIGHT:
-			printf("Go straigh \n");
+			printf("GO_STRAIGHT \n");
 			break;
 		case FOLLOW_RIGHT:
 			printf("FOLLOW_RIGHT \n");

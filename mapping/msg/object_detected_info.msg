@@ -1,0 +1,3 @@
+uint32 objectDetected
+uint32 object_x
+uint32 object_y

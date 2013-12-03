@@ -16,6 +16,7 @@
 #include "Mapper.h"
 #include "ImageConverter.h"
 #include "PlaneDetector.h"
+#include "mapping/object_detected_info.h"
 
 namespace enc = sensor_msgs::image_encodings;
 
@@ -28,6 +29,8 @@ image_transport::Publisher image_pub_;
 ImageConverter ic;
 pcl::PointCloud<pcl::PointXYZ>* cloudCache = NULL;
 vector<Vec4i> houghLineCache;
+
+Mapper *mapper;
 
 bool killProgram = false;
 
@@ -61,6 +64,9 @@ void imgCallback(const sensor_msgs::ImageConstPtr& msg);
 
 void depthCallback(const sensor_msgs::PointCloud2& pcl);
 
+void objectDetectedCallback(const mapping::object_detected_info &msg);
+
+
 bool hasRight(double x, double y) {
 	return true;
 }
@@ -85,14 +91,18 @@ int main(int argc, char** argv) {
 	ros::init(argc, argv, "Mapping");
 	ros::NodeHandle nh_;
 
+	mapper = new Mapper();
+
 	//image_transport::ImageTransport it_ = nh_;
 	ros::Subscriber sub = nh_.subscribe("/camera/rgb/image_color", 1,
 			&imgCallback);
 	ros::Subscriber dSub = nh_.subscribe("/camera/depth_registered/points", 1,
 			&depthCallback);
 
+	ros::Subscriber objectDetectedSub = nh_.subscribe("/mapping/objectDetectedInfo", 1, &objectDetectedCallback);
+
 	Scalar black = Scalar(0, 0, 0);
-	Mapper mapper;
+
 
 	while (ros::ok()) {
 		cv::waitKey(3);
@@ -162,4 +172,39 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 		delete (cloudCache);
 	}
 	cloudCache = new PointCloud<PointXYZ>(cloud);
+}
+
+void objectDetectedCallback(const mapping::object_detected_info &msg){
+
+	double theta = 0.6435;
+    Mat T = (Mat_<double>(4,4) << 0, -sin(theta), cos(theta), 0.1, -1, 0, 0, 0, 0, -cos(theta),-sin(theta),0.3,0,0,0,1);
+
+	if(msg.objectDetected){
+		std::cerr << "OBJECT" << std::endl;
+		int pixnum = px(msg.object_x, msg.object_y);
+
+		// WE FORGOT TO RECORD THIS TOPIC!
+		// so we simply replace by:
+		//mapper->addObject(0.1,0);
+		PointXYZ pix = cloudCache->points[pixnum];
+		if(!isnan(pix.z)){
+			//cout << "PIXEL: "<< pix << endl;
+
+			Mat pointMat = (Mat_<double>(4,1) << pix.x,pix.y,pix.z,1);
+			//Mat pointMat = (Mat_<double>(4,1) << 0,0,0,1);
+			//cout << "POINT MAT: " << pointMat << endl;
+			Mat ObjectPos=T*pointMat;
+			//cout << "RESULT CHECK: " << ObjectPos << endl;
+			//cout << "RESULT CHECK 2: " << ObjectPos.at<double>(0,0)<< ObjectPos.at<double>(0,1) << endl;
+			//mapper.addObject(ObjectPos.at<double>(0,),ObjectPos[1]);
+			std::cerr << "A" << std::endl;
+			mapper->addObject(ObjectPos.at<double>(0,0),ObjectPos.at<double>(0,1));
+			std::cerr << "B" << std::endl;
+		}
+		else{
+			mapper->addObject(0.1,0);
+		}
+
+
+	}
 }

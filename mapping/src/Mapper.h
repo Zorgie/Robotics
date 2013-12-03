@@ -17,6 +17,10 @@
 #include <mapping/robot_pose.h>
 #include "NavMap.h"
 
+//enumerations
+#include <navigation/movement_state.h>
+#include <navigation/RobotActions.h>
+
 
 class Mapper {
 private:
@@ -26,6 +30,7 @@ private:
 	ros::Subscriber poseSub;
 	ros::Publisher posePub;
 	ros::Subscriber camSub;
+	ros::Subscriber movementSub;
 	mapping::robot_pose currentPose;
 	bool poseInit;
 
@@ -38,6 +43,8 @@ public:
 	void irCallback(const irsensors::floatarray& msg);
 	void depthCallback(const sensor_msgs::PointCloud2& pcloud);
 	void poseCallback(const mapping::robot_pose& p);
+	void addObject(double x, double y);
+	void movementCommandCallback(const navigation::movement_state& state);
 	mapping::robot_pose calibratePos(irsensors::floatarray currentIR);
 };
 
