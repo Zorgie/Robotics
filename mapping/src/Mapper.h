@@ -17,8 +17,10 @@
 #include <mapping/robot_pose.h>
 #include "NavMap.h"
 
-//enumerations
+// Navigation messages etc.
 #include <navigation/movement_state.h>
+#include <navigation/path_request.h>
+#include <navigation/path_result.h>
 #include <navigation/RobotActions.h>
 
 
@@ -28,11 +30,17 @@ private:
 	ros::NodeHandle nh;
 	ros::Subscriber irSub;
 	ros::Subscriber poseSub;
-	ros::Publisher posePub;
 	ros::Subscriber camSub;
 	ros::Subscriber movementSub;
+	ros::Subscriber pathRequestSub;
+
+	ros::Publisher posePub;
+	ros::Publisher pathResultPub;
+
 	mapping::robot_pose currentPose;
 	bool poseInit;
+
+	int findPath;
 
 	char* WINDOW;
 
@@ -43,9 +51,12 @@ public:
 	void irCallback(const irsensors::floatarray& msg);
 	void depthCallback(const sensor_msgs::PointCloud2& pcloud);
 	void poseCallback(const mapping::robot_pose& p);
+	void pathRequestCallback(const navigation::path_request& p);
 	void addObject(double x, double y);
 	void movementCommandCallback(const navigation::movement_state& state);
 	mapping::robot_pose calibratePos(irsensors::floatarray currentIR);
+
+	void pathResultCallback(vector<Edge> path);
 };
 
 #endif /* MAPPER_H_ */

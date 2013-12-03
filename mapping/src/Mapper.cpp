@@ -21,11 +21,20 @@ bool Mapper::validIR(double r1, double r2){
 
 Mapper::Mapper() {
 	WINDOW = "Map visualization";
+
+	/* Subscribers */
 	irSub = nh.subscribe("/sensors/transformed/ADC",1,&Mapper::irCallback,this);
 	movementSub = nh.subscribe("/navigation/movement_state", 1, &Mapper::movementCommandCallback, this);
 	poseSub = nh.subscribe("/robot_pose",100,&Mapper::poseCallback, this);
+	pathRequestSub = nh.subscribe("/path/request",100,&Mapper::pathRequestCallback, this);
 	//camSub = nh.subscribe("/camera/depth_registered/points",1, &Mapper::depthCallback, this);
+
+	/* Publishers */
 	posePub = nh.advertise<mapping::robot_pose>("/robot_pose_aligned", 1);
+	pathResultPub = nh.advertise<navigation::path_result>("/path/result", 1000);
+
+	findPath = -1;
+
 	cv::namedWindow(WINDOW);
 
 	poseInit = false;
@@ -73,6 +82,17 @@ void Mapper::poseCallback(const mapping::robot_pose& p){
 	poseInit = true;
 }
 
+void Mapper::pathRequestCallback(const navigation::path_request& p){
+	printf("Received path request callback.\n");
+	switch(p.path_type){
+	case 1:
+		findPath = 0;
+		break;
+	case 2:
+		break;
+	}
+}
+
 mapping::robot_pose Mapper::calibratePos(irsensors::floatarray currentIR) {
 	mapping::robot_pose pose_diff;
 	pose_diff.x = 0;
@@ -85,7 +105,6 @@ mapping::robot_pose Mapper::calibratePos(irsensors::floatarray currentIR) {
 	int thetaSnap = round(currentPose.theta / (2 * M_PI) * 4);
 	thetaSnap = (thetaSnap + 4) % 4;
 
-	double distanceFront = (currentIR.ch[7] + currentIR.ch[7]) / 2;
 	bool horizontal = (thetaSnap == 0 || thetaSnap == 2);
 
 	Point2d syncPosL, syncPosR;
@@ -101,7 +120,8 @@ mapping::robot_pose Mapper::calibratePos(irsensors::floatarray currentIR) {
 		Point2d wallPosB = nav.pointConversion(curPos,Point2d(-0.09,dLB),currentPose.theta);
 		nav.extendWall(wallPosF.x,wallPosF.y,horizontal);
 		nav.extendWall(wallPosB.x,wallPosB.y,horizontal);
-		Point2d adjustedPos = nav.getCalibratedPos(curPos,wallPosF);
+		// TODO Use?
+		Point2d adjustedPos;
 	}
 	if (validIR(currentIR.ch[0], currentIR.ch[1])) {
 		// Right sensors
@@ -113,11 +133,14 @@ mapping::robot_pose Mapper::calibratePos(irsensors::floatarray currentIR) {
 		nav.extendWall(wallPosF.x,wallPosF.y,horizontal);
 		nav.extendWall(wallPosB.x,wallPosB.y,horizontal);
 	}
-	if(validIR(currentIR.ch[7],currentIR.ch[7])){
+	if(validIR(currentIR.ch[3],currentIR.ch[7])){
+		double dFR = currentIR.ch[3] + 0.11 + 0.01;
+		double dFL = currentIR.ch[7] + 0.11 + 0.01;
 		// Adding one centimeter to reach the middle of the wall.
-		distanceFront+=0.10 + 0.01;
-		Point2d wallPos = nav.pointConversion(curPos,Point2d(distanceFront,-0.07),currentPose.theta);
-		nav.extendWall(wallPos.x,wallPos.y,!horizontal);
+		Point2d wallPosL = nav.pointConversion(curPos,Point2d(dFL,-0.07),currentPose.theta);
+		Point2d wallPosR = nav.pointConversion(curPos,Point2d(dFR,0.07),currentPose.theta);
+		nav.extendWall(wallPosL.x,wallPosL.y,!horizontal);
+		nav.extendWall(wallPosR.x,wallPosR.y,!horizontal);
 	}
 
 	return pose_diff;
@@ -134,6 +157,28 @@ void Mapper::movementCommandCallback(const navigation::movement_state& state){
 	for (int i = 0; i < 3; i++) {
 		if (action == node_actions[i]) {
 			nav.addNode(currentPose.x, currentPose.y, action);
+			if(findPath != -1){
+				vector<Edge> path = nav.getPath(findPath);
+				printf("Getting path, length: %d\n", path.size());
+				pathResultCallback(path);
+				printf("Finished publishing path.\n");
+				findPath = -1;
+			}
 		}
+	}
+}
+
+
+void Mapper::pathResultCallback(vector<Edge> path){
+	for(int i=0; i<path.size(); i++){
+		navigation::path_result res;
+		res.edge_type = path[i].type;
+		Node from = nav.getNode(path[i].from);
+		Node to = nav.getNode(path[i].to);
+		res.x1 = from.x;
+		res.y1 = from.y;
+		res.x2 = to.x;
+		res.y2 = to.y;
+		pathResultPub.publish(res);
 	}
 }

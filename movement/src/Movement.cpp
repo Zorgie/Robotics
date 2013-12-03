@@ -104,6 +104,7 @@ void act() {
 
 	double delta_x = pose_hist[0].x - pose_hist[1].x;
 	double delta_y = pose_hist[0].y - pose_hist[1].y;
+	double delta_theta = pose_hist[0].theta - pose_hist[1].theta;
 
 	double lin_dist = sqrt((delta_x * delta_x) + (delta_y * delta_y));
 
@@ -111,6 +112,7 @@ void act() {
 			+ lin_dist * cos(estimated_pose.theta);
 	estimated_pose.y = estimated_pose.y
 			+ lin_dist * sin(estimated_pose.theta);
+
 
 	std::cout << "\n\n\n" << std::endl;
 	std::cout << "\033[1;32mPure encoder readings\033[0m\n"; // green

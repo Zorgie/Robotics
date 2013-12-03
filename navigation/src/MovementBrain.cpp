@@ -379,7 +379,7 @@ robot_movement_state MovementBrain::make_state_decision_follow_right() {
 		else
 			return FOLLOW_LEFT;
 	if (wall_lost)
-		return CHECK_RIGHT_PATH_0_GO_FORWARD; // Rui change to GO_STRAIGHT
+		return GO_STRAIGHT;//CHECK_RIGHT_PATH_0_GO_FORWARD; // Rui change to GO_STRAIGHT
 	if (wall_in_front)
 		return TURN_LEFT;
 
@@ -413,7 +413,7 @@ robot_movement_state MovementBrain::make_state_decision_follow_left() {
 		else
 			return FOLLOW_RIGHT;
 	if (wall_lost)
-		return CHECK_LEFT_PATH_0_GO_FORWARD; // Rui change to GO_STRAIGHT
+		return GO_STRAIGHT;//CHECK_LEFT_PATH_0_GO_FORWARD; // Rui change to GO_STRAIGHT
 	if (wall_in_front)
 		return TURN_RIGHT;
 

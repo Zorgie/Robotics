@@ -6,6 +6,7 @@
  */
 
 #include "../include/NavMap.h"
+static bool DEBUG = FALSE;
 
 Point NavMap::getVisualCoord(double x, double y){
 	return Point((int)(drawOffset.x - drawScaling.x * (x)), (int) (drawOffset.y + drawScaling.y * (y)));
@@ -35,26 +36,69 @@ void NavMap::addNode(double x, double y, int type) {
 	int newNodeId = nodes.size();
 	Node n = {newNodeId,x,y,type};
 
-	for (int i = 0; i < 4; i++) {
+	for(int i=0; i<nodes.size(); i++)
+		updateNode(nodes[i]);
 
-		double wallDist = getDistanceToWall(Point2d(x, y), i);
-		//bool collision = getCalibratedPos(Point2d(x,y),Point2d(x,y),Point2d(x,y));// LUCAS I CHANGED THIS, BEST REGARDS RUI!
-		if(wallDist < 0.3){
-			n.walls[i] = true;
-		}else{
-			n.walls[i] = false;
-		}
-	}
-	nodes.push_back(n);
-	printf("Node created: %d  %d %.2f %.2f %d %d %d %d\n",n.index,n.type,n.x,n.y,n.walls[0],n.walls[1],n.walls[2],n.walls[3]);
-
+	updateNode(n);
 
 	if(newNodeId == 0){
+		nodes.push_back(n);
 		lastVisitedNode = nodes[0];
 		return;
 	}
+
+	// Look for a matching node.
+	Node match;
+	if (nodeMatch(n, match)) {
+		printf("Matching node found!\n");
+		newNodeId = match.index;
+	} else {
+		// No matching node found, adds the node.
+		nodes.push_back(n);
+		printf("Node created.\n"); //: %d  %d %.2f %.2f %d %d %d %d\n",n.index,n.type,n.x,n.y,n.walls[0],n.walls[1],n.walls[2],n.walls[3]);
+	}
+
 	addEdge(newNodeId, lastVisitedNode.index, type);
 	lastVisitedNode = nodes[newNodeId];
+
+}
+
+
+bool NavMap::nodeMatch(Node in, Node& res){
+	double minDist = IDENTICAL_NODE_DIST+1;
+	for(int i=0; i<nodes.size(); i++){
+		Node n = nodes[i];
+		Point2d inP = Point2d(in.x,in.y);
+		Point2d nP = Point2d(n.x,n.y);
+		double dist = norm(inP-nP);
+		if(dist > IDENTICAL_NODE_DIST || dist > minDist){
+			continue;
+		}
+		bool sameWalls = true;
+		for(int j=0; j<4; j++){
+			if(n.walls[j] != in.walls[j]){
+				sameWalls = false;
+				if(in.index == 9){
+					printf("Not same walls, broke on #%d\n",i);
+				}
+			}
+		}
+		if(sameWalls){
+			minDist = dist;
+			res = n;
+		}
+	}
+	if(in.index == 9){
+		printf("Min Dist: %.3f\n", minDist);
+	}
+	if(minDist <= IDENTICAL_NODE_DIST){
+		return true;
+	}
+	return false;
+}
+
+void NavMap::nodeMerge(Node& to, Node& from){
+
 }
 
 void NavMap::addEdge(int from, int to, int type) {
@@ -63,17 +107,34 @@ void NavMap::addEdge(int from, int to, int type) {
 		throw -1;
 	}
 	neighbours[from] = vector<Edge>();
-	neighbours[to].push_back( { to, from, type });
-	int invertedType = type;
-	if (type == FOLLOW_LEFT_WALL)
-		invertedType = FOLLOW_RIGHT_WALL;
-	else if (type == FOLLOW_RIGHT_WALL)
-		invertedType = FOLLOW_LEFT_WALL;
-	neighbours[from].push_back( { from, to, invertedType });
+	bool edgeExists = false;
+	for (int i = 0; i < neighbours[to].size(); i++) {
+		if (neighbours[to][i].to == to)
+			edgeExists = true;
+	}
+	if (!edgeExists)
+		neighbours[to].push_back( { to, from, type });
+	edgeExists = false;
+	for (int i = 0; i < neighbours[from].size(); i++) {
+		if (neighbours[from][i].to == from)
+			edgeExists = true;
+	}
+	if (!edgeExists) {
+		int invertedType = type;
+		if (type == FOLLOW_LEFT_WALL)
+			invertedType = FOLLOW_RIGHT_WALL;
+		else if (type == FOLLOW_RIGHT_WALL)
+			invertedType = FOLLOW_LEFT_WALL;
+		neighbours[from].push_back( { from, to, invertedType });
+	}
 }
 
 vector<Edge> NavMap::getNeighbours(int nodeId) {
 	return neighbours[nodeId];
+}
+
+vector<Edge> NavMap::getPath(int to){
+	return getPath(lastVisitedNode.index, to);
 }
 
 vector<Edge> NavMap::getPath(int from, int to){
@@ -188,13 +249,13 @@ void NavMap::extendWall(double x, double y, bool horizontal) {
 }
 
 bool NavMap::intersectsWithWall(double x1, double y1, double x2, double y2,
-		Point2f &intersect) {
-	Point2f o1 = Point2f(x1, y1);
-	Point2f p1 = Point2f(x2, y2);
+		Point2d &intersect) {
+	Point2d o1 = Point2d(x1, y1);
+	Point2d p1 = Point2d(x2, y2);
 	for (int i = 0; i < walls.size(); i++) {
 		Wall w = walls[i];
-		Point2f o2 = Point2f(w.x1, w.y1);
-		Point2f p2 = Point2f(w.x2, w.y2);
+		Point2d o2 = Point2d(w.x1, w.y1);
+		Point2d p2 = Point2d(w.x2, w.y2);
 		if (intersection(o1, p1, o2, p2, intersect)) {
 			return true;
 		}
@@ -212,13 +273,71 @@ double NavMap::getDistanceToNode(int nodeId) {
 	return -1;
 }
 
+void NavMap::updateNode(Node& n){
+	double d = NODE_WALL_CHECK / CALIBRATE_MULTIPLIER;
+	Point2d origin = Point2d(n.x,n.y);
+	int wallCount = 0;
+	for (int i = 0; i < 4; i++) {
+		Point2d collisionPoint;
+		bool collision = getCalibratedPos(origin,i,d,collisionPoint);
+		n.walls[i] = collision;
+		wallCount += collision;
+	}
+//	if(wallCount == 2){ // Might be a corner
+//		Point2d pt1, pt2;
+//		Point2d cal1, cal2;
+//		if(n.walls[0] && n.walls[1]){ // Upper right corner.
+//			getCalibratedPos(origin,0,NODE_DIST_FROM_CORNER,pt1);
+//			getCalibratedPos(origin,1,NODE_DIST_FROM_CORNER,pt2);
+//			n.x = pt1.x;
+//			n.y = pt2.y;
+//			printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
+//		}else if(n.walls[1] && n.walls[2]){ // Upper left corner.
+//			getCalibratedPos(origin,1,NODE_DIST_FROM_CORNER,pt1);
+//			getCalibratedPos(origin,2,NODE_DIST_FROM_CORNER,pt2);
+//			n.y = pt1.y;
+//			n.x = pt2.x;
+//			printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
+//		}else if(n.walls[2] && n.walls[3]){ // Bottom left corner.
+//			getCalibratedPos(origin,2,NODE_DIST_FROM_CORNER,pt1);
+//			getCalibratedPos(origin,3,NODE_DIST_FROM_CORNER,pt2);
+//			n.x = pt1.x;
+//			n.y = pt2.y;
+//			printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
+//		}else if(n.walls[3] && n.walls[0]){ // Bottom right corner.
+//			getCalibratedPos(origin,3,NODE_DIST_FROM_CORNER,pt1);
+//			getCalibratedPos(origin,0,NODE_DIST_FROM_CORNER,pt2);
+//			n.y = pt1.y;
+//			n.x = pt2.x;
+//			printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
+//		}
+//
+//	}
+}
+
+
+bool NavMap::pointOnLine(Point2d pt, Point2d line1, Point2d line2) {
+	double EPS = 0.01;
+	double minLX = min(line1.x, line2.x) - EPS;
+	double maxLX = max(line1.x, line2.x) + EPS;
+	double minLY = min(line1.y, line2.y) - EPS;
+	double maxLY = max(line1.y, line2.y) + EPS;
+	if(pt.x < minLX || pt.x > maxLX){
+		return false;
+	}
+	if(pt.y < minLY || pt.y > maxLY){
+		return false;
+	}
+	return true;
+}
+
 // Finds the intersection of two lines, or returns false.
 // The lines are defined by (o1, p1) and (o2, p2).
-bool NavMap::intersection(Point2f o1, Point2f p1, Point2f o2, Point2f p2,
-		Point2f &r) {
-	Point2f x = o2 - o1;
-	Point2f d1 = p1 - o1;
-	Point2f d2 = p2 - o2;
+bool NavMap::intersection(Point2d o1, Point2d p1, Point2d o2, Point2d p2,
+		Point2d &r) {
+	Point2d x = o2 - o1;
+	Point2d d1 = p1 - o1;
+	Point2d d2 = p2 - o2;
 
 	float cross = d1.x * d2.y - d1.y * d2.x;
 	if (abs(cross) < /*EPS*/1e-8)
@@ -226,7 +345,11 @@ bool NavMap::intersection(Point2f o1, Point2f p1, Point2f o2, Point2f p2,
 
 	double t1 = (x.x * d2.y - x.y * d2.x) / cross;
 	r = o1 + d1 * t1;
-	return true;
+	// See if the intersection point lies on the line segments we check.
+	if(pointOnLine(r, o1, p1) && pointOnLine(r, o2, p2)){
+		return true;
+	}
+	return false;
 }
 
 void NavMap::draw(Mat& img) {
@@ -258,9 +381,9 @@ void NavMap::draw(Mat& img) {
 	// TODO Fix general case of sizing.
 	for (int i = 0; i < walls.size(); i++) {
 		Wall w = walls[i];
-		if (norm(Point2d(w.x1, w.y1) - Point2d(w.x2, w.y2)) < WALL_MIN_LENGTH) {
-			continue;
-		}
+//		if (norm(Point2d(w.x1, w.y1) - Point2d(w.x2, w.y2)) < WALL_MIN_LENGTH) {
+//			continue;
+//		}
 		line(img, getVisualCoord(w.x1,w.y1),
 				getVisualCoord(w.x2,w.y2),
 				(w.horizontal ? black : grey), 3, 8);
@@ -275,6 +398,18 @@ void NavMap::draw(Mat& img) {
 		}else{
 			circle(img, getVisualCoord(n.x,n.y),
 					5, nodeColors[n.type % colorCount], 3, 8);
+			// Draw wall connections.
+			Point2d dirs[4];
+			dirs[0] = Point2d(0.2,0);
+			dirs[1] = Point2d(0,-0.2);
+			dirs[2] = Point2d(-0.2,0);
+			dirs[3] = Point2d(0, 0.2);
+			for(int i=0; i<4; i++){
+				if(!n.walls[i])
+					continue;
+				Point2d p = Point2d(n.x,n.y) + dirs[i];
+				line(img,getVisualCoord(n.x,n.y),getVisualCoord(p.x,p.y),Scalar(0,0,255),2,8);
+			}
 		}
 	}
 	// Drawing edges
@@ -308,7 +443,7 @@ double NavMap::getDistanceToWall(Point2d origin, int direction){
 		break;
 	}
 	double minDist = 10000;
-	Point2f intersect;
+	Point2d intersect;
 	for (int i = 0; i < walls.size(); i++) {
 		Wall w = walls[i];
 		if (w.horizontal == (direction == 0 || direction == 1)) {
@@ -324,11 +459,25 @@ double NavMap::getDistanceToWall(Point2d origin, int direction){
 	return minDist;
 }
 
-bool NavMap::getCalibratedPos(Point2d approximatePos,
-		Point2d relativeWallPos, Point2d& calibratedPos) {
+bool NavMap::getCalibratedPos(Point2d approximatePos, int direction, double dist, Point2d& calibratedPos){
+	Point2d dir;
+	switch(direction){
+	case 0:
+		dir = Point2d(dist, 0);
+	break;
+	case 1:
+		dir = Point2d(0, -dist);
+		break;
+	case 2:
+		dir = Point2d(-dist, 0);
+		break;
+	case 3:
+		dir = Point2d(0, dist);
+		break;
+	}
 	Point2d p = approximatePos;
-	Point2d o = p + Point2d(relativeWallPos.x * 10, relativeWallPos.y * 10);
-	bool horizontal = relativeWallPos.y == 0;
+	Point2d o = p + Point2d(dir.x * CALIBRATE_MULTIPLIER, dir.y * CALIBRATE_MULTIPLIER);
+	bool horizontal = dir.y == 0;
 	for (int i = 0; i < walls.size(); i++) {
 		Wall w = walls[i];
 		if (w.horizontal == horizontal)
@@ -336,20 +485,20 @@ bool NavMap::getCalibratedPos(Point2d approximatePos,
 //		if(norm(Point2d(w.x1,w.y1) - Point2d(w.x2,w.y2)) < WALL_MIN_LENGTH){
 //			continue;
 //		}
-		Point2f intersect;
+		Point2d intersect;
 		if (intersection(Point2d(w.x1, w.y1), Point2d(w.x2, w.y2), p, o,
 				intersect)) {
 			if (horizontal && w.x1 < max(p.x, o.x) && w.x1 > min(p.x, o.x)) {
-				calibratedPos = Point2d(intersect.x, intersect.y) - relativeWallPos;
+				calibratedPos = Point2d(intersect.x, intersect.y) - dir;
 				return true;
 			} else if (!horizontal && w.y1 < max(p.y, o.y)
 					&& w.y1 > min(p.y, o.y)) {
-				calibratedPos = Point2d(intersect.x, intersect.y) - relativeWallPos;
+				calibratedPos = Point2d(intersect.x, intersect.y) - dir;
 				return true;
 			}
 		}
 	}
-	return true;
+	return false;
 }
 
 Point2d NavMap::pointConversion(Point2d origin, Point2d relativePos,

@@ -53,7 +53,7 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 			//std::cout << "\033[1;33mEstimating angle...\033[0m\n"; // yellow
 			double wall_theta = pose_estimate.theta / (M_PI / 2.0);
 			wall_theta = round(wall_theta) * (M_PI / 2.0);
-			pose_estimate.theta = wall_theta;// + error_theta;
+			pose_estimate.theta = wall_theta + error_theta;
 
 			//std::cout << *pose_estimate << std::endl;
 			//std::cout << "\033[1;32mAngle estimated...\033[0m\n"; // green
@@ -75,7 +75,7 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 			//std::cout << "\033[1;33mEstimating angle...\033[0m\n"; // yellow
 			double wall_theta = pose_estimate.theta / (M_PI / 2.0);
 			wall_theta = round(wall_theta) * (M_PI / 2.0);
-			pose_estimate.theta = wall_theta;// + error_theta;
+			pose_estimate.theta = wall_theta+error_theta;
 
 			//std::cout << *pose_estimate << std::endl;
 			//std::cout << "\033[1;32mAngle estimated...\033[0m\n"; // green
