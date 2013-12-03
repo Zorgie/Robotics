@@ -213,10 +213,10 @@ bool MovementBrain::make_state_decision() {
 		actionPerformedTrigger = false;
 
 		//change to transition state
-		if (current_movement_state != TRANSITION) {
+		/*if (current_movement_state != TRANSITION) {
 			state_after_transition = current_movement_state;
 			current_movement_state = TRANSITION;
-		}
+		}*/ // Rui changes
 
 		return true;
 	}
@@ -258,11 +258,11 @@ bool MovementBrain::make_state_decision() {
 	}
 
 	//now just wait after every transition
-	if (old_state != current_movement_state && old_state != TRANSITION) {
+/*	if (old_state != current_movement_state && old_state != TRANSITION) {
 		//change to transition state
 		state_after_transition = current_movement_state;
 		current_movement_state = TRANSITION;
-	}
+	}*/ // Rui changes
 
 	return old_state != current_movement_state;
 }
@@ -379,7 +379,7 @@ robot_movement_state MovementBrain::make_state_decision_follow_right() {
 		else
 			return FOLLOW_LEFT;
 	if (wall_lost)
-		return CHECK_RIGHT_PATH_0_GO_FORWARD;
+		return CHECK_RIGHT_PATH_0_GO_FORWARD; // Rui change to GO_STRAIGHT
 	if (wall_in_front)
 		return TURN_LEFT;
 
@@ -413,7 +413,7 @@ robot_movement_state MovementBrain::make_state_decision_follow_left() {
 		else
 			return FOLLOW_RIGHT;
 	if (wall_lost)
-		return CHECK_LEFT_PATH_0_GO_FORWARD;
+		return CHECK_LEFT_PATH_0_GO_FORWARD; // Rui change to GO_STRAIGHT
 	if (wall_in_front)
 		return TURN_RIGHT;
 
