@@ -102,8 +102,32 @@ void wall_following_act() {
 	static bool in_rotation = false;
 	movement::wheel_speed desired_speed;
 
+	std::vector<movement::robot_pose>::iterator it;
+
+	pose_hist.pop_back(); // Remove oldest element (last in list)
+	it = pose_hist.begin();
+	pose_hist.insert(it, poseCache); // Insert newest element (at beginning of list)
+
+	double delta_x = pose_hist[0].x - pose_hist[1].x;
+	double delta_y = pose_hist[0].y - pose_hist[1].y;
+	double delta_theta = pose_hist[0].theta - pose_hist[1].theta;
+
+	double lin_dist = sqrt((delta_x * delta_x) + (delta_y * delta_y));
+
+	estimated_pose.x = estimated_pose.x + lin_dist * cos(estimated_pose.theta);
+	estimated_pose.y = estimated_pose.y + lin_dist * sin(estimated_pose.theta);
+
+	std::cout << "\nEstimated X: " << estimated_pose.x << std::endl;
+	std::cout << "Estimated Y: " << estimated_pose.y << std::endl;
+	std::cout << "Estimated theta (in degrees): " << estimated_pose.theta*(180.0/M_PI) << std::endl;
+
+
 	if (global_path.empty()){
 		std::cout << "Vector is empty, so I assume I arrived at the destination" << std::endl;
+		desired_speed.W1=0.0;
+		desired_speed.W2=0.0;
+		desired_speed_pub.publish(desired_speed);
+		return;
 	}
 
 	// Following the next path available
@@ -114,8 +138,8 @@ void wall_following_act() {
 
 	// Check if I am close to from point (sanity check)
 	double distance = sqrt(
-			pow(current_path.x1 - poseCache.x, 2)
-					+ pow(current_path.y1 - poseCache.y, 2));
+			pow(current_path.x2 - estimated_pose.x, 2)
+					+ pow(current_path.y2 - estimated_pose.y, 2));
 //	std::cout << "\nAt a distance of [m] to from point: " << distance
 //			<< std::endl;
 //
@@ -150,10 +174,10 @@ void wall_following_act() {
 
 	static int need_to_rotate = 0;
 
-	std::cout << "\n\nBeautiful Desired angle: " << desired_angle_multiple_of_90*90
-			<< std::endl;
-	std::cout << "Beautiful Current Perfect angle: "
-			<< estimated_angle_multiple_of_90*90 << std::endl;
+//	std::cout << "\n\nBeautiful Desired angle: " << desired_angle_multiple_of_90*90
+//			<< std::endl;
+//	std::cout << "Beautiful Current Perfect angle: "
+//			<< estimated_angle_multiple_of_90*90 << std::endl;
 
 	if(desired_angle_multiple_of_90>estimated_angle_multiple_of_90){
 		need_to_rotate=desired_angle_multiple_of_90-estimated_angle_multiple_of_90;
@@ -165,14 +189,7 @@ void wall_following_act() {
 		need_to_rotate=0;
 	}
 
-//	if (abs(desired_angle_multiple_of_90 - estimated_angle_multiple_of_90)
-//			< abs(	estimated_angle_multiple_of_90-desired_angle_multiple_of_90)) {
-//		need_to_rotate = desired_angle_multiple_of_90- estimated_angle_multiple_of_90;
-//	} else {
-//		need_to_rotate = estimated_angle_multiple_of_90- desired_angle_multiple_of_90;
-//	}
-
-	std::cout << "Need to rotate: " << need_to_rotate * 90 << std::endl;
+//	std::cout << "Need to rotate: " << need_to_rotate * 90 << std::endl;
 
 	// If we need to rotate, let us rotate
 	if (need_to_rotate != 0) {
@@ -186,7 +203,7 @@ void wall_following_act() {
 	}
 
 	if (in_rotation) {
-		std::cout << "On Rotation" << std::endl;
+//		std::cout << "On Rotation" << std::endl;
 		desired_speed = rotation.step(wheel_distance_traveled_global);
 		if (rotation.isFinished()) {
 			std::cout << "Finished Rotation" << std::endl;
@@ -207,8 +224,9 @@ void wall_following_act() {
 	//	FRONT_RIGHT = 0, BACK_RIGHT = 1
 	//	BACK_LEFT = 5, FRONT_LEFT = 6
 	//	FRONTAL_LEFT = 2, FRONTAL_RIGHT = 7
-	if (current_path.edge_type < 3) // Either GO_STRAIGHT_INF or GO_STRAIGHT_X
-			{
+	if (current_path.edge_type < 3) { // Either GO_STRAIGHT_INF or GO_STRAIGHT_X
+
+	} else {
 		if (current_path.edge_type == 4) { // Should follow the left wall
 			if (ir_readings_processed_global.ch[5] < 0.17
 					&& ir_readings_processed_global.ch[6] < 0.17) {
@@ -252,7 +270,6 @@ void wall_following_act() {
 void act() {
 
 	movement::wheel_speed desired_speed;
-	movement::robot_pose pose;
 
 	std::vector<movement::robot_pose>::iterator it;
 
@@ -463,9 +480,9 @@ int main(int argc, char **argv) {
 
 	// Need to check the order in which I insert/pop
 	navigation::path_result artificial_path;
-	artificial_path.x1=1.0;
-	artificial_path.y1=0.0;
-	artificial_path.x2=0.0;
+	artificial_path.x1=estimated_pose.x; // From
+	artificial_path.y1=estimated_pose.y;
+	artificial_path.x2=0.0; // To
 	artificial_path.y2=0.0;
 	artificial_path.edge_type=4; // Follow left
 
