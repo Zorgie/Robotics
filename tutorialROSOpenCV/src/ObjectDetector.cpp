@@ -49,7 +49,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 	switch(detectingPhase){
 		case CONTOURING:
 			//not enough contour votes?
-			if(contourChecker.getCurrentNumberOfVotes() < 50){
+			if(contourChecker.getCurrentNumberOfVotes() < 30){
 				contourChecker.updateComplexityEstimation(imgBGR);
 			}
 			else{
@@ -65,7 +65,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 
 			break;
 		case HIGH_CONTOUR_SURFING:
-			if(surfChecker.getNrOfSurfsDone() < 10){
+			if(surfChecker.getNrOfSurfsDone() < 5){
 				surfChecker.performSurf(imgBGR);
 			}
 			else{
@@ -87,7 +87,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 			break;
 
 		case SHAPING:
-			if(shapeChecker.nrOfVotes < 50){
+			if(shapeChecker.nrOfVotes < 20){
 				shapeChecker.updateShapeEstimation(imgBGR);
 			}
 			else

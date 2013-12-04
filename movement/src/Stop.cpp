@@ -11,7 +11,7 @@
 
 movement::wheel_speed Stop::step(movement::wheel_distance& distance_traveled) {
 
-	std::cout << "\033[1;31mIn Stop Mode\033[0m\n"; // green
+//	std::cout << "\033[1;31mIn Stop Mode\033[0m\n"; // green
 	double wheel_diameter = 0.1;
 	int UPDATE_RATE = 50;
 

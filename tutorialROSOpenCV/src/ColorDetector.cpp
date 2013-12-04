@@ -138,7 +138,7 @@ void ColorDetector::updatePixelCount(Mat bgrImage){
 
 
 	// DEBUGGING OUTPUT TO SHOW IT WORKS"
-	imshow("Masked Image in ColorDetection",maskedImage);
+	//imshow("Masked Image in ColorDetection",maskedImage);
 	waitKey(3);
 
 

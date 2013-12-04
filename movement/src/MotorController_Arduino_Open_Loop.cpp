@@ -166,10 +166,10 @@ int main(int argc, char **argv) {
 		bool started_rotation = false;
 
 		if(prev_wheel_speed_global.W1/fabs(prev_wheel_speed_global.W1)!=wheel_speed_global.W1/fabs(wheel_speed_global.W1)){
-			started_rotation=true
+			started_rotation=true;
 		}
 		if(prev_wheel_speed_global.W2/fabs(prev_wheel_speed_global.W2)!=wheel_speed_global.W2/fabs(wheel_speed_global.W2)){
-			started_rotation=true
+			started_rotation=true;
 		}
 
 

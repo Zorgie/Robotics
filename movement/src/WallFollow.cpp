@@ -46,8 +46,8 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 		error_distance = distance - desired_distance_to_wall;
 		error_distance *= -1;
 
-		std::cout << "\033[1;31mError angle...\033[0m\n";
-		std::cout << error_theta << std::endl;
+//		std::cout << "\033[1;31mError angle...\033[0m\n";
+//		std::cout << error_theta << std::endl;
 
 		if (fabs(error_theta) < 0.3) { // Only improve if angle is small (more thrust-worthy)
 			//std::cout << "\033[1;33mEstimating angle...\033[0m\n"; // yellow
@@ -68,8 +68,8 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 		distance = 0.5 * (sensor_one + sensor_two);
 		error_distance = distance - desired_distance_to_wall;
 
-		std::cout << "\033[1;31mError angle...\033[0m\n";
-		std::cout << error_theta << std::endl;
+//		std::cout << "\033[1;31mError angle...\033[0m\n";
+//		std::cout << error_theta << std::endl;
 
 		if (fabs(error_theta) < 0.3) { // Only improve if angle is small (more thrust-worthy)
 			//std::cout << "\033[1;33mEstimating angle...\033[0m\n"; // yellow

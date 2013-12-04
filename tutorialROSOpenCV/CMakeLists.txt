@@ -43,3 +43,4 @@ rosbuild_add_executable(plane_detection_rui src/plane_detection_rui.cpp src/NavM
 #rosbuild_add_executable(plane_detection_sctrach src/plane_detection_scratch.cpp src/ImageConverter.cpp)
 #rosbuild_add_executable(plane_detection_no_lib src/plane_detection_no_lib.cpp src/ImageConverter.cpp)
 #rosbuild_add_executable(plane_detection_no_lib src/plane_detection_no_lib.cpp src/NavMap.cpp src/ImageConverter.cpp)
+rosbuild_add_executable(robot_eye src/RobotEye.cpp src/ImageConverter.cpp src/ObjectDetector.cpp src/ContourChecker.cpp src/SurfChecker.cpp src/ShapeChecker.cpp src/ColorDetector.cpp src/SurfCheckerSimpleContours.cpp)

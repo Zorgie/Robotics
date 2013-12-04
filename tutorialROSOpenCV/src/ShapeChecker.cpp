@@ -104,7 +104,7 @@ void ShapeChecker::updateShapeEstimation(cv::Mat bgrImg){
 	    	}
 
 	    		// DEBUGGING OUTPUT TO SHOW IT WORKS"
-	    		imshow("123",maskedImage);
+	    		//imshow("123",maskedImage);
 	    	 waitKey(3);
 
 	    	goodRects.push_back(minRect[i]);

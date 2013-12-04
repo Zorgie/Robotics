@@ -32,3 +32,4 @@ rosbuild_add_executable(open_loop_control src/RobotPosition.cpp src/MotorControl
 rosbuild_add_executable(movement_control ../mapping/src/NavMap.cpp src/WallFollow.cpp src/Rotation.cpp src/Go_straight.cpp src/Movement.cpp src/Stop.cpp src/WallAlign.cpp)
 rosbuild_add_executable(wall_follower_tuning src/wall_follow_calibration.cpp)
 rosbuild_add_executable(path_visualizer src/PathVisualizer.cpp)
+rosbuild_add_executable(path_follower ../mapping/src/NavMap.cpp src/WallFollow.cpp src/Rotation.cpp src/Go_straight.cpp src/Path_Follower.cpp src/Stop.cpp src/WallAlign.cpp)
