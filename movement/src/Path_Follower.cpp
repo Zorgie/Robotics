@@ -4,7 +4,7 @@
 #include "movement/wheel_speed.h"
 #include "movement/wheel_distance.h"
 #include <irsensors/floatarray.h>
-#include "navigation/path_result.h"
+
 
 //CV libraries
 #include "cv.h"
@@ -26,6 +26,10 @@
 #include "Stop.h"
 #include "WallAlign.h"
 #include "movement/robot_pose.h"
+
+// navigation messages
+#include "navigation/path_result.h"
+#include "navigation/path_request.h"
 
 using namespace differential_drive;
 
@@ -49,6 +53,7 @@ static ros::Subscriber path_pub;
 static ros::Publisher desired_speed_pub;
 static ros::Publisher requested_action_performed_pub;
 static ros::Publisher robot_pos_calibrated;
+static ros::Publisher pathRequestPub;
 
 //store last received ir and wheel distance values
 static irsensors::floatarray ir_readings_processed_global;
@@ -68,13 +73,15 @@ static movement::robot_pose poseCache;
 //movement::robot_pose *estimated_pose;
 movement::robot_pose estimated_pose;
 
+static bool global_received_path=false;
+
 // Vector to store the path (as a sum of short paths)
 std::vector<navigation::path_result> global_path;
 
 // Vector containing last two elements
 std::vector<movement::robot_pose> pose_hist;
 
-bool global_path_following = true;
+bool global_path_following = false;
 
 void ir_readings_update(const irsensors::floatarray &msg) {
 	ir_readings_processed_global = msg;
@@ -97,10 +104,20 @@ void robotPoseUpdate(const movement::robot_pose& p) {
 	poseCache.theta = p.theta;
 }
 
-void wall_following_act() {
+void path_following_act() {
+
+	movement::wheel_speed desired_speed;
+
+	desired_speed.W1=0.0;
+	desired_speed.W2=0.0;
+	desired_speed_pub.publish(desired_speed);
+
+	if(!global_received_path){
+		return;
+	}
+
 
 	static bool in_rotation = false;
-	movement::wheel_speed desired_speed;
 
 	std::vector<movement::robot_pose>::iterator it;
 
@@ -150,8 +167,13 @@ void wall_following_act() {
 
 	// Am I in the right orientation? // First Question!
 	// From point
-	double desired_angle = atan2(current_path.x2 - current_path.x1,
-			current_path.y2 - current_path.y1);
+	std::cout << "From point: " << current_path.x1 << " , " << current_path.y1 << std::endl;
+	std::cout << "To point: " << current_path.x2 << " , " << current_path.y2 << std::endl;
+	std::cout << "Atan of: " << current_path.x2 - current_path.x1 << " , "
+			<< current_path.y2 - current_path.y1 << std::endl;
+	double desired_angle = atan2(current_path.y2 - current_path.y1,
+			current_path.x2 - current_path.x1);
+	std::cout << "With angle: " << desired_angle << std::endl;
 
 //	std::cout << "Desired angle: " << round(desired_angle / ((M_PI / 2))) * 90
 //			<< std::endl;
@@ -167,17 +189,17 @@ void wall_following_act() {
 	}
 
 	int desired_angle_multiple_of_90 = round(desired_angle / (M_PI / 2));
-	desired_angle_multiple_of_90 = remainder(desired_angle_multiple_of_90, 4);
+		desired_angle_multiple_of_90 = remainder(desired_angle_multiple_of_90, 4);
 	if(desired_angle_multiple_of_90<0){
 		desired_angle_multiple_of_90=4+desired_angle_multiple_of_90;
 	}
 
 	static int need_to_rotate = 0;
 
-//	std::cout << "\n\nBeautiful Desired angle: " << desired_angle_multiple_of_90*90
-//			<< std::endl;
-//	std::cout << "Beautiful Current Perfect angle: "
-//			<< estimated_angle_multiple_of_90*90 << std::endl;
+	std::cout << "\n\nBeautiful Desired angle: " << desired_angle_multiple_of_90*90
+			<< std::endl;
+	std::cout << "Beautiful Current Perfect angle: "
+			<< estimated_angle_multiple_of_90*90 << std::endl;
 
 	if(desired_angle_multiple_of_90>estimated_angle_multiple_of_90){
 		need_to_rotate=desired_angle_multiple_of_90-estimated_angle_multiple_of_90;
@@ -193,7 +215,7 @@ void wall_following_act() {
 
 	// If we need to rotate, let us rotate
 	if (need_to_rotate != 0) {
-		std::cout << "Initiate Rotation" << std::endl;
+		std::cout << "Initiate Rotation of : " << need_to_rotate * 90 << std::endl;
 		rotation.initiate_rotation(need_to_rotate * 90, estimated_pose);
 		desired_speed.W1=0.0;
 		desired_speed.W2=0.0;
@@ -254,7 +276,7 @@ void wall_following_act() {
 
 	}
 
-	if (distance < 0.10) {
+	if (distance < 0.05) {
 
 		std::cout << "Arrived at the point!" << std::endl;
 		global_path.pop_back();
@@ -359,6 +381,7 @@ void path_receiver(const navigation::path_result &path_part) {
 
 	std::cout << "Inserted at the beginning" << std::endl;
 
+	global_received_path = true;
 	global_path_following = true;
 
 }
@@ -461,6 +484,8 @@ int main(int argc, char **argv) {
 			"/movement/requested_action_performed", 1);
 	robot_pos_calibrated = n.advertise<movement::robot_pose>(
 			"/robot_pose_aligned_NEW", 1);
+	pathRequestPub = n.advertise<navigation::path_request>("/path/request",1);
+
 
 	// Initialize pose historic
 	movement::robot_pose initial_pose;
@@ -470,32 +495,75 @@ int main(int argc, char **argv) {
 	pose_hist.push_back(initial_pose);
 	pose_hist.push_back(initial_pose);
 
+	estimated_pose = initial_pose;
+
 	// Initialize pointer
 //	estimated_pose = new movement::robot_pose;
 //	*estimated_pose = initial_pose;
-	estimated_pose = initial_pose;
-	estimated_pose.x=1.0;
-	estimated_pose.y=0.0;
-	estimated_pose.theta=M_PI;
+//	estimated_pose = initial_pose;
+//	estimated_pose.x=0.0;
+//	estimated_pose.y=0.5;
+//	estimated_pose.theta=0*(M_PI/2);
+//
+//	// Need to check the order in which I insert/pop
+//	navigation::path_result artificial_path;
+//	artificial_path.x1=estimated_pose.x; // From
+//	artificial_path.y1=estimated_pose.y;
+//	artificial_path.x2=0.0; // To
+//	artificial_path.y2=0.0;
+//	artificial_path.edge_type=4; // Follow left
 
-	// Need to check the order in which I insert/pop
+//	global_path.push_back(artificial_path);
+
+	//-----------------ARTIFICIAL PATH--------------//
 	navigation::path_result artificial_path;
 	artificial_path.x1=estimated_pose.x; // From
 	artificial_path.y1=estimated_pose.y;
-	artificial_path.x2=0.0; // To
+	artificial_path.x2=1.0; // To
 	artificial_path.y2=0.0;
 	artificial_path.edge_type=4; // Follow left
 
-	global_path.push_back(artificial_path);
+
+	// Need to check the order in which I insert/pop
+	std::vector<navigation::path_result>::iterator it;
+	it = global_path.begin();
+	it = global_path.insert(it, artificial_path);
+
+	artificial_path.x1=global_path[global_path.size()-1].x2; // From
+	artificial_path.y1=global_path[global_path.size()-1].y2;
+	artificial_path.x2=1.0; // To
+	artificial_path.y2=1.0;
+	artificial_path.edge_type=4; // Follow left
+
+	it = global_path.begin();
+	it = global_path.insert(it, artificial_path);
+
+	global_received_path=true;
+
+	//-----------------ARTIFICIAL PATH--------------//
+
+	double t = (double)cv::getTickCount();
+	int ask_once = 0;
 
 	while (ros::ok()) {
 		ros::spinOnce();
 		loop_rate.sleep();
-		if (!global_path_following) {
-			//act();
-		} else {
-			wall_following_act();
-		}
-		cv::waitKey(3);
+		path_following_act();
+//		if (!global_path_following) {
+//			act();
+//		} else {
+//			wall_following_act();
+//		}
+//
+//		if(ask_once==0 && ((double)cv::getTickCount() - t)/cv::getTickFrequency()>10.0)
+//		{
+//
+//			std::cout << "Time to go back!" << std::endl;
+//			global_path_following=true;
+//			navigation::movement_state ask_path;
+//			ask_path.movement_state=1;
+//			pathRequestPub.publish(ask_path);
+//			ask_once=1;
+//		}
 	}
 }
