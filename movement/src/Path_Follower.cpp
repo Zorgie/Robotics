@@ -112,12 +112,6 @@ void path_following_act() {
 	desired_speed.W1 = 0.0;
 	desired_speed.W2 = 0.0;
 
-
-	if (!global_received_path) {
-		desired_speed_pub.publish(desired_speed);
-		return;
-	}
-
 	static bool in_rotation = false;
 	static double wall_in_front = 0.0;
 
@@ -160,10 +154,10 @@ void path_following_act() {
 
 	// Check if I am close to from point (sanity check)
 	double distance = sqrt(
-			pow(current_path.x2 - estimated_pose.x, 2)
-					+ pow(current_path.y2 - estimated_pose.y, 2));
-//	std::cout << "\nAt a distance of [m] to from point: " << distance
-//			<< std::endl;
+			pow(current_path.x2 - estimated_pose.x, 2)*pow(cos(estimated_pose.theta),2)
+					+ pow(current_path.y2 - estimated_pose.y, 2)*pow(sin(estimated_pose.theta),2) );
+	std::cout << "\nAt a distance of [m] to from point: " << distance
+			<< std::endl;
 //
 //	std::cout << "From point: " << current_path.x1 << " , " << current_path.y1
 //			<< std::endl;
@@ -219,8 +213,11 @@ void path_following_act() {
 	}
 	// New stuff end
 
-	if (need_to_rotate > 2) {
+	while (need_to_rotate > 2) {
 		need_to_rotate = -(4 - need_to_rotate);
+	}
+	while(need_to_rotate < -2){
+		need_to_rotate = 4 + need_to_rotate;
 	}
 	if (desired_angle_multiple_of_90 == estimated_angle_multiple_of_90) {
 		need_to_rotate = 0;
@@ -230,6 +227,7 @@ void path_following_act() {
 
 	// If we need to rotate, let us rotate
 	if (need_to_rotate != 0) {
+		wall_in_front=0.0;
 		std::cout << "\033[1;31mRotation\033[0m\n"; // Red
 		std::cout << "Initiate Rotation of : " << need_to_rotate * 90
 				<< std::endl;
@@ -244,6 +242,7 @@ void path_following_act() {
 	}
 
 	if (in_rotation) {
+		wall_in_front=0.0;
 //		std::cout << "On Rotation" << std::endl;
 		std::cout << "\033[1;31mRotation\033[0m\n"; // Red
 		desired_speed = rotation.step(wheel_distance_traveled_global);
@@ -266,7 +265,26 @@ void path_following_act() {
 	//	BACK_LEFT = 5, FRONT_LEFT = 6
 	//	FRONTAL_LEFT = 2, FRONTAL_RIGHT = 7
 	if (current_path.edge_type < 3) { // Either GO_STRAIGHT_INF or GO_STRAIGHT_X
-
+		if (ir_readings_processed_global.ch[5] < 0.17
+				&& ir_readings_processed_global.ch[6] < 0.17) {
+			// Do wall following left
+			std::cout << "\033[1;34mFollow left\033[0m\n"; // blue
+			desired_speed = wall_follow.step(ir_readings_processed_global, 1,
+					estimated_pose);
+		} else {
+			if (ir_readings_processed_global.ch[0] < 0.17
+					&& ir_readings_processed_global.ch[1] < 0.17) {
+				// Do wall following right
+				std::cout << "\033[1;33mFollow right\033[0m\n"; // Yellow
+				desired_speed = wall_follow.step(ir_readings_processed_global,
+						0, estimated_pose);
+			} else {
+				// Go straight, what else can I do?
+				std::cout << "\033[1;32mStraight\033[0m\n"; // green
+				desired_speed = go_straight.step(
+						wheel_distance_traveled_global);
+			}
+		}
 	} else {
 		if (current_path.edge_type == 4) { // Should follow the left wall
 			if (ir_readings_processed_global.ch[5] < 0.17
@@ -299,8 +317,8 @@ void path_following_act() {
 
 	}
 
-	double frontal_left=ir_readings_processed_global.ch[2];
-	double frontal_right=ir_readings_processed_global.ch[7];
+	double frontal_left = ir_readings_processed_global.ch[2];
+	double frontal_right = ir_readings_processed_global.ch[7];
 
 
 
@@ -329,7 +347,7 @@ void path_following_act() {
 	std::cout << "Frontal right: "<< frontal_right << std::endl;
 	std::cout << "Wall in front? : " << wall_in_front << std::endl;
 
-	if (fabs(distance) < 0.05 || wall_in_front==1.0) {
+	if (fabs(distance) < 0.01 || wall_in_front==1.0) {
 
 		wall_in_front=0.0;
 
@@ -341,6 +359,14 @@ void path_following_act() {
 		global_path.pop();//pop_back();
 //		std::cerr << "Press a key to continue!" << std::endl;
 //		std::cin.ignore();
+
+		double distance_from_origin = sqrt(	pow(estimated_pose.x, 2)+ pow(estimated_pose.y, 2));
+		if(distance_from_origin<0.1){
+			std::cout << "\033[1;35mBad finish detection.\033[0m\n"; // green
+			while(!global_path.empty()){
+				global_path.pop();
+			}
+		}
 
 
 	}
@@ -369,6 +395,13 @@ void act() {
 
 	estimated_pose.x = estimated_pose.x + lin_dist * cos(estimated_pose.theta);
 	estimated_pose.y = estimated_pose.y + lin_dist * sin(estimated_pose.theta);
+
+	std::cout << "\nEstimated X: " << estimated_pose.x << std::endl;
+	std::cout << "Estimated Y: " << estimated_pose.y << std::endl;
+	std::cout << "Real theta (in degrees): "
+				<< pose_hist[0].theta * (180.0 / M_PI) << std::endl;
+	std::cout << "Estimated theta (in degrees): "
+			<< estimated_pose.theta * (180.0 / M_PI) << std::endl;
 
 //	std::cout << "\n\n\n" << std::endl;
 //	std::cout << "\033[1;32mPure encoder readings\033[0m\n"; // green
@@ -437,16 +470,7 @@ void act() {
 void path_receiver(const navigation::path_result &path_part) {
 
 	// Need to check the order in which I insert/pop
-	std::vector<navigation::path_result>::iterator it;
-//	it = global_path.begin();
-//	it = global_path.insert(it, path_part);
 	global_path.push(path_part);
-
-	std::cout << "Inserted at the beginning" << std::endl;
-
-	global_received_path = true;
-	global_path_following = true;
-
 }
 
 //update the robot state and initialize a new object calculating wheel speeds
@@ -519,6 +543,83 @@ void movement_state_update(const navigation::movement_state &mvs) {
 
 }
 
+void createFakePath(){
+	navigation::path_result artificial_path;
+	navigation::path_result last_path;
+
+//	x1: 0.829401612282
+//	y1: -0.743018388748
+//	x2: 0.831691324711
+//	y2: -1.15563106537
+//	edge_type: 4
+//	---
+//	x1: 0.831691324711
+//	y1: -1.15563106537
+//	x2: 0.02240039967
+//	y2: -1.19585394859
+//	edge_type: 4
+//	---
+//	x1: 0.02240039967
+//	y1: -1.19585394859
+//	x2: -0.00791495013982
+//	y2: 0.00292932242155
+//	edge_type: 4
+
+
+	artificial_path.x1 = estimated_pose.x; // From
+	artificial_path.y1 = estimated_pose.y;
+	artificial_path.x2 =  0.02240039967; // To
+	artificial_path.y2 = -1.19585394859;
+	artificial_path.edge_type = 5; // Follow right
+
+	global_path.push(artificial_path);
+	last_path = artificial_path;
+
+	artificial_path.x1 = last_path.x2; // From
+	artificial_path.y1 = last_path.y2;
+	artificial_path.x2 = 0.831691324711; // To
+	artificial_path.y2 = -1.15563106537;
+	artificial_path.edge_type = 5; // Follow right
+
+	global_path.push(artificial_path);
+	last_path = artificial_path;
+
+	artificial_path.x1 = last_path.x2; // From
+	artificial_path.y1 = last_path.y2;
+	artificial_path.x2 = 0.829401612282; // To
+	artificial_path.y2 = -0.743018388748;
+	artificial_path.edge_type = 5; // Follow right
+
+	global_path.push(artificial_path);
+	last_path = artificial_path;
+
+	artificial_path.x1 = last_path.x2; // From
+	artificial_path.y1 = last_path.y2;
+	artificial_path.x2 = 0.831691324711; // To
+	artificial_path.y2 = -1.15563106537;
+	artificial_path.edge_type = 4; // Follow left
+
+	global_path.push(artificial_path);
+	last_path = artificial_path;
+
+	artificial_path.x1 = last_path.x2; // From
+	artificial_path.y1 = last_path.y2;
+	artificial_path.x2 = 0.02240039967; // To
+	artificial_path.y2 = -1.19585394859;
+	artificial_path.edge_type = 4; // Follow left
+
+	global_path.push(artificial_path);
+	last_path = artificial_path;
+
+	artificial_path.x1 = last_path.x2; // From
+	artificial_path.y1 = last_path.y2;
+	artificial_path.x2 = 0.0; // To
+	artificial_path.y2 = 0.0;
+	artificial_path.edge_type = 4; // Follow left
+
+	global_path.push(artificial_path);
+}
+
 int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "Movement");
@@ -557,110 +658,21 @@ int main(int argc, char **argv) {
 	pose_hist.push_back(initial_pose);
 	pose_hist.push_back(initial_pose);
 
-	estimated_pose = initial_pose;
-
-	// Initialize pointer
-//	estimated_pose = new movement::robot_pose;
-//	*estimated_pose = initial_pose;
-//	estimated_pose = initial_pose;
-//	estimated_pose.x=0.0;
-//	estimated_pose.y=0.5;
-//	estimated_pose.theta=0*(M_PI/2);
-//
-//	// Need to check the order in which I insert/pop
-//	navigation::path_result artificial_path;
-//	artificial_path.x1=estimated_pose.x; // From
-//	artificial_path.y1=estimated_pose.y;
-//	artificial_path.x2=0.0; // To
-//	artificial_path.y2=0.0;
-//	artificial_path.edge_type=4; // Follow left
-
-//	global_path.push_back(artificial_path);
-
-	//-----------------ARTIFICIAL PATH--------------//
-	navigation::path_result artificial_path;
-	navigation::path_result last_path;
-	artificial_path.x1 = estimated_pose.x; // From
-	artificial_path.y1 = estimated_pose.y;
-	artificial_path.x2 = 0.6; // To
-	artificial_path.y2 = estimated_pose.y;
-	artificial_path.edge_type = 4; // Follow left
-
-	// Need to check the order in which I insert/pop
-//	std::vector<navigation::path_result>::iterator it;
-//	it = global_path.begin();
-//	it = global_path.insert(it, artificial_path);
-	global_path.push(artificial_path);
-	last_path = artificial_path;
-
-	artificial_path.x1 = last_path.x2; // From
-	artificial_path.y1 = last_path.y2;
-	artificial_path.x2 = last_path.x2; // To
-	artificial_path.y2 = -0.6;
-	artificial_path.edge_type = 4; // Follow left
-
-//	it = global_path.begin();
-//	it = global_path.insert(it, artificial_path);
-	global_path.push(artificial_path);
-	last_path = artificial_path;
-
-	artificial_path.x1 = last_path.x2; // From
-	artificial_path.y1 = last_path.y2;
-	artificial_path.x2 = 0.0; // To
-	artificial_path.y2 = last_path.y2;
-	artificial_path.edge_type = 4; // Follow left
-
-//	it = global_path.begin();
-//	it = global_path.insert(it, artificial_path);
-	global_path.push(artificial_path);
-	last_path = artificial_path;
-
-	artificial_path.x1 = last_path.x2; // From
-	artificial_path.y1 = last_path.y2;
-	artificial_path.x2 = last_path.x2; // To
-	artificial_path.y2 = -0.6-0.8;
-	artificial_path.edge_type = 4; // Follow left
-
-//	it = global_path.begin();
-//	it = global_path.insert(it, artificial_path);
-	global_path.push(artificial_path);
-
-	global_received_path = true;
-
-	/*for (int i=0; i<global_path.size();i++){
-		std::cout << "\nPath # " << i << std::endl;
-		std::cout << "From: " << global_path[i].x1 << " , " << global_path[i].y1 << std::endl;
-		std::cout << "To: " << global_path[i].x2 << " , " << global_path[i].y2 << std::endl;
-		std::cout << "With angle: " << (atan2(global_path[i].y2 - global_path[i].y1,
-				global_path[i].x2 - global_path[i].x1))*(180.0/M_PI) << std::endl;
-	}*/
-
-
-
-	//-----------------ARTIFICIAL PATH--------------//
-
-	double t = (double) cv::getTickCount();
-	int ask_once = 0;
+	bool pathing_activated = false;
 
 	while (ros::ok()) {
 		ros::spinOnce();
 		loop_rate.sleep();
-		path_following_act();
-//		if (!global_path_following) {
-//			act();
-//		} else {
-//			wall_following_act();
-//		}
-//
-//		if(ask_once==0 && ((double)cv::getTickCount() - t)/cv::getTickFrequency()>10.0)
-//		{
-//
-//			std::cout << "Time to go back!" << std::endl;
-//			global_path_following=true;
-//			navigation::movement_state ask_path;
-//			ask_path.movement_state=1;
-//			pathRequestPub.publish(ask_path);
-//			ask_once=1;
-//		}
+		if (!global_path.empty()) {
+			path_following_act();
+			pathing_activated = true;
+		} else if(!pathing_activated) {
+			act();
+		}else{
+			movement::wheel_speed desired_speed;
+			desired_speed.W1 = 0.0;
+			desired_speed.W2 = 0.0;
+			desired_speed_pub.publish(desired_speed);
+		}
 	}
 }

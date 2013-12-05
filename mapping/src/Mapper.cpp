@@ -19,7 +19,8 @@ bool Mapper::validIR(double r1, double r2){
 	return true;
 }
 
-Mapper::Mapper() {
+Mapper::Mapper(bool gui) {
+	useGui = gui;
 	WINDOW = "Map visualization";
 
 	/* Subscribers */
@@ -35,13 +36,15 @@ Mapper::Mapper() {
 
 	findPath = -1;
 
-	cv::namedWindow(WINDOW);
+	if(useGui)
+		cv::namedWindow(WINDOW);
 
 	poseInit = false;
 }
 
 Mapper::~Mapper() {
-	cv::destroyWindow(WINDOW);
+	if(useGui)
+		cv::destroyWindow(WINDOW);
 }
 
 void Mapper::irCallback(const irsensors::floatarray& msg){
@@ -52,9 +55,11 @@ void Mapper::irCallback(const irsensors::floatarray& msg){
 	calibratePos(currentIR);
 	Mat img(480, 640, CV_8UC3, Scalar(255, 255, 255));
 	nav.setRobotPos(Point2d(currentPose.x, currentPose.y));
-	nav.draw(img);
-	cv::imshow(WINDOW, img);
-	cv::waitKey(3);
+	if(useGui){
+		nav.draw(img);
+		cv::imshow(WINDOW, img);
+		cv::waitKey(3);
+	}
 }
 
 void Mapper::addObject(double x, double y){
@@ -151,12 +156,26 @@ void Mapper::movementCommandCallback(const navigation::movement_state& state){
 	robot_action action = (robot_action) state.movement_state;
 	robot_action node_actions[] = {
 			GO_STRAIGHT_X,
+			GO_STRAIGHT_INF,
 		    FOLLOW_LEFT_WALL,
 		    FOLLOW_RIGHT_WALL
 	};
 	for (int i = 0; i < 3; i++) {
 		if (action == node_actions[i]) {
 			nav.addNode(currentPose.x, currentPose.y, action);
+//			if(nav.getLastVisitedNode().index == 0 && nav.getNodeCount() > 1){
+//				cout << "Found the 0 node, creating a path. ";
+//				vector<Edge> path = nav.getPath(0,3);
+//				cout << "Size " << path.size();
+//				pathResultCallback(path);
+//				path = nav.getPath(3,0);
+//				cout << " and " << path.size() << endl;
+//				pathResultCallback(path);
+//			}
+			if(nav.getNodeCount() > 5){
+				vector<Edge> path = nav.getPath(0);
+				pathResultCallback(path);
+			}
 			if(findPath != -1){
 				vector<Edge> path = nav.getPath(findPath);
 				printf("Getting path, length: %d\n", path.size());

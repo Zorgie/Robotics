@@ -58,9 +58,17 @@ void NavMap::addNode(double x, double y, int type) {
 		printf("Node created.\n"); //: %d  %d %.2f %.2f %d %d %d %d\n",n.index,n.type,n.x,n.y,n.walls[0],n.walls[1],n.walls[2],n.walls[3]);
 	}
 
-	addEdge(newNodeId, lastVisitedNode.index, type);
+	if(lastVisitedNode.index != newNodeId){
+		addEdge(newNodeId, lastVisitedNode.index, type);
+	}
 	lastVisitedNode = nodes[newNodeId];
 
+	printf("Edges:\n");
+	for(int i=0; i<neighbours.size(); i++){
+		for(int j=0; j<neighbours[i].size(); j++){
+			printf("From %d to %d\n",neighbours[i][j].from,neighbours[i][j].to);
+		}
+	}
 }
 
 
@@ -106,7 +114,6 @@ void NavMap::addEdge(int from, int to, int type) {
 		cerr << "Trying to add edge between invalid nodes: " << from << ", " << to;
 		throw -1;
 	}
-	neighbours[from] = vector<Edge>();
 	bool edgeExists = false;
 	for (int i = 0; i < neighbours[to].size(); i++) {
 		if (neighbours[to][i].to == to)
@@ -159,7 +166,6 @@ vector<Edge> NavMap::getPath(int from, int to){
 			if(!visited.count(e.to)){// Confirms that the node is unvisited.
 				q.push(e.to);
 				visited[e.to] = e;
-				cerr << "adding " << e.to << " to visited." << endl;
 			}
 		}
 	}
@@ -289,27 +295,35 @@ void NavMap::updateNode(Node& n){
 //		if(n.walls[0] && n.walls[1]){ // Upper right corner.
 //			getCalibratedPos(origin,0,NODE_DIST_FROM_CORNER,pt1);
 //			getCalibratedPos(origin,1,NODE_DIST_FROM_CORNER,pt2);
-//			n.x = pt1.x;
-//			n.y = pt2.y;
-//			printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
+//			if(abs(n.y < pt1.x) < 0.2 && abs(n.x-pt2.y) < 0.2){
+//				n.x = pt1.x;
+//				n.y = pt2.y;
+//				printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
+//			}
 //		}else if(n.walls[1] && n.walls[2]){ // Upper left corner.
 //			getCalibratedPos(origin,1,NODE_DIST_FROM_CORNER,pt1);
 //			getCalibratedPos(origin,2,NODE_DIST_FROM_CORNER,pt2);
-//			n.y = pt1.y;
-//			n.x = pt2.x;
-//			printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
+//			if(abs(n.y < pt1.y) < 0.2 && abs(n.x-pt2.x) < 0.2){
+//				n.y = pt1.y;
+//				n.x = pt2.x;
+//				printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
+//			}
 //		}else if(n.walls[2] && n.walls[3]){ // Bottom left corner.
 //			getCalibratedPos(origin,2,NODE_DIST_FROM_CORNER,pt1);
 //			getCalibratedPos(origin,3,NODE_DIST_FROM_CORNER,pt2);
-//			n.x = pt1.x;
-//			n.y = pt2.y;
-//			printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
+//			if(abs(n.y < pt1.x) < 0.2 && abs(n.x-pt2.y) < 0.2){
+//				n.x = pt1.x;
+//				n.y = pt2.y;
+//				printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
+//			}
 //		}else if(n.walls[3] && n.walls[0]){ // Bottom right corner.
 //			getCalibratedPos(origin,3,NODE_DIST_FROM_CORNER,pt1);
 //			getCalibratedPos(origin,0,NODE_DIST_FROM_CORNER,pt2);
-//			n.y = pt1.y;
-//			n.x = pt2.x;
-//			printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
+//			if(abs(n.y < pt1.y) < 0.2 && abs(n.x-pt2.x) < 0.2){
+//				n.y = pt1.y;
+//				n.x = pt2.x;
+//				printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
+//			}
 //		}
 //
 //	}

@@ -63,6 +63,7 @@ public:
 	void setRobotPos(Point2d p){robotPos = p;}
 	int getNodeCount(){return nodes.size();}
 	Node getNode(int index){return nodes[index];}
+	Node getLastVisitedNode(){return lastVisitedNode;}
 
 	/* ----------- Error checking -------------------------*/
 	bool validNode(int n);

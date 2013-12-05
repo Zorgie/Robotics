@@ -44,9 +44,11 @@ private:
 
 	char* WINDOW;
 
+	bool useGui;
+
 	bool validIR(double r1, double r2);
 public:
-	Mapper();
+	Mapper(bool gui);
 	virtual ~Mapper();
 	void irCallback(const irsensors::floatarray& msg);
 	void depthCallback(const sensor_msgs::PointCloud2& pcloud);

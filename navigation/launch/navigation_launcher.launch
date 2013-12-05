@@ -1,7 +1,8 @@
 <launch>
   <node name="serial_node" pkg="rosserial_python" type="serial_node.py" args="/dev/ttyACM0" /> 
   <node name="open_loop_control" pkg="movement" type="open_loop_control"/>
-  <node name="movement_controller" pkg="movement" type="movement_control"/>
+  <!--node name="path_follower" pkg="movement" type="path_follower"/-->
   <node name="ir_sensor" pkg="irsensors" type="IrReadings"/>
   <node name="navigator" pkg="navigation" type="navigator" />
+  <node name="mapper" pkg="mapping" type="main" args="gui" />
 </launch>

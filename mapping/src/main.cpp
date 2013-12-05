@@ -65,7 +65,14 @@ int main(int argc, char** argv) {
 	ros::init(argc, argv, "Mapping");
 	ros::NodeHandle nh_;
 
-	mapper = new Mapper();
+	bool gui = true;
+	for(int i=0; i<argc; i++){
+		if(strcmp("nogui",argv[i]) == 0){
+			gui = false;
+		}
+	}
+
+	mapper = new Mapper(gui);
 
 	//image_transport::ImageTransport it_ = nh_;
 	ros::Subscriber sub = nh_.subscribe("/camera/rgb/image_color", 1,
