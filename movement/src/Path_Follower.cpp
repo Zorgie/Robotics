@@ -13,6 +13,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <vector>
+#include <queue>
 
 //enumerations
 #include <navigation/movement_state.h>
@@ -75,7 +76,8 @@ movement::robot_pose estimated_pose;
 static bool global_received_path = false;
 
 // Vector to store the path (as a sum of short paths)
-std::vector<navigation::path_result> global_path;
+//std::vector<navigation::path_result> global_path;
+std::queue<navigation::path_result> global_path;
 
 // Vector containing last two elements
 std::vector<movement::robot_pose> pose_hist;
@@ -151,9 +153,10 @@ void path_following_act() {
 	// Following the next path available
 	// Always following the path that is last on the vector.
 	navigation::path_result current_path;
-	current_path = global_path[global_path.size() - 1];
+	current_path = global_path.front();//global_path[global_path.size() - 1];
 
 	go_straight.initiate_go_straight(5.0, true); // Infinity equals five meters.
+	// This line stops the robot from going faster, consider remove it.
 
 	// Check if I am close to from point (sanity check)
 	double distance = sqrt(
@@ -235,8 +238,8 @@ void path_following_act() {
 		desired_speed.W2 = 0.0;
 		desired_speed_pub.publish(desired_speed);
 		in_rotation = true;
-				std::cerr << "Press a key to continue!" << std::endl;
-				std::cin.ignore();
+//				std::cerr << "Press a key to continue!" << std::endl;
+//				std::cin.ignore();
 		return;
 	}
 
@@ -335,7 +338,7 @@ void path_following_act() {
 		desired_speed.W2 = 0.0;
 		estimated_pose.x=current_path.x2;
 		estimated_pose.y=current_path.y2;
-		global_path.pop_back();
+		global_path.pop();//pop_back();
 //		std::cerr << "Press a key to continue!" << std::endl;
 //		std::cin.ignore();
 
@@ -343,6 +346,7 @@ void path_following_act() {
 	}
 
 	desired_speed_pub.publish(desired_speed);
+	robot_pos_calibrated.publish(estimated_pose);
 
 }
 
@@ -434,8 +438,9 @@ void path_receiver(const navigation::path_result &path_part) {
 
 	// Need to check the order in which I insert/pop
 	std::vector<navigation::path_result>::iterator it;
-	it = global_path.begin();
-	it = global_path.insert(it, path_part);
+//	it = global_path.begin();
+//	it = global_path.insert(it, path_part);
+	global_path.push(path_part);
 
 	std::cout << "Inserted at the beginning" << std::endl;
 
@@ -574,6 +579,7 @@ int main(int argc, char **argv) {
 
 	//-----------------ARTIFICIAL PATH--------------//
 	navigation::path_result artificial_path;
+	navigation::path_result last_path;
 	artificial_path.x1 = estimated_pose.x; // From
 	artificial_path.y1 = estimated_pose.y;
 	artificial_path.x2 = 0.6; // To
@@ -581,47 +587,53 @@ int main(int argc, char **argv) {
 	artificial_path.edge_type = 4; // Follow left
 
 	// Need to check the order in which I insert/pop
-	std::vector<navigation::path_result>::iterator it;
-	it = global_path.begin();
-	it = global_path.insert(it, artificial_path);
+//	std::vector<navigation::path_result>::iterator it;
+//	it = global_path.begin();
+//	it = global_path.insert(it, artificial_path);
+	global_path.push(artificial_path);
+	last_path = artificial_path;
 
-	artificial_path.x1 = global_path[0].x2; // From
-	artificial_path.y1 = global_path[0].y2;
-	artificial_path.x2 = global_path[0].x2; // To
+	artificial_path.x1 = last_path.x2; // From
+	artificial_path.y1 = last_path.y2;
+	artificial_path.x2 = last_path.x2; // To
 	artificial_path.y2 = -0.6;
 	artificial_path.edge_type = 4; // Follow left
 
-	it = global_path.begin();
-	it = global_path.insert(it, artificial_path);
+//	it = global_path.begin();
+//	it = global_path.insert(it, artificial_path);
+	global_path.push(artificial_path);
+	last_path = artificial_path;
 
-	artificial_path.x1 = global_path[0].x2; // From
-	artificial_path.y1 = global_path[0].y2;
+	artificial_path.x1 = last_path.x2; // From
+	artificial_path.y1 = last_path.y2;
 	artificial_path.x2 = 0.0; // To
-	artificial_path.y2 = global_path[0].y2;
+	artificial_path.y2 = last_path.y2;
 	artificial_path.edge_type = 4; // Follow left
 
-	it = global_path.begin();
-	it = global_path.insert(it, artificial_path);
+//	it = global_path.begin();
+//	it = global_path.insert(it, artificial_path);
+	global_path.push(artificial_path);
+	last_path = artificial_path;
 
-	artificial_path.x1 = global_path[0].x2; // From
-	artificial_path.y1 = global_path[0].y2;
-	artificial_path.x2 = global_path[0].x2; // To
+	artificial_path.x1 = last_path.x2; // From
+	artificial_path.y1 = last_path.y2;
+	artificial_path.x2 = last_path.x2; // To
 	artificial_path.y2 = -0.6-0.8;
 	artificial_path.edge_type = 4; // Follow left
 
-	it = global_path.begin();
-	it = global_path.insert(it, artificial_path);
+//	it = global_path.begin();
+//	it = global_path.insert(it, artificial_path);
+	global_path.push(artificial_path);
 
 	global_received_path = true;
 
-	for (int i=0; i<global_path.size();i++){
+	/*for (int i=0; i<global_path.size();i++){
 		std::cout << "\nPath # " << i << std::endl;
 		std::cout << "From: " << global_path[i].x1 << " , " << global_path[i].y1 << std::endl;
 		std::cout << "To: " << global_path[i].x2 << " , " << global_path[i].y2 << std::endl;
 		std::cout << "With angle: " << (atan2(global_path[i].y2 - global_path[i].y1,
 				global_path[i].x2 - global_path[i].x1))*(180.0/M_PI) << std::endl;
-	}
-
+	}*/
 
 
 

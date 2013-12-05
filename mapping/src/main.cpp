@@ -34,32 +34,6 @@ Mapper *mapper;
 
 bool killProgram = false;
 
-cv::Mat findRed(cv::Mat imgHSV) {
-	cv::Mat imgThresh = cvCreateImage(cvSize(640, 480), IPL_DEPTH_8U, 1);
-	inRange(imgHSV, cv::Scalar(0, 0, 128), cv::Scalar(70, 90, 255), imgThresh);
-	return imgThresh;
-}
-
-cv::Mat findYellow(cv::Mat imgHSV) {
-	cv::Mat imgThresh = cvCreateImage(cvSize(640, 480), IPL_DEPTH_8U, 1);
-	inRange(imgHSV, cv::Scalar(0, 180, 154), cv::Scalar(90, 255, 255),
-			imgThresh);
-	return imgThresh;
-}
-
-int count(cv::Mat image) {
-	int count = 0;
-	for (int x = 0; x < image.rows; x++) {
-		for (int y = 0; y < image.cols; y++) {
-			int k = x * image.cols + y;
-			if (image.data[k] == 255) {
-				count++;
-			}
-		}
-	}
-	return count;
-}
-
 void imgCallback(const sensor_msgs::ImageConstPtr& msg);
 
 void depthCallback(const sensor_msgs::PointCloud2& pcl);
