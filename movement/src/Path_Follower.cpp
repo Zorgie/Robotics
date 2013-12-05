@@ -209,6 +209,13 @@ void path_following_act() {
 		need_to_rotate = desired_angle_multiple_of_90
 				- estimated_angle_multiple_of_90;
 	}
+	// New stuff begin
+	if (desired_angle_multiple_of_90 < estimated_angle_multiple_of_90) {
+			need_to_rotate = desired_angle_multiple_of_90
+					- estimated_angle_multiple_of_90;
+	}
+	// New stuff end
+
 	if (need_to_rotate > 2) {
 		need_to_rotate = -(4 - need_to_rotate);
 	}
@@ -228,6 +235,8 @@ void path_following_act() {
 		desired_speed.W2 = 0.0;
 		desired_speed_pub.publish(desired_speed);
 		in_rotation = true;
+				std::cerr << "Press a key to continue!" << std::endl;
+				std::cin.ignore();
 		return;
 	}
 
@@ -567,7 +576,7 @@ int main(int argc, char **argv) {
 	navigation::path_result artificial_path;
 	artificial_path.x1 = estimated_pose.x; // From
 	artificial_path.y1 = estimated_pose.y;
-	artificial_path.x2 = 0.2; // To
+	artificial_path.x2 = 0.6; // To
 	artificial_path.y2 = estimated_pose.y;
 	artificial_path.edge_type = 4; // Follow left
 
@@ -579,7 +588,7 @@ int main(int argc, char **argv) {
 	artificial_path.x1 = global_path[0].x2; // From
 	artificial_path.y1 = global_path[0].y2;
 	artificial_path.x2 = global_path[0].x2; // To
-	artificial_path.y2 = 0.2;
+	artificial_path.y2 = -0.6;
 	artificial_path.edge_type = 4; // Follow left
 
 	it = global_path.begin();
@@ -597,7 +606,7 @@ int main(int argc, char **argv) {
 	artificial_path.x1 = global_path[0].x2; // From
 	artificial_path.y1 = global_path[0].y2;
 	artificial_path.x2 = global_path[0].x2; // To
-	artificial_path.y2 = 0.0;
+	artificial_path.y2 = -0.6-0.8;
 	artificial_path.edge_type = 4; // Follow left
 
 	it = global_path.begin();
@@ -606,9 +615,11 @@ int main(int argc, char **argv) {
 	global_received_path = true;
 
 	for (int i=0; i<global_path.size();i++){
-		std::cout << "Path # " << i << std::endl;
+		std::cout << "\nPath # " << i << std::endl;
 		std::cout << "From: " << global_path[i].x1 << " , " << global_path[i].y1 << std::endl;
 		std::cout << "To: " << global_path[i].x2 << " , " << global_path[i].y2 << std::endl;
+		std::cout << "With angle: " << (atan2(global_path[i].y2 - global_path[i].y1,
+				global_path[i].x2 - global_path[i].x1))*(180.0/M_PI) << std::endl;
 	}
 
 
