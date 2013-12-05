@@ -111,16 +111,16 @@ int main(int argc, char **argv) {
 		n.getParam("/iGain", iGain);
 
 		current_robot_pose = robot_position.step(encoders_global);
-		std::cout << "X: " << current_robot_pose.x << "\t" << "Y: "
-				<< current_robot_pose.y << "\t" << "theta (in degrees): "
-				<< current_robot_pose.theta * (180.0 / PI) << std::endl;
+//		std::cout << "X: " << current_robot_pose.x << "\t" << "Y: "
+//				<< current_robot_pose.y << "\t" << "theta (in degrees): "
+//				<< current_robot_pose.theta * (180.0 / PI) << std::endl;
 
 		// Computing the error: Error=Desired_Speed-Real_Speed
 		error_1 = wheel_speed_global.W1
 				- ((encoders_global.delta_encoder1 * UPDATE_RATE) / 360.0);
 		error_2 = wheel_speed_global.W2
 				- ((encoders_global.delta_encoder2 * UPDATE_RATE) / 360.0);
-		std::cout << "W1:" << wheel_speed_global.W1 << "W2:"
+		std::cout << "\nW1: " << wheel_speed_global.W1 << "\t W2: "
 				<< wheel_speed_global.W2 << std::endl;
 
 		wheel_distance_traveled.distance1 = -(encoders_global.delta_encoder1
@@ -128,9 +128,9 @@ int main(int argc, char **argv) {
 
 		wheel_distance_traveled.distance2 = (encoders_global.delta_encoder2
 				/ 360.0) * (PI * wheel_diameter);
-		printf("Distance1: %f \t Distance2: %f \n",
-				wheel_distance_traveled.distance1,
-				wheel_distance_traveled.distance2);
+//		printf("Distance1: %f \t Distance2: %f \n",
+//				wheel_distance_traveled.distance1,
+//				wheel_distance_traveled.distance2);
 
 		wheel_distance_pub.publish(wheel_distance_traveled);
 
@@ -174,6 +174,7 @@ int main(int argc, char **argv) {
 
 
 		if ((wheel_speed_global.W1 == 0.0 && wheel_speed_global.W2 == 0.0) || started_rotation) {
+			std::cout << "\033[1;31mReset controllers!\033[0m\n" << std::endl; // yellow
 			pwm_command.PWM1 = 0;
 			pwm_command.PWM2 = 0;
 			integral_error_1 = 0;
@@ -182,8 +183,8 @@ int main(int argc, char **argv) {
 			proportional_error_2 = 0;
 		}
 
-		printf("P_error: %f \t I_error: %f \n", proportional_error_1,
-				integral_error_1);
+//		printf("P_error: %f \t I_error: %f \n", proportional_error_1,
+//				integral_error_1);
 
 		//printf("PWM1: %d \t PWM2: %d \n",pwm_command.PWM1,pwm_command.PWM2);
 
@@ -223,7 +224,7 @@ int main(int argc, char **argv) {
 		if (pwm_command.PWM2 < -255)
 			pwm_command.PWM2 = -255;
 
-		printf("PWM1: %d \t PWM2: %d \n", pwm_command.PWM1, pwm_command.PWM2);
+//		printf("PWM1: %d \t PWM2: %d \n", pwm_command.PWM1, pwm_command.PWM2);
 
 		// publsih pwm commands and the robot pose
 		pwm_pub.publish(pwm_command);
