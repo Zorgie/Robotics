@@ -30,6 +30,7 @@ void ObjectDetector::printObjectName(object o){
 	case ORANGE: cout << "ORANGE" << endl; break;
 	case LION: 	 cout << "LION" << endl;break;
 	case LEMON:  cout << "LEMON" << endl;break;
+	case PEPPER: cout << "PEPPER" << endl;break;
 	}
 }
 
@@ -49,7 +50,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 	switch(detectingPhase){
 		case CONTOURING:
 			//not enough contour votes?
-			if(contourChecker.getCurrentNumberOfVotes() < 30){
+			if(contourChecker.getCurrentNumberOfVotes() < 5){
 				contourChecker.updateComplexityEstimation(imgBGR);
 			}
 			else{
@@ -59,7 +60,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 				}
 				else{
 					std::cout << "SIMPLE OBJECT DETECTED => CHECK FOR SHAPE AND COLOR" << std::endl;
-					detectingPhase = SHAPING;
+					detectingPhase = COLORING;
 				}
 			}
 
@@ -86,9 +87,32 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 			}
 			break;
 
+		case COLORING:
+
+			if(colorDetector.getNumberOfIterations() < 5){
+				if(colorDetector.getNumberOfIterations() == 0){cout<<"COLOR DETECTION STARTED" << endl;}
+				colorDetector.updatePixelCount(imgBGR);
+			}
+			else
+			{
+				cout << "COLOR DETECTION DONE: FOUND COLOR OBJECTS: " << endl;
+				vector<object> result = colorDetector.getProbableObjects();
+				for(int i = 0;i < result.size();i++)
+				{
+					cout << "result[i]: " << result[i] << endl;
+					printObjectName(result[i]);
+					objectProbabilities[result[i]] += 0.2;
+				}
+				detectingPhase = SHAPING;
+			}
+
+			break;
+
+
 		case SHAPING:
-			if(shapeChecker.nrOfVotes < 20){
-				shapeChecker.updateShapeEstimation(imgBGR);
+			if(shapeChecker.nrOfVotes < 10){
+				cout << "SHAPE CHECKING STARTED" << endl;
+				shapeChecker.updateShapeEstimation(imgBGR,colorDetector.getProbableColors());
 			}
 			else
 			{
@@ -102,7 +126,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 					objectProbabilities[AVOCADO]  += 0.2;
 					objectProbabilities[LEMON]   += 0.2;
 
-					detectingPhase = COLORING;
+					detectingPhase = DONE;
 
 				}
 				else if(shapeChecker.isEllipse())
@@ -114,41 +138,23 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 					objectProbabilities[BANANA] += 0.2;
 					objectProbabilities[CORN]   += 0.2;
 					objectProbabilities[PEAR]   += 0.2;
+					objectProbabilities[PEPPER]   += 0.2;
 
-					detectingPhase = COLORING;
+
+					detectingPhase = DONE;
 				}
 				else
 				{
 					//either the elephant or the hippo, we should try to detect the elephant using surf (maybe also
 					//the hippo, not sure) and take the one with the best results
 					//I guess all the other cases should be caught in the above cases
-					objectProbabilities[ELEPHANT] += 0.2;
-					objectProbabilities[HIPPO] += 0.2;
-					cout << "NO CONTOUR FOUND => ELEPHANT OR HIPPO or LION - HANDLE THAT LATER" << endl;
-					detectingPhase = LOW_CONTOUR_SURFING;
+					//objectProbabilities[ELEPHANT] += 0.2;
+				//	objectProbabilities[HIPPO] += 0.2;
+					//cout << "NO CONTOUR FOUND => ELEPHANT OR HIPPO or LION - HANDLE THAT LATER" << endl;
+					detectingPhase = DONE;
 				}
 
 
-			}
-
-			break;
-		case COLORING:
-
-			if(colorDetector.getNumberOfIterations() < 50){
-				cout << "COLORING STEP " << colorDetector.getNumberOfIterations() << endl;
-				colorDetector.updatePixelCount(imgBGR);
-			}
-			else
-			{
-				cout << "COLOR DETECTION DONE: FOUND COLOR OBJECTS: " << endl;
-				vector<object> result = colorDetector.getProbableObjects();
-				for(int i = 0;i < result.size();i++)
-				{
-					cout << "result[i]: " << result[i] << endl;
-					printObjectName(result[i]);
-					objectProbabilities[result[i]] += 0.2;
-				}
-				detectingPhase = DONE;
 			}
 
 			break;
@@ -191,7 +197,7 @@ vector<object> ObjectDetector::detectObject(){
 	for(int i = 0;i < NUMBER_OF_OBJECTS;i++){
 		if(objectProbabilities[i] > highestProbability){
 			highestProbability = objectProbabilities[i];
-			bestGuess = static_cast<object>(i);;
+			bestGuess = static_cast<object>(i);
 		}
 	}
 

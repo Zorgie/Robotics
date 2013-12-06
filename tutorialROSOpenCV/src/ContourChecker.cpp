@@ -10,7 +10,7 @@
 
 
 ContourChecker::ContourChecker() {
-	COMPLEXITY_THRESHOLD = 4.5;
+	COMPLEXITY_THRESHOLD = 7.5;
 }
 
 ContourChecker::~ContourChecker() {
