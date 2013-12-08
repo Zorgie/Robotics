@@ -125,7 +125,8 @@ void SurfChecker::performSurf(Mat bgrImage){
 	}
 	cout << "------------------------------------------------------" << endl;
 	//cout << "MAX GIRAFFE MATCHES: " << max_good_matches << endl;
-	averageGiraffeMatches += max_good_matches;
+	if(max_good_matches >= 3)
+		averageGiraffeMatches += max_good_matches;
 
 
 
@@ -158,7 +159,8 @@ void SurfChecker::performSurf(Mat bgrImage){
 			}
 		}
 		//cout << "MAX ZEBRA MATCHES: " << max_good_matches << endl;
-		averageZebraMatches += max_good_matches;
+		if(max_good_matches >= 3)
+			averageZebraMatches += max_good_matches;
 
 
 
@@ -192,8 +194,11 @@ void SurfChecker::performSurf(Mat bgrImage){
 				//	cout << "GIRAFFE FOUND" << endl;
 				}
 			}
-			//cout << "MAX TIGER MATCHES: " << max_good_matches << endl;
-			averageTigerMatches += max_good_matches;
+			//cout << "MAX TIGER MATCHES: " << max_good_matches << endl
+			cout << "TIGER: " << max_good_matches << endl;
+			if(max_good_matches >= 3)
+				averageTigerMatches += max_good_matches;
+
 
 
 

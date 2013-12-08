@@ -24,6 +24,10 @@ public:
 	void updatePixelCount(Mat bgrImage);
 	std::vector<object> getProbableObjects();
 	int getNumberOfIterations();
+	std::vector<colors> getProbableColors();
+
+	bool objectPresent(Mat bgrImage,int &center_x,int &center_y);
+	void getColorCenter(Mat bgrImage,Scalar lower_bound,Scalar upper_bound,double &mean_x,double &mean_y,double &variance);
 
 
 private:

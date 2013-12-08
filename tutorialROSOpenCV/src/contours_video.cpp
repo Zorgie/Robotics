@@ -122,7 +122,8 @@ int main(int argc,char** argv)
     		frame = globalImage;
     	}
 
-    	GaussianBlur(frame,frame,Size(9,9),0,0);
+    	//GaussianBlur(frame,frame,Size(9,9),0,0);
+    	GaussianBlur(frame,frame,Size(3,3),0,0);
     	Canny(frame, frame, 50, 200, 3 );
     	Mat cont;
     	vector<vector<Point> > contours;
