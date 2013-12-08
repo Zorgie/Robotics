@@ -7,8 +7,6 @@
 
 #include "ShapeChecker.h"
 
-
-
 ShapeChecker::ShapeChecker() {
 
 	lowerColorBounds[BANANA_YELLOW]		= cv::Scalar(22, 120, 104);
@@ -18,7 +16,7 @@ ShapeChecker::ShapeChecker() {
 		lowerColorBounds[BROCOLI_GREEN]		=cv::Scalar(37, 93, 132);
 		lowerColorBounds[PAPRIKA_GREEN]		=cv::Scalar(64,41,6);
 		lowerColorBounds[AVOCADO_GREEN]		=cv::Scalar(64,41,6);
-		lowerColorBounds[LION_YELLOW]       =cv::Scalar(6,89,41);
+		//lowerColorBounds[LION_YELLOW]       =cv::Scalar(6,89,41);
 		lowerColorBounds[LEMON_YELLOW]       =lowerColorBounds[BANANA_YELLOW];			//TODO: For now take banana yellow
 		lowerColorBounds[PEPPER_RED]        =lowerColorBounds[TOMATO_RED];			//TODO: For now take tomato yellow
 
@@ -30,6 +28,7 @@ ShapeChecker::ShapeChecker() {
 		lowerColorBounds[ORANGE_ORANGE]		=cv::Scalar(18,95,107);
 		lowerColorBounds[MELON_GREEN]		=cv::Scalar(57,56,49);
 		lowerColorBounds[MELON_RED]			=cv::Scalar(0,68,70);
+		lowerColorBounds[PLATE_RED]			=cv::Scalar(0,103,55);
 
 		upperColorBounds[BANANA_YELLOW]		= cv::Scalar(30,256,256);
 		upperColorBounds[POTATO_BROWN]		=cv::Scalar(27,195,206);
@@ -46,10 +45,10 @@ ShapeChecker::ShapeChecker() {
 		upperColorBounds[ORANGE_ORANGE]		=cv::Scalar(26,256,256);
 		upperColorBounds[MELON_GREEN]		=cv::Scalar(69,145,193);
 		upperColorBounds[MELON_RED]			=cv::Scalar(13,101,183);
-		upperColorBounds[LION_YELLOW]		=cv::Scalar(31,254,217);
+		//upperColorBounds[LION_YELLOW]		=cv::Scalar(31,254,217);
 		upperColorBounds[LEMON_YELLOW]       =upperColorBounds[BANANA_YELLOW];			//TODO: For now take banana yellow
 		upperColorBounds[PEPPER_RED]       =upperColorBounds[TOMATO_RED];
-
+		upperColorBounds[PLATE_RED]			=cv::Scalar(11,217,256);
 
 	reset();
 }

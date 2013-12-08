@@ -43,6 +43,8 @@ int main(int argc,char** argv)
 	ros::Subscriber rgb_sub = nh_.subscribe("/camera/rgb/image_color", 1, &imgCallback);
 	ros::Subscriber object_detected_sub = nh_.subscribe("/mapping/objectDetectedInfo", 1, &objectDetectedCallback);
 
+	ros::Publisher  objectInScreenPub = nh_.advertise<mapping::object_detected_info>("robot_eye/object_detected_info",1);
+
 	ColorDetector cDetect;
 	ContourChecker contourChecker;
 
@@ -57,9 +59,18 @@ int main(int argc,char** argv)
     		cDetect.updatePixelCount(globalImage);
     		contourChecker.updateComplexityEstimation(globalImage);
 
-    		if(cDetect.getNumberOfIterations() > 3)
+    		if(cDetect.getNumberOfIterations() > 1)
     		{
-    			if(cDetect.objectPresent(globalImage) ){
+    			int center_x,center_y;
+    			if(cDetect.objectPresent(globalImage,center_x,center_y) ){
+    				    mapping::object_detected_info  msg;
+
+    				    msg.objectDetected = 1;
+    				    msg.object_x = center_x;
+    				    msg.object_y = center_y;
+    					objectInScreenPub.publish(msg); //Indicates that there MIGHT be an object in the screen!
+    					//We need a second publisher that actually says that it was one!
+
     					cout << "Colored Object in the image!" << endl;
     			   		detectObject = true;
     			   }
@@ -69,9 +80,10 @@ int main(int argc,char** argv)
     			   }
     			cDetect.reset();
     		}
-    		if(contourChecker.getCurrentNumberOfVotes() > 3)
+    		if(contourChecker.getCurrentNumberOfVotes() > 1)
     		{
     			if(contourChecker.isComplex()){
+    				mapping::object_detected_info  msg;
     				detectObject = true;
     				cout << "Complex Object in the image!" << endl;
     			}

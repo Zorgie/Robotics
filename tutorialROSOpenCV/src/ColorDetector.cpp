@@ -43,13 +43,14 @@ ColorDetector::ColorDetector() {
 	lowerColorBounds[BANANA_YELLOW]		= cv::Scalar(22, 120, 104);
 	lowerColorBounds[POTATO_BROWN]		= cv::Scalar(11,93,135);
 	lowerColorBounds[TOMATO_RED]		=cv::Scalar(0,46,124);
-	lowerColorBounds[ONION_ORANGE]		=cv::Scalar(0,110,107);
+	lowerColorBounds[ONION_ORANGE]		=cv::Scalar(10,110,107);
 	lowerColorBounds[BROCOLI_GREEN]		=cv::Scalar(37, 93, 132);
 	lowerColorBounds[PAPRIKA_GREEN]		=cv::Scalar(64,41,6);
 	lowerColorBounds[AVOCADO_GREEN]		=cv::Scalar(64,41,6);
-	lowerColorBounds[LION_YELLOW]       =cv::Scalar(6,89,41);
-	lowerColorBounds[LEMON_YELLOW]       =lowerColorBounds[BANANA_YELLOW];			//TODO: For now take banana yellow
+	//lowerColorBounds[LION_YELLOW]       =cv::Scalar(6,89,41);
+	lowerColorBounds[LEMON_YELLOW]       =cv::Scalar(20,217,150);			//TODO: For now take banana yellow
 	lowerColorBounds[PEPPER_RED]        =lowerColorBounds[TOMATO_RED];			//TODO: For now take tomato yellow
+	lowerColorBounds[PLATE_RED]			=lowerColorBounds[TOMATO_RED];
 
 
 	lowerColorBounds[CARROT_ORANGE]		=cv::Scalar(5,50,155);
@@ -75,9 +76,10 @@ ColorDetector::ColorDetector() {
 	upperColorBounds[ORANGE_ORANGE]		=cv::Scalar(26,256,256);
 	upperColorBounds[MELON_GREEN]		=cv::Scalar(69,145,193);
 	upperColorBounds[MELON_RED]			=cv::Scalar(13,101,183);
-	upperColorBounds[LION_YELLOW]		=cv::Scalar(31,254,217);
-	upperColorBounds[LEMON_YELLOW]       =upperColorBounds[BANANA_YELLOW];			//TODO: For now take banana yellow
+	//upperColorBounds[LION_YELLOW]		=cv::Scalar(31,254,217);
+	upperColorBounds[LEMON_YELLOW]       =cv::Scalar(30,256,256);			//TODO: For now take banana yellow
 	upperColorBounds[PEPPER_RED]       =upperColorBounds[TOMATO_RED];
+	upperColorBounds[PLATE_RED]			=cv::Scalar(11,217,256);
 
 	reset();
 }
@@ -166,8 +168,8 @@ void ColorDetector::getColorCenter(Mat bgrImage,Scalar lower_bound,Scalar upper_
 }
 
 
-
-bool ColorDetector::objectPresent(Mat bgrImage){
+//returns true if there is an object in the image and fills center_x and center_y with the coordinates
+bool ColorDetector::objectPresent(Mat bgrImage,int &center_x,int &center_y){
 	std::vector<colors> result;
 
 	double mean_x = 0.0;
@@ -182,24 +184,26 @@ bool ColorDetector::objectPresent(Mat bgrImage){
 			//low 13 137 0
 			//up 32 256 70
 
+			vector<double> all_mean_x, all_mean_y;
 
 			for(int i = 0;i < NR_OF_COLORS;i++){
 				avgNrOfPixels = totalNrOfPixels[i]/nrOfTurns;
 				if(avgNrOfPixels > threshold){ // && avgNrOfPixels > currentMax
 
 					getColorCenter(bgrImage,lowerColorBounds[i],upperColorBounds[i],mean_x,mean_y,variance);
-
+					all_mean_x.push_back(mean_x);
+					all_mean_y.push_back(mean_y);
 
 					if(variance < 100){
 					//cout << "COLOR " << i << " DETECTED " << avgNrOfPixels << " PIXELS" << endl;
 						//cout << "OBJECT CENTER: (" << mean_x << "," << mean_y << ")" << " VARIANCE: " << variance << endl;
 
-					/*DEBUG IMAGE PRINT WITH OBJECT CENTER
-					 * Mat imgWithCircle(bgrImage);
+					//DEBUG IMAGE PRINT WITH OBJECT CENTER
+					 Mat imgWithCircle(bgrImage);
 					Point center((int)mean_x,(int)mean_y);
 					circle(imgWithCircle, center, 30, Scalar(0,0,255));
 					imshow("OBJECT POSITION",imgWithCircle);
-					waitKey(3);*/
+					waitKey(3);
 
 					result.push_back(static_cast<colors>(i));
 					}
@@ -219,6 +223,13 @@ bool ColorDetector::objectPresent(Mat bgrImage){
 				result.push_back(static_cast<colors>(-1));
 			}
 			*/
+			double temp_x = 0, temp_y = 0;
+			for(int i = 0;i < all_mean_x.size();i++){
+				temp_x += all_mean_x[i];
+				temp_y += all_mean_y[i];
+			}
+			center_x = (int)(temp_x/all_mean_x.size());
+			center_y = (int)(temp_x/all_mean_y.size());
 
 
 			return (result.size() != 0);
@@ -236,7 +247,7 @@ std::vector<colors> ColorDetector::getProbableColors(){
 			if(avgNrOfPixels > threshold){ // && avgNrOfPixels > currentMax
 				currentMax = (int)avgNrOfPixels;
 				result.push_back(static_cast<colors>(i));
-				cout << "COLOR " << i << " detected" << endl;
+				cout << "COLOR " << i << " detected - nr of px: " << avgNrOfPixels <<  endl;
 			}
 		}
 
@@ -274,9 +285,10 @@ object ColorDetector::colorObjectMapping(colors objectColor){
 			case MELON_GREEN:		return MELON;
 			case MELON_RED:			return MELON;
 			case AVOCADO_GREEN:		return AVOCADO;
-			case LION_YELLOW:		return LION;
+			//case LION_YELLOW:		return LION;
 			case LEMON_YELLOW:		return LEMON;
 			case PEPPER_RED:		return PEPPER;
+			case PLATE_RED:			return PLATE;
 		}
 		std::cout << "ERROR in ColorDetection::colorObjectMapping - THE OBJECT COLOR DOES NOT EXIST!" << std::endl;
 		return static_cast<object>(-1);

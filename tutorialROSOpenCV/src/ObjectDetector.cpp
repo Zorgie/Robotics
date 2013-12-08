@@ -31,6 +31,7 @@ void ObjectDetector::printObjectName(object o){
 	case LION: 	 cout << "LION" << endl;break;
 	case LEMON:  cout << "LEMON" << endl;break;
 	case PEPPER: cout << "PEPPER" << endl;break;
+	case PLATE: cout << "PLATE" << endl;break;
 	}
 }
 
@@ -50,7 +51,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 	switch(detectingPhase){
 		case CONTOURING:
 			//not enough contour votes?
-			if(contourChecker.getCurrentNumberOfVotes() < 5){
+			if(contourChecker.getCurrentNumberOfVotes() < 2){				//was 5
 				contourChecker.updateComplexityEstimation(imgBGR);
 			}
 			else{
@@ -66,19 +67,24 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 
 			break;
 		case HIGH_CONTOUR_SURFING:
-			if(surfChecker.getNrOfSurfsDone() < 5){
+			if(surfChecker.getNrOfSurfsDone() < 1){		//was 5
 				surfChecker.performSurf(imgBGR);
 			}
 			else{
-				double minThreshold = 0;
+				double minThreshold = 3;
 
 				double avgGiraffe = surfChecker.getAvgGiraffeMatches();
 				double avgZebra   = surfChecker.getAvgZebraMatches();
 				double avgTiger   = surfChecker.getAvgTigerMatches();
+
+				cout << "AVG GIRAFFE: " << avgGiraffe << endl;
+				cout << "AVG ZEBRA: "   << avgZebra << endl;
+				cout << "AVG TIGER: "   << avgTiger << endl;
+
 				double sum = avgGiraffe + avgZebra + avgTiger;
 
 				//only update the probabilities if the surf results actually indicate that there is (at least) one of those objects detected
-				if(avgGiraffe > minThreshold && avgZebra > minThreshold && avgTiger > minThreshold){
+				if(avgGiraffe > minThreshold || avgZebra > minThreshold || avgTiger > minThreshold){
 					objectProbabilities[TIGER]   = avgTiger/sum;
 					objectProbabilities[ZEBRA]   = avgZebra/sum;
 					objectProbabilities[GIRAFFE] = avgGiraffe/sum;
@@ -89,7 +95,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 
 		case COLORING:
 
-			if(colorDetector.getNumberOfIterations() < 5){
+			if(colorDetector.getNumberOfIterations() < 1){		//was 5
 				if(colorDetector.getNumberOfIterations() == 0){cout<<"COLOR DETECTION STARTED" << endl;}
 				colorDetector.updatePixelCount(imgBGR);
 			}
@@ -110,7 +116,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 
 
 		case SHAPING:
-			if(shapeChecker.nrOfVotes < 10){
+			if(shapeChecker.nrOfVotes < 2){				//was 10
 				cout << "SHAPE CHECKING STARTED" << endl;
 				shapeChecker.updateShapeEstimation(imgBGR,colorDetector.getProbableColors());
 			}
@@ -139,6 +145,8 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 					objectProbabilities[CORN]   += 0.2;
 					objectProbabilities[PEAR]   += 0.2;
 					objectProbabilities[PEPPER]   += 0.2;
+					objectProbabilities[PLATE]    += 0.2;
+
 
 
 					detectingPhase = DONE;
