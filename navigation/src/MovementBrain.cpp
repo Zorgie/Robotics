@@ -29,10 +29,10 @@ void MovementBrain::process_irsensor_readings(float s_frontal_left,
 
 //	std::cout << "\n s_frontal_left: \t" << s_frontal_left <<
 //			"\n s_frontal_right: \t" << s_frontal_right << std::endl;
-	std::cout << "\n avg_front_wall_distance: \t" << avg_front_wall_distance
-			<< "\n avg_left_wall_distance: \t" << avg_left_wall_distance
-			<< "\n avg_right_wall_distance: \t" << avg_right_wall_distance
-			<< std::endl;
+//	std::cout << "\n avg_front_wall_distance: \t" << avg_front_wall_distance
+//			<< "\n avg_left_wall_distance: \t" << avg_left_wall_distance
+//			<< "\n avg_right_wall_distance: \t" << avg_right_wall_distance
+//			<< std::endl;
 
 	//thresholds[meters]: when does the front sensor think there is a wall?
 	const double c_front_thresh = 0.15;
@@ -119,10 +119,10 @@ void MovementBrain::process_irsensor_readings(float s_frontal_left,
 	state_probability[NO_LEFT_WALL] /= normalize_sum_left;
 	state_probability[LEFT_INVALID] /= normalize_sum_left;
 
-	std::cout << "Front prob: " << state_probability[FRONT_WALL] << std::endl;
-	std::cout << "Left prob: " << state_probability[FRONT_WALL] << std::endl;
-	std::cout << "No left prob: " << state_probability[NO_LEFT_WALL]
-			<< std::endl;
+//	std::cout << "Front prob: " << state_probability[FRONT_WALL] << std::endl;
+//	std::cout << "Left prob: " << state_probability[FRONT_WALL] << std::endl;
+//	std::cout << "No left prob: " << state_probability[NO_LEFT_WALL]
+//			<< std::endl;
 }
 
 //observe: robot is not able to handle 180° corners at the moment
@@ -331,12 +331,14 @@ robot_movement_state MovementBrain::make_state_decision_straight() {
 		return GO_STRAIGHT;
 
 	if (follow_right && follow_left) {
-		if (avg_left_wall_distance < avg_right_wall_distance) {
-			std::cout << "CHOSE LEFT OVER RIGHT" << std::endl;
-			return FOLLOW_LEFT;
-		} else {
-			std::cout << "CHOSE RIGHT OVER LEFT" << std::endl;
-			return FOLLOW_RIGHT;
+		if (fabs(avg_left_wall_distance - avg_right_wall_distance) > 0.05) {
+			if (avg_left_wall_distance < avg_right_wall_distance) {
+				std::cout << "CHOSE LEFT OVER RIGHT" << std::endl;
+				return FOLLOW_LEFT;
+			} else {
+				std::cout << "CHOSE RIGHT OVER LEFT" << std::endl;
+				return FOLLOW_RIGHT;
+			}
 		}
 
 	}
@@ -347,10 +349,17 @@ robot_movement_state MovementBrain::make_state_decision_straight() {
 
 	//otherwise: just turn left/right (chosen randomly) 90° as there is a front wall
 	//we might want to change that later to: turn to a direction where the sensors detect no wall
-	if (rand() % 2)
-		return TURN_LEFT;
-	else
+//	if (rand() % 2)
+//		return TURN_LEFT;
+//	else
+//		return TURN_RIGHT;
+	if (avg_left_wall_distance<avg_right_wall_distance){
+		std::cout << "TURN RIGHT, MY LEFT IS BLOCKED" << std::endl;
 		return TURN_RIGHT;
+	}else{
+		std::cout << "TURN LEFT, MY RIGHT IS BLOCKED" << std::endl;
+		return TURN_LEFT;
+	}
 }
 
 robot_movement_state MovementBrain::make_state_decision_follow_right() {

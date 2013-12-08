@@ -26,13 +26,15 @@ Mapper::Mapper(bool gui) {
 	/* Subscribers */
 	irSub = nh.subscribe("/sensors/transformed/ADC",1,&Mapper::irCallback,this);
 	movementSub = nh.subscribe("/navigation/movement_state", 1, &Mapper::movementCommandCallback, this);
-	poseSub = nh.subscribe("/robot_pose",100,&Mapper::poseCallback, this);
+	poseSub = nh.subscribe("/robot_pose_aligned_NEW",100,&Mapper::poseCallback, this);
 	pathRequestSub = nh.subscribe("/path/request",100,&Mapper::pathRequestCallback, this);
+	objectSub = nh.subscribe("/robot_eye/object_detected_info", 1, &Mapper::objectDetectedCallback,this);
 	//camSub = nh.subscribe("/camera/depth_registered/points",1, &Mapper::depthCallback, this);
 
 	/* Publishers */
-	posePub = nh.advertise<mapping::robot_pose>("/robot_pose_aligned", 1);
+	posePub = nh.advertise<mapping::robot_pose>("/robot_pose_map_update", 1);
 	pathResultPub = nh.advertise<navigation::path_result>("/path/result", 1000);
+	speakerPub = nh.advertise<std_msgs::String>("/robot/talk", 1);
 
 	findPath = -1;
 	goneHome = false;
@@ -177,32 +179,36 @@ void Mapper::movementCommandCallback(const navigation::movement_state& state){
 	}
 	for (int i = 0; i < 4; i++) {
 		if (action == node_actions[i]) {
-			acceptNode = false;
-			bool created = 	nav.addNode(currentPose.x, currentPose.y, action);
-			if(nav.getLastVisitedNode().index == 0 && nav.getNodeCount() > 1){
-				cout << "Found the 0 node, creating a path. ";
-				int targetNode = 3;//nav.getNodeCount() / 3;
-				vector<Edge> path = nav.getPath(0,targetNode);
-				cout << "Size " << path.size();
-				pathResultCallback(path);
-				path = nav.getPath(targetNode,0);
-				cout << " and " << path.size() << endl;
-				pathResultCallback(path);
-				goneHome = true;
-				break;
+			mapping::robot_pose old;
+			old.x=currentPose.x;
+			old.y=currentPose.y;
+			old.theta=currentPose.theta;
+
+
+			cout << "Address of old: " << &old << endl;
+			bool created = 	nav.addNode(currentPose.x, currentPose.y, action,old);
+
+			if(acceptNode && (old.x!=currentPose.x || old.y!=currentPose.y) ){
+
+				posePub.publish(old);
+				cout << "publishing" << endl;
+
+			}else{
+				printf("Old: %.2f %.2f\n", old.x,old.y);
+				printf("Current: %.2f %.2f\n", currentPose.x,currentPose.y);
 			}
-//			if(nav.getNodeCount() > 3 && created){
-//				cout << "Publishing path." << endl;
-//				vector<Edge> path = nav.getPath(0);
+			acceptNode = false;
+//			if(nav.getLastVisitedNode().index == 0 && nav.getNodeCount() > 1){
+//				cout << "Found the 0 node, creating a path. ";
+//				int targetNode = 3;//nav.getNodeCount() / 3;
+//				vector<Edge> path = nav.getPath(0,targetNode);
+//				cout << "Size " << path.size();
 //				pathResultCallback(path);
+//				path = nav.getPath(targetNode,0);
+//				cout << " and " << path.size() << endl;
+//				pathResultCallback(path);
+//				goneHome = true;
 //				break;
-//			}
-//			if(findPath != -1){
-//				vector<Edge> path = nav.getPath(findPath);
-//				printf("Getting path, length: %d\n", path.size());
-//				pathResultCallback(path);
-//				printf("Finished publishing path.\n");
-//				findPath = -1;
 //			}
 		}
 	}
@@ -221,4 +227,31 @@ void Mapper::pathResultCallback(vector<Edge> path){
 		res.y2 = to.y;
 		pathResultPub.publish(res);
 	}
+}
+
+void Mapper::objectDetectedCallback(const tutorialROSOpenCV::evidence &msg){
+	cout << "EVIDENCE RECEIVED!" << endl;
+	cout << "ID: " << msg.object_id << endl;
+	cout << msg.object_id.empty() << endl;
+	string evidence_string = msg.object_id;
+	std_msgs::String say_this;
+	say_this.data=evidence_string;
+	std::cout << msg.object_id << std::endl;
+//	if(!msg.object_id.empty()){
+//		speaker.publish(say_this);
+//
+	if(nav.objectStrToId.find(msg.object_id) == nav.objectStrToId.end()){
+		// Not found
+	}else{
+		// Found
+		int id = nav.objectStrToId[msg.object_id];
+		nav.addNode(currentPose.x, currentPose.y, -id);
+	}
+	speakerPub.publish(say_this);
+	if(evidence_string.compare("CARROT") == 0){
+		cout << "CARROT RECEIVED" << endl;
+
+	}
+	else
+		cout << "SOMETHING ELSE RECEIVED" << endl;
 }

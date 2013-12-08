@@ -40,7 +40,7 @@ movement::wheel_speed Go_straight::step(movement::wheel_distance& distance_trave
 	float direction = 0;
 	direction= fabs(distance_target)/distance_target;
 	if(direction>0.0){
-		if(fabs(distance_moved - distance_target) > 0.01){
+		if(fabs(distance_moved - distance_target) > 0.01 && distance_moved<distance_target){
 			speed.W1=SPEED;
 			speed.W2=SPEED;
 		}
@@ -61,7 +61,7 @@ movement::wheel_speed Go_straight::step(movement::wheel_distance& distance_trave
 	}
     
 	if(direction<0.0){
-			if(fabs(distance_moved - distance_target) > 0.01){
+			if(fabs(distance_moved - distance_target) > 0.01 && distance_moved>distance_target){
 				speed.W1=-SPEED;
 				speed.W2=-SPEED;
 			}

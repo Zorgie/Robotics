@@ -21,7 +21,25 @@ bool NavMap::validNode(int n) {
 	return true;
 }
 
+// TODO make this good.
+bool NavMap::addObject(double x, double y, int id, int direction){
+	if(find(objectsFound.begin(), objectsFound.end(), id) == objectsFound.end()){
+		return false;
+	}
+	if(addNode(x,y,-1)){
+		objectsFound.push_back(id);
+		lastVisitedNode.object = direction;
+		return true;
+	}
+	return false;
+}
+
 bool NavMap::addNode(double x, double y, int type) {
+	mapping::robot_pose dummy;
+	return addNode(x,y,type,dummy);
+}
+
+bool NavMap::addNode(double x, double y, int type, mapping::robot_pose& calibratedPose) {
 	if (type == -1) { // Object
 		for (int i = 0; i < nodes.size(); i++) {
 			if(nodes[i].type != type)
@@ -62,6 +80,25 @@ bool NavMap::addNode(double x, double y, int type) {
 
 	if(lastVisitedNode.index != newNodeId){
 		addEdge(newNodeId, lastVisitedNode.index, type);
+		if(!newCreated){
+			Point2d calib;
+			for(int i=0; i<4;i++){
+				if(!nodes[newNodeId].walls[i])
+					continue;
+				if(!getCalibratedPos(Point2d(calibratedPose.x,calibratedPose.y),i,0.2,calib))
+					continue;
+				if(i%2 == 0){
+					cout << "Changing Xval " << calibratedPose.x << " to " << calib.x;
+					calibratedPose.x = calib.x;
+					cout << ". Now: " << calibratedPose.x << endl;
+				}
+				else{
+					cout << "Changing Yval " << calibratedPose.y << " to " << calib.y;
+					calibratedPose.y = calib.y;
+					cout << ". Now: " << calibratedPose.y << endl;
+				}
+			}
+		}
 	}
 	lastVisitedNode = nodes[newNodeId];
 	return newCreated;
@@ -528,4 +565,15 @@ Point2d NavMap::pointConversion(Point2d origin, Point2d relativePos,
 	world.y = origin.y + sin(angle) * relativePos.x
 			+ cos(angle) * relativePos.y;
 	return world;
+}
+
+void NavMap::initObjectMap(){
+	string objects = { "TIGER", "ZEBRA", "ELEPHANT", "HIPPO", "GIRAFFE", "LION",
+			"POTATO", "TOMATO", "ONION", "BROCOLI", "PAPRIKA", "CARROT", "CORN",
+			"AVOCADO", "PEPPER", "MELON", "PEAR", "BANANA", "ORANGE", "LEMON",
+			"PLATE" };
+	for(int i=0; i<21; i++){
+		objectStrToId[objects[i]] = i;
+		objectIdToStr[i] = objects[i];
+	}
 }

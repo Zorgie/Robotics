@@ -1,4 +1,4 @@
-/*
+/*/
  * NavMap.h
  *
  *  Created on: Nov 15, 2013
@@ -14,6 +14,7 @@
 #include <set>
 #include <cv.h>
 #include <navigation/RobotActions.h>
+#include <mapping/robot_pose.h>
 
 using namespace std;
 using namespace cv;
@@ -23,6 +24,7 @@ typedef struct Node{
 	double x, y;
 	int type;
 	bool walls[4];
+	int object;
 };
 typedef struct Wall{
 	double x1, y1, x2, y2;
@@ -35,6 +37,7 @@ typedef struct Edge{
 class NavMap {
 private:
 	map<int, vector<Edge> > neighbours;
+	vector<int> objectsFound;
 	vector<Wall> walls;
 	vector<Node> nodes;
 	vector<Edge> lastPath;
@@ -54,12 +57,15 @@ private:
 	Point getVisualCoord(double x, double y);
 	bool pointOnLine(Point2d pt, Point2d line1, Point2d line2);
 public:
+	map<int, string> objectIdToStr;
+	map<string, int> objectStrToId;
 	/* ----------- Constructors, destructors. -----------*/
 	NavMap(){
-		drawOffset = Point(100,100);
-		drawScaling = Point2d(250,250);
+		drawOffset = Point(300,300);
+		drawScaling = Point2d(100,100);
 	}
 	virtual ~NavMap(){}
+	void initObjectMap();
 	/* ----------- Basic getters / setters. -------------*/
 	void setRobotPos(Point2d p){robotPos = p;}
 	int getNodeCount(){return nodes.size();}
@@ -76,6 +82,8 @@ public:
 	bool intersectsWithWall(double x1, double y1, double x2, double y2, Point2d &intersect);
 	double getDistanceToWall(Point2d origin, int direction);
 	/* ----------  Node functionality ---------------------*/
+	bool addObject(double x, double y, int id, int direction);
+	bool addNode(double x, double y, int type, mapping::robot_pose& calibratedPose);
 	bool addNode(double x, double y, int type);
 	bool nodeMatch(Node in, Node& res);
 	void nodeMerge(Node& to, Node& from);

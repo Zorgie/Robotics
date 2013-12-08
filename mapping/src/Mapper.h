@@ -22,6 +22,8 @@
 #include <navigation/path_request.h>
 #include <navigation/path_result.h>
 #include <navigation/RobotActions.h>
+#include "tutorialROSOpenCV/evidence.h"
+#include "std_msgs/String.h"
 
 
 class Mapper {
@@ -33,9 +35,11 @@ private:
 	ros::Subscriber camSub;
 	ros::Subscriber movementSub;
 	ros::Subscriber pathRequestSub;
+	ros::Subscriber objectSub;
 
 	ros::Publisher posePub;
 	ros::Publisher pathResultPub;
+	ros::Publisher speakerPub;
 
 	mapping::robot_pose currentPose;
 	bool poseInit;
@@ -62,6 +66,7 @@ public:
 	mapping::robot_pose calibratePos(irsensors::floatarray currentIR);
 
 	void pathResultCallback(vector<Edge> path);
+	void objectDetectedCallback(const tutorialROSOpenCV::evidence &msg);
 };
 
 #endif /* MAPPER_H_ */
