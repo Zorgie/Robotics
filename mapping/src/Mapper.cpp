@@ -35,6 +35,8 @@ Mapper::Mapper(bool gui) {
 	pathResultPub = nh.advertise<navigation::path_result>("/path/result", 1000);
 
 	findPath = -1;
+	goneHome = false;
+	acceptNode = false;
 
 	if(useGui)
 		cv::namedWindow(WINDOW);
@@ -115,6 +117,8 @@ mapping::robot_pose Mapper::calibratePos(irsensors::floatarray currentIR) {
 	Point2d syncPosL, syncPosR;
 
 	using namespace cv;
+	if(goneHome)
+		return pose_diff;
 	Point2d curPos = Point2d(currentPose.x, currentPose.y);
 	if (validIR(currentIR.ch[5], currentIR.ch[6])) {
 		// Left sensors
@@ -153,6 +157,12 @@ mapping::robot_pose Mapper::calibratePos(irsensors::floatarray currentIR) {
 
 
 void Mapper::movementCommandCallback(const navigation::movement_state& state){
+	if(goneHome)
+		return;
+	robot_action rotate_actions[] = {
+			TURN_LEFT_90,
+		    TURN_RIGHT_90
+	};
 	robot_action action = (robot_action) state.movement_state;
 	robot_action node_actions[] = {
 			GO_STRAIGHT_X,
@@ -160,29 +170,40 @@ void Mapper::movementCommandCallback(const navigation::movement_state& state){
 		    FOLLOW_LEFT_WALL,
 		    FOLLOW_RIGHT_WALL
 	};
-	for (int i = 0; i < 3; i++) {
+	for (int i=0; i<2; i++){
+		if( action == rotate_actions[i]){
+			acceptNode = true;
+		}
+	}
+	for (int i = 0; i < 4; i++) {
 		if (action == node_actions[i]) {
-			nav.addNode(currentPose.x, currentPose.y, action);
-//			if(nav.getLastVisitedNode().index == 0 && nav.getNodeCount() > 1){
-//				cout << "Found the 0 node, creating a path. ";
-//				vector<Edge> path = nav.getPath(0,3);
-//				cout << "Size " << path.size();
+			acceptNode = false;
+			bool created = 	nav.addNode(currentPose.x, currentPose.y, action);
+			if(nav.getLastVisitedNode().index == 0 && nav.getNodeCount() > 1){
+				cout << "Found the 0 node, creating a path. ";
+				int targetNode = 3;//nav.getNodeCount() / 3;
+				vector<Edge> path = nav.getPath(0,targetNode);
+				cout << "Size " << path.size();
+				pathResultCallback(path);
+				path = nav.getPath(targetNode,0);
+				cout << " and " << path.size() << endl;
+				pathResultCallback(path);
+				goneHome = true;
+				break;
+			}
+//			if(nav.getNodeCount() > 3 && created){
+//				cout << "Publishing path." << endl;
+//				vector<Edge> path = nav.getPath(0);
 //				pathResultCallback(path);
-//				path = nav.getPath(3,0);
-//				cout << " and " << path.size() << endl;
-//				pathResultCallback(path);
+//				break;
 //			}
-			if(nav.getNodeCount() > 5){
-				vector<Edge> path = nav.getPath(0);
-				pathResultCallback(path);
-			}
-			if(findPath != -1){
-				vector<Edge> path = nav.getPath(findPath);
-				printf("Getting path, length: %d\n", path.size());
-				pathResultCallback(path);
-				printf("Finished publishing path.\n");
-				findPath = -1;
-			}
+//			if(findPath != -1){
+//				vector<Edge> path = nav.getPath(findPath);
+//				printf("Getting path, length: %d\n", path.size());
+//				pathResultCallback(path);
+//				printf("Finished publishing path.\n");
+//				findPath = -1;
+//			}
 		}
 	}
 }

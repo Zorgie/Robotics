@@ -14,6 +14,9 @@ Rotation::~Rotation() {
 }
 
 void Rotation::initiate_rotation(float degrees,movement::robot_pose &pose_estimate) {//degrees are received in degrees
+	while(pose_estimate.theta < -M_PI){
+		pose_estimate.theta += 2*M_PI;
+	}
 	double radians = degrees * M_PI / 180.0;
 	double rounded_radians = radians/(M_PI/2.0);
 	rounded_radians=round(rounded_radians);

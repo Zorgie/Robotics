@@ -21,14 +21,14 @@ bool NavMap::validNode(int n) {
 	return true;
 }
 
-void NavMap::addNode(double x, double y, int type) {
+bool NavMap::addNode(double x, double y, int type) {
 	if (type == -1) { // Object
 		for (int i = 0; i < nodes.size(); i++) {
 			if(nodes[i].type != type)
 				continue;
 			double distance = sqrt(pow(x - nodes[i].x, 2) + pow(y - nodes[i].y, 2));
 			if (distance < 0.2) {
-				return;
+				return false;
 			}
 		}
 	}
@@ -44,14 +44,16 @@ void NavMap::addNode(double x, double y, int type) {
 	if(newNodeId == 0){
 		nodes.push_back(n);
 		lastVisitedNode = nodes[0];
-		return;
+		return true;
 	}
 
 	// Look for a matching node.
 	Node match;
+	bool newCreated = true;
 	if (nodeMatch(n, match)) {
 		printf("Matching node found!\n");
 		newNodeId = match.index;
+		newCreated = false;
 	} else {
 		// No matching node found, adds the node.
 		nodes.push_back(n);
@@ -62,13 +64,7 @@ void NavMap::addNode(double x, double y, int type) {
 		addEdge(newNodeId, lastVisitedNode.index, type);
 	}
 	lastVisitedNode = nodes[newNodeId];
-
-	printf("Edges:\n");
-	for(int i=0; i<neighbours.size(); i++){
-		for(int j=0; j<neighbours[i].size(); j++){
-			printf("From %d to %d\n",neighbours[i][j].from,neighbours[i][j].to);
-		}
-	}
+	return newCreated;
 }
 
 
@@ -159,6 +155,8 @@ vector<Edge> NavMap::getPath(int from, int to){
 				path.insert(path.begin(), visited[id]);
 				id = visited[id].from;
 			}
+			if(path.size() > 0)
+				lastPath = path;
 			return path;
 		}
 		for(int i=0; i<neighbours[n.index].size(); i++){
@@ -434,6 +432,13 @@ void NavMap::draw(Mat& img) {
 			Node to = nodes[neighbours[i][j].to];
 			line(img, getVisualCoord(from.x,from.y),getVisualCoord(to.x,to.y),Scalar(100,100,100),1,8);
 		}
+	}
+	// Drawing path
+	for(int i=0; i<lastPath.size(); i++){
+		Node from = nodes[lastPath[i].from];
+		Node to = nodes[lastPath[i].to];
+		line(img, getVisualCoord(from.x, from.y), getVisualCoord(to.x, to.y),
+				Scalar(0, 255, 0), 2, 8);
 	}
 	// Drawing robot.
 	circle(img, getVisualCoord(robotPos.x, robotPos.y),3,Scalar(0,0,0),3,8);

@@ -42,6 +42,9 @@ private:
 
 	int findPath;
 
+	bool goneHome;
+	bool acceptNode;
+
 	char* WINDOW;
 
 	bool useGui;

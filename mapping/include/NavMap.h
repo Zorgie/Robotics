@@ -37,6 +37,7 @@ private:
 	map<int, vector<Edge> > neighbours;
 	vector<Wall> walls;
 	vector<Node> nodes;
+	vector<Edge> lastPath;
 	Node lastVisitedNode;
 	bool intersection(Point2d o1, Point2d p1, Point2d o2, Point2d p2,
             Point2d &r);
@@ -55,8 +56,8 @@ private:
 public:
 	/* ----------- Constructors, destructors. -----------*/
 	NavMap(){
-		drawOffset = Point(440,200);
-		drawScaling = Point2d(100,100);
+		drawOffset = Point(100,100);
+		drawScaling = Point2d(250,250);
 	}
 	virtual ~NavMap(){}
 	/* ----------- Basic getters / setters. -------------*/
@@ -75,7 +76,7 @@ public:
 	bool intersectsWithWall(double x1, double y1, double x2, double y2, Point2d &intersect);
 	double getDistanceToWall(Point2d origin, int direction);
 	/* ----------  Node functionality ---------------------*/
-	void addNode(double x, double y, int type);
+	bool addNode(double x, double y, int type);
 	bool nodeMatch(Node in, Node& res);
 	void nodeMerge(Node& to, Node& from);
 	void addEdge(int from, int to, int type);

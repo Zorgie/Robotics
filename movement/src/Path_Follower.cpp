@@ -176,13 +176,14 @@ void path_following_act() {
 			current_path.x2 - current_path.x1);
 	std::cout << "With angle: " << desired_angle << std::endl;
 
-//	std::cout << "Desired angle: " << round(desired_angle / ((M_PI / 2))) * 90
-//			<< std::endl;
-//	std::cout << "Current Perfect angle: "
-//			<< estimated_pose.theta * (180.0 / M_PI) << std::endl;
+	std::cout << "Desired angle: " << round(desired_angle / ((M_PI / 2))) * 90
+			<< std::endl;
+	std::cout << "Current Perfect angle: "
+			<< estimated_pose.theta * (180.0 / M_PI) << std::endl;
 
 	int estimated_angle_multiple_of_90 = round(
 			estimated_pose.theta / (M_PI / 2));
+			//poseCache.theta/ (M_PI / 2));
 	estimated_angle_multiple_of_90 = remainder(estimated_angle_multiple_of_90,
 			4);
 	if (estimated_angle_multiple_of_90 < 0) {
@@ -347,27 +348,21 @@ void path_following_act() {
 	std::cout << "Frontal right: "<< frontal_right << std::endl;
 	std::cout << "Wall in front? : " << wall_in_front << std::endl;
 
-	if (fabs(distance) < 0.01 || wall_in_front==1.0) {
+	wall_in_front=0.0;
 
-		wall_in_front=0.0;
+	if (fabs(distance) < 0.01 || wall_in_front == 1.0) {
 
-		std::cout << "Arrived at the intermediate point! Snapping myself to it!" << std::endl;
+		wall_in_front = 0.0;
+
+		std::cout << "Arrived at the intermediate point! Snapping myself to it!"
+				<< std::endl;
 		desired_speed.W1 = 0.0;
 		desired_speed.W2 = 0.0;
-		estimated_pose.x=current_path.x2;
-		estimated_pose.y=current_path.y2;
-		global_path.pop();//pop_back();
+		estimated_pose.x = current_path.x2;
+		estimated_pose.y = current_path.y2;
+		global_path.pop(); //pop_back();
 //		std::cerr << "Press a key to continue!" << std::endl;
 //		std::cin.ignore();
-
-		double distance_from_origin = sqrt(	pow(estimated_pose.x, 2)+ pow(estimated_pose.y, 2));
-		if(distance_from_origin<0.1){
-			std::cout << "\033[1;35mBad finish detection.\033[0m\n"; // green
-			while(!global_path.empty()){
-				global_path.pop();
-			}
-		}
-
 
 	}
 
@@ -475,6 +470,9 @@ void path_receiver(const navigation::path_result &path_part) {
 
 //update the robot state and initialize a new object calculating wheel speeds
 void movement_state_update(const navigation::movement_state &mvs) {
+	if(!global_path.empty()){
+		return;
+	}
 
 	CURRENT_STATE = (robot_action) mvs.movement_state;
 	double target_rot;
@@ -498,11 +496,10 @@ void movement_state_update(const navigation::movement_state &mvs) {
 		target_rot = (target_rot) / (2 * M_PI) * 4;
 		target_rot = round(target_rot);
 		target_rot = 2 * M_PI * target_rot / 4;
-//		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI,
-//				estimated_pose);
-		rotation.initiate_rotation(
-				(target_rot - estimated_pose.theta) * 180 / M_PI,
+		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI,
 				estimated_pose);
+//		rotation.initiate_rotation(	(target_rot - estimated_pose.theta) * 180 / M_PI,
+//				estimated_pose);
 //		std::cout << "\033[1;33mWill rotate\033[0m\n"; // yellow
 //		std::cout << (target_rot - poseCache.theta) * 180 / M_PI << std::endl;
 		//rotation.initiate_rotation(90.0);
@@ -516,11 +513,10 @@ void movement_state_update(const navigation::movement_state &mvs) {
 		target_rot = (target_rot) / (2 * M_PI) * 4;
 		target_rot = round(target_rot);
 		target_rot = 2 * M_PI * target_rot / 4;
-//		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI,
-//				estimated_pose);
-		rotation.initiate_rotation(
-				(target_rot - estimated_pose.theta) * 180 / M_PI,
+		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI,
 				estimated_pose);
+//		rotation.initiate_rotation((target_rot - estimated_pose.theta) * 180 / M_PI,
+//				estimated_pose);
 //		std::cout << "\033[1;33mWill rotate\033[0m\n"; // yellow
 //		std::cout << (target_rot - poseCache.theta) * 180 / M_PI << std::endl;
 		//rotation.initiate_rotation(-90.0);
