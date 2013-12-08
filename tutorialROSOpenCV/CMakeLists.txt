@@ -17,7 +17,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 #uncomment if you have defined messages
-#rosbuild_genmsg()
+rosbuild_genmsg()
 #uncomment if you have defined services
 #rosbuild_gensrv()
 
@@ -44,4 +44,3 @@ rosbuild_add_executable(plane_detection_rui src/plane_detection_rui.cpp src/NavM
 #rosbuild_add_executable(plane_detection_no_lib src/plane_detection_no_lib.cpp src/ImageConverter.cpp)
 #rosbuild_add_executable(plane_detection_no_lib src/plane_detection_no_lib.cpp src/NavMap.cpp src/ImageConverter.cpp)
 rosbuild_add_executable(robot_eye src/RobotEye.cpp src/ImageConverter.cpp src/ObjectDetector.cpp src/ContourChecker.cpp src/SurfChecker.cpp src/ShapeChecker.cpp src/ColorDetector.cpp src/SurfCheckerSimpleContours.cpp)
-

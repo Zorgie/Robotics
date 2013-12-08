@@ -17,6 +17,8 @@
 #include "ImageConverter.h"
 #include "PlaneDetector.h"
 #include "mapping/object_detected_info.h"
+#include "tutorialROSOpenCV/evidence.h"
+#include "std_msgs/String.h"
 
 namespace enc = sensor_msgs::image_encodings;
 
@@ -32,13 +34,18 @@ vector<Vec4i> houghLineCache;
 
 Mapper *mapper;
 
+ros::Publisher speaker;
+
 bool killProgram = false;
 
 void imgCallback(const sensor_msgs::ImageConstPtr& msg);
 
 void depthCallback(const sensor_msgs::PointCloud2& pcl);
 
-void objectDetectedCallback(const mapping::object_detected_info &msg);
+void objectDetectedCallback(const tutorialROSOpenCV::evidence &msg);
+
+
+//ros::Publisher  objectInScreenPub = nh_.advertise<tutorialROSOpenCV::evidence>("robot_eye/object_detected_info",1);
 
 
 bool hasRight(double x, double y) {
@@ -80,7 +87,9 @@ int main(int argc, char** argv) {
 	ros::Subscriber dSub = nh_.subscribe("/camera/depth_registered/points", 1,
 			&depthCallback);
 
-	ros::Subscriber objectDetectedSub = nh_.subscribe("/mapping/objectDetectedInfo", 1, &objectDetectedCallback);
+	ros::Subscriber objectDetectedSub = nh_.subscribe("/robot_eye/object_detected_info", 1, &objectDetectedCallback);
+
+	speaker = nh_.advertise<std_msgs::String>("/robot/talk", 1);
 
 	Scalar black = Scalar(0, 0, 0);
 
@@ -155,8 +164,10 @@ void depthCallback(const sensor_msgs::PointCloud2& pcloud) {
 	cloudCache = new PointCloud<PointXYZ>(cloud);
 }
 
-void objectDetectedCallback(const mapping::object_detected_info &msg){
 
+void objectDetectedCallback(const tutorialROSOpenCV::evidence &msg){
+
+	/*
 	double theta = 0.6435;
     Mat T = (Mat_<double>(4,4) << 0, -sin(theta), cos(theta), 0.1, -1, 0, 0, 0, 0, -cos(theta),-sin(theta),0.3,0,0,0,1);
 
@@ -187,5 +198,22 @@ void objectDetectedCallback(const mapping::object_detected_info &msg){
 		}
 
 
+	}*/
+	cout << "EVIDENCE RECEIVED!" << endl;
+	cout << "ID: " << msg.object_id << endl;
+	cout << msg.object_id.empty() << endl;
+	string evidence_string = msg.object_id;
+	std_msgs::String say_this;
+	say_this.data=evidence_string;
+	std::cout << msg.object_id << std::endl;
+	if(!msg.object_id.empty()){
+		speaker.publish(say_this);
 	}
+
+	if(evidence_string.compare("CARROT") == 0){
+		cout << "CARROT RECEIVED" << endl;
+
+	}
+	else
+		cout << "SOMETHING ELSE RECEIVED" << endl;
 }
