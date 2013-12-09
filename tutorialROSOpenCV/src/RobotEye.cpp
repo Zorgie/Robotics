@@ -15,7 +15,7 @@
 using namespace cv;
 using namespace std;
 
-//tutorialROSOpenCV::evidence x;
+tutorialROSOpenCV::evidence currentEvidence;
 
 ImageConverter ic;
 Mat globalImage;
@@ -27,10 +27,12 @@ bool detectObject = true;
 
 //receive new kinect image and convert it to cv::Mat (BGR)
 void imgCallback(const sensor_msgs::ImageConstPtr &msg){
+	currentEvidence.image_evidence = *msg;
+	currentEvidence.stamp = ros::Time::now();
+	currentEvidence.group_number = 9;
+
 	const cv_bridge::CvImagePtr cv_ptr = ic.getImage(msg);
 	globalImage = cv_ptr->image.clone();
-
-	kinectInputImage = *msg;
 }
 
 std::string objectToString(object o);
@@ -110,8 +112,6 @@ int main(int argc,char** argv)
     			{
     				//OBJECT DETECTED!!!
 
-    				tutorialROSOpenCV::evidence evidence_message;
-    				evidence_message.group_number = 9;
 
 //    				cv_bridge::CvImage out_msg;
 //    				out_msg=kinectInputImage;
@@ -119,12 +119,15 @@ int main(int argc,char** argv)
 //    				out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1; // Or whatever
 //    				out_msg.image    = kinectInputImage; // Your cv::Mat
 
-    				evidence_message.image_evidence = kinectInputImage;
+    				//evidence_message.image_evidence = kinectInputImage;
 
 
+    				/*const cv_bridge::CvImagePtr xyz = ic.getImage(pointerToImage);
+    				Mat myMat = xyz->image.clone();
+    				imshow("MyMat",myMat);*/
 
 
-    				evidence_message.stamp = ros::Time::now();
+    				//evidence_message.stamp = ros::Time::now();
 
 
     				if(result.size() == 1){
@@ -133,7 +136,7 @@ int main(int argc,char** argv)
 
     					cout << "ONE OBJECT HAS BEEN FOUND: ";
     					detector.printObjectName(result[0]);
-    					evidence_message.object_id = objectToString(result[0]);
+    					currentEvidence.object_id = objectToString(result[0]);
 
     				}
     				else if(result.size() == 2)
@@ -146,55 +149,82 @@ int main(int argc,char** argv)
     						cout << "IS CORN?: " << (detector.shapeChecker.getCornVotes() > detector.shapeChecker.getBananaVotes()) << endl;
     						cout << detector.shapeChecker.getCornVotes() << "   BANANA:  " << detector.shapeChecker.getBananaVotes() << endl;
     						if(detector.shapeChecker.getCornVotes() > detector.shapeChecker.getBananaVotes())
-    							evidence_message.object_id = "CORN";
+    							currentEvidence.object_id = "CORN";
     						else
-    							evidence_message.object_id = "BANANA";
+    							currentEvidence.object_id = "BANANA";
     					}
     					//this case handles all the carrot combinations that sometimes occur (carrot + potato)
     					else if(result[0] == CARROT || result[1] == CARROT)
     					{
     						//if there is a bit of green => Carrot otherwise other object
     						if(detector.colorDetector.isCarrot()){
-    							evidence_message.object_id = "CARROT";
+    							currentEvidence.object_id = "CARROT";
     						}else{
-    							if(result[0] != CARROT)evidence_message.object_id = objectToString(result[0]);
-    							else evidence_message.object_id = objectToString(result[1]);
+    							if(result[0] != CARROT)currentEvidence.object_id = objectToString(result[0]);
+    							else currentEvidence.object_id = objectToString(result[1]);
     						}
     					}
     					else if(result[0] == PEPPER || result[1] == PEPPER){
     						//if there is a bit of green => Pepper, otherwise other object
+    						cout << "MAYBE ITS THE PEPPER, MAYBE SOMETHING ELSE.." << endl;
 							if (detector.colorDetector.isPepper()) {
-								evidence_message.object_id = "PEPPER";
+								currentEvidence.object_id = "PEPPER";
+								cout << "DECIDED ON PEPEPR" << endl;
 							} else {
+								cout << "DECIDED ON OTHER OBJECT" << endl;
 								if (result[0] != PEPPER)
-									evidence_message.object_id = objectToString(
+									currentEvidence.object_id = objectToString(
 											result[0]);
 								else
-									evidence_message.object_id = objectToString(
+									currentEvidence.object_id = objectToString(
 											result[1]);
 							}
 						}
     				else if((result[0] == PAPRIKA || result[1] == PAPRIKA) && (result[0] == AVOCADO || result[1] == AVOCADO)){
     						cout << "ITS EITHER PAPRIKA OR AVOCADO: " << endl;
+    						cout << "PAPRIKA VOTES: " << detector.contourChecker.getPaprikaVotes()<< endl;
+    						cout << "AVOCADO VOTES: " << detector.contourChecker.getAvocadoVotes() << endl;
     						if(detector.contourChecker.getPaprikaVotes() > detector.contourChecker.getAvocadoVotes()){
-    							evidence_message.object_id = "PAPRIKA";
+    							currentEvidence.object_id = "PAPRIKA";
+    							cout << "DECIDED ON PAPRIKA" << endl;
     						}
     						else
     						{
-    							evidence_message.object_id = "AVOCADO";
+    							cout << "DECIDED ON AVOCADO" << endl;
+    							currentEvidence.object_id = "AVOCADO";
     						}
     					}
     					else
     					{
-    						evidence_message.object_id = objectToString(result[0]) + ";" + objectToString(result[1]);
+    						currentEvidence.object_id = objectToString(result[0]) + ";" + objectToString(result[1]);
     						cout << "HM I CANT DISTINGUISH THESE 2 YET!" << endl;
     					}
     				}
+    				else if (result[0] == TOMATO || result[1] == TOMATO) {
+						//if there is a bit of green => Tomato, otherwise other object
+						cout << "MAYBE ITS THE TOMATO, MAYBE SOMETHING ELSE.."<< endl;
+						if (detector.colorDetector.isPepper()) { //isPepper == isTomato == isCarrot
+							currentEvidence.object_id = "TOMATO";
+							cout << "DECIDED ON TOMATO" << endl;
+						} else {
+							cout << "DECIDED ON OTHER OBJECT" << endl;
+							if (result[0] != PEPPER)
+								currentEvidence.object_id = objectToString(
+										result[0]);
+							else
+								currentEvidence.object_id = objectToString(
+										result[1]);
+						}
+					}
+
+
+
+
     				else{
-    					evidence_message.object_id = "";
+    					currentEvidence.object_id = "";
     					cout << "MORE THAN 2 OBJECTS, REALLY I HAVE NO IDEA" << endl;
     				}
-    				objectInScreenPub.publish(evidence_message);
+    				objectInScreenPub.publish(currentEvidence);
     			}
 
     				detectObject = false;

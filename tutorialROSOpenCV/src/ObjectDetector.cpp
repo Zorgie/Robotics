@@ -51,7 +51,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 	switch(detectingPhase){
 		case CONTOURING:
 			//not enough contour votes?
-			if(contourChecker.getCurrentNumberOfVotes() < 2){				//was 5
+			if(contourChecker.getCurrentNumberOfVotes() < 5){				//was 5
 				contourChecker.updateComplexityEstimation(imgBGR);
 			}
 			else{
@@ -131,6 +131,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 					objectProbabilities[ORANGE]  += 0.2;
 					objectProbabilities[AVOCADO]  += 0.2;
 					objectProbabilities[LEMON]   += 0.2;
+					objectProbabilities[PLATE]    += 0.2;
 
 					detectingPhase = DONE;
 
@@ -146,6 +147,7 @@ void ObjectDetector::updateObjectProbability(cv::Mat imgBGR){
 					objectProbabilities[PEAR]   += 0.2;
 					objectProbabilities[PEPPER]   += 0.2;
 					objectProbabilities[PLATE]    += 0.2;
+
 
 
 

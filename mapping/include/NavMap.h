@@ -8,6 +8,8 @@
 #ifndef NAVMAP_H_
 #define NAVMAP_H_
 
+#define INF_ISH 1000000000
+
 #include <vector>
 #include <map>
 #include <queue>
@@ -73,8 +75,8 @@ public:
 	map<string, int> objectStrToId;
 	/* ----------- Constructors, destructors. -----------*/
 	NavMap(){
-		drawOffset = Point(100, 100);
-		drawScaling = Point2d(50, 50);
+		drawOffset = Point(200, 200);
+		drawScaling = Point2d(100, 100);
 		initObjectMap();
 	}
 	virtual ~NavMap(){}
@@ -103,6 +105,7 @@ public:
 	void nodeMerge(Node& to, Node& from);
 	void addEdge(int from, int to, int type);
 	vector<Edge> getNeighbours(int nodeId);
+	vector<Edge> getNeighbours(int nodeId, bool cache);
 	vector<Edge> getPath(int to);
 	vector<Edge> getPath(int from, int to);
 	double getPath(int to, vector<Edge>& path);

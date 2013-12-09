@@ -76,7 +76,7 @@ bool NavMap::addNode(double x, double y, int type, mapping::robot_pose& calibrat
 	}
 
 	if(lastVisitedNode.index != newNodeId){
-		addEdge(newNodeId, lastVisitedNode.index, type);
+//		addEdge(newNodeId, lastVisitedNode.index, type);
 		if(!newCreated){
 			Point2d calib;
 			for(int i=0; i<4;i++){
@@ -98,6 +98,7 @@ bool NavMap::addNode(double x, double y, int type, mapping::robot_pose& calibrat
 		}
 	}
 	lastVisitedNode = nodes[newNodeId];
+	getNeighbours(newNodeId, false);
 	return newCreated;
 }
 
@@ -161,6 +162,85 @@ void NavMap::addEdge(int from, int to, int type) {
 }
 
 vector<Edge> NavMap::getNeighbours(int nodeId) {
+	return getNeighbours(nodeId, false);
+}
+
+vector<Edge> NavMap::getNeighbours(int nodeId, bool cache) {
+	if(cache){
+		//return neighbours[nodeId];
+	}
+	vector<Edge> edges;
+	Node from = nodes[nodeId];
+	int dir;
+	for(int i=0; i<nodes.size(); i++){
+		if(nodes[i].index == nodeId)
+			continue;
+		vector<double> dists(4, INF_ISH);
+		vector<double> ids(4, -1);
+		Node n = nodes[i];
+		double xDiff = abs(n.x - from.x);
+		double yDiff = abs(n.y - from.y);
+		if(yDiff < 0.1){ // Eventual horizontal neighbours.
+			Point2d cross;
+			if(!intersectsWithWall(from.x,from.y,n.x,n.y,cross)){
+				if (n.x > from.x && xDiff < dists[0]) { // Right
+					dists[0] = xDiff;
+					ids[0] = n.index;
+				} else if (n.x < from.x && xDiff < dists[2]) { // Left
+					dists[2] = xDiff;
+					ids[2] = n.index;
+				}
+			}
+		} else if (xDiff < 0.1) {
+			Point2d cross;
+			if (!intersectsWithWall(from.x, from.y, n.x, n.y, cross)) {
+				if (n.y > from.y && yDiff < dists[1]) { // Up
+					dists[1] = yDiff;
+					ids[1] = n.index;
+				} else if (n.y < from.y && yDiff < dists[3]) { // Down
+					dists[3] = yDiff;
+					ids[3] = n.index;
+				}
+			}
+		}
+		if (ids[0] != -1) {
+			Edge e = { nodeId, ids[0] };
+			if (nodes[nodeId].walls[1]) {
+				e.type = FOLLOW_LEFT_WALL;
+			} else if (nodes[nodeId].walls[3]) {
+				e.type = FOLLOW_RIGHT_WALL;
+			}
+			edges.push_back(e);
+		}
+		if (ids[1] != -1) {
+			Edge e = { nodeId, ids[1] };
+			if (nodes[nodeId].walls[0]) {
+				e.type = FOLLOW_RIGHT_WALL;
+			} else if (nodes[nodeId].walls[2]) {
+				e.type = FOLLOW_LEFT_WALL;
+			}
+			edges.push_back(e);
+		}
+		if (ids[2] != -1) {
+			Edge e = { nodeId, ids[2] };
+			if (nodes[nodeId].walls[1]) {
+				e.type = FOLLOW_RIGHT_WALL;
+			} else if (nodes[nodeId].walls[3]) {
+				e.type = FOLLOW_LEFT_WALL;
+			}
+			edges.push_back(e);
+		}
+		if (ids[3] != -1) {
+			Edge e = { nodeId, ids[3] };
+			if (nodes[nodeId].walls[0]) {
+				e.type = FOLLOW_LEFT_WALL;
+			} else if (nodes[nodeId].walls[2]) {
+				e.type = FOLLOW_RIGHT_WALL;
+			}
+			edges.push_back(e);
+		}
+	}
+	neighbours[nodeId] = edges;
 	return neighbours[nodeId];
 }
 
@@ -183,7 +263,7 @@ vector<Edge> NavMap::getPath(int from, int to){
 double NavMap::getPath(int from, int to, vector<Edge>& path){
 	queue<int> q;
 	priority_queue<GraphNode, vector<GraphNode>, GraphNodeCmp> pq;
-	vector<double> dists = vector<double>(nodes.size(), 100000);
+	vector<double> dists = vector<double>(nodes.size(), INF_ISH);
 	dists[from] = 0;
 	map<int, Edge> visited;
 	q.push(from);
@@ -203,8 +283,9 @@ double NavMap::getPath(int from, int to, vector<Edge>& path){
 				lastPath = path;
 			return dists[to];
 		}
-		for(int i=0; i<neighbours[gn.n.index].size(); i++){
-			Edge e = neighbours[gn.n.index][i];
+		vector<Edge> edges = getNeighbours(gn.n.index);
+		for(int i=0; i<edges.size(); i++){
+			Edge e = edges[i];
 			double edgeDist = dist + max(fabs(nodes[e.to].x - nodes[id].x),fabs(nodes[e.to].y - nodes[id].y));
 			if(edgeDist < dists[e.to]){
 				visited[e.to] = e;
@@ -234,7 +315,7 @@ void NavMap::addWall(double x1, double y1, double x2, double y2) {
 }
 
 void NavMap::extendWall(double x, double y, bool horizontal) {
-	double closest = 100000;
+	double closest = INF_ISH;
 	int index = -1;
 	int align = -1;
 	Point2d ep(x, y);
@@ -310,6 +391,9 @@ bool NavMap::intersectsWithWall(double x1, double y1, double x2, double y2,
 		Wall w = walls[i];
 		Point2d o2 = Point2d(w.x1, w.y1);
 		Point2d p2 = Point2d(w.x2, w.y2);
+		if(norm(p2-o1) < 0.09){
+			continue;
+		}
 		if (intersection(o1, p1, o2, p2, intersect)) {
 			return true;
 		}
@@ -415,7 +499,7 @@ bool NavMap::intersection(Point2d o1, Point2d p1, Point2d o2, Point2d p2,
 }
 
 void NavMap::draw(Mat& img) {
-	double minX = 1000,minY = 1000, maxX = -1000, maxY = -1000;
+	double minX = INF_ISH,minY = INF_ISH, maxX = -INF_ISH, maxY = -INF_ISH;
 	for(int i=0; i<walls.size(); i++){
 		Wall w = walls[i];
 		minX = min(w.x1, minX);
@@ -475,20 +559,29 @@ void NavMap::draw(Mat& img) {
 		}
 	}
 	// Drawing edges
-	for(int i=0; i<neighbours.size(); i++){
-		// Edges for a certain node.
-		for(int j=0; j<neighbours[i].size(); j++){
-			Node from = nodes[neighbours[i][j].from];
-			Node to = nodes[neighbours[i][j].to];
-			line(img, getVisualCoord(from.x,from.y),getVisualCoord(to.x,to.y),Scalar(100,100,100),1,8);
+//	for(int i=0; i<neighbours.size(); i++){
+//		// Edges for a certain node.
+//		for(int j=0; j<neighbours[i].size(); j++){
+//			Node from = nodes[neighbours[i][j].from];
+//			Node to = nodes[neighbours[i][j].to];
+//			line(img, getVisualCoord(from.x,from.y),getVisualCoord(to.x,to.y),Scalar(100,100,100),1,8);
+//		}
+//	}
+	for(int i=0; i<nodes.size(); i++){
+			// Edges for a certain node.
+		vector<Edge> edges = getNeighbours(nodes[i].index, true);
+			for(int j=0; j<edges.size(); j++){
+				Node to = nodes[edges[j].to];
+				Node from = nodes[edges[j].from];
+				line(img, getVisualCoord(from.x,from.y),getVisualCoord(to.x,to.y),Scalar(100,100,100),1,8);
+			}
 		}
-	}
 	// Drawing path
 	for(int i=0; i<lastPath.size(); i++){
 		Node from = nodes[lastPath[i].from];
 		Node to = nodes[lastPath[i].to];
 		line(img, getVisualCoord(from.x, from.y), getVisualCoord(to.x, to.y),
-				Scalar(0, 255, 0), 2+3*i, 8);
+				Scalar(0, 255, 0), 2, 8);
 	}
 	// Drawing robot.
 	circle(img, getVisualCoord(robotPos.x, robotPos.y),3,Scalar(0,0,0),3,8);
@@ -505,7 +598,7 @@ vector<Edge> NavMap::visitAllObjects(){
 	int current = 0;
 	while(!toVisit.empty()){
 		vector<Edge> bestPath;
-		double bestDist = 100000;
+		double bestDist = INF_ISH;
 		int bestObject = -1;
 		for(int i=0; i<toVisit.size(); i++){
 			int oid = toVisit[i];
@@ -523,9 +616,7 @@ vector<Edge> NavMap::visitAllObjects(){
 				bigPath.push_back(bestPath[i]);
 			}
 			toVisit.erase(find(toVisit.begin(), toVisit.end(), bestObject));
-			cerr << "Adding path to" << objectsFound[bestObject] << " by " << bestObject << endl;
 		}else{
-			cerr << "No path found from " << current << endl;
 		}
 	}
 	vector<Edge> path = getPath(current,0);
@@ -552,7 +643,7 @@ double NavMap::getDistanceToWall(Point2d origin, int direction){
 		o = origin + Point2d(0, -10);
 		break;
 	}
-	double minDist = 10000;
+	double minDist = INF_ISH;
 	Point2d intersect;
 	for (int i = 0; i < walls.size(); i++) {
 		Wall w = walls[i];

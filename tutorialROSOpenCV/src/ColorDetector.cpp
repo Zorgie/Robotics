@@ -41,45 +41,45 @@ int ColorDetector::countPixels(Scalar lower_bound,Scalar upper_bound,Mat &bgrIma
 ColorDetector::ColorDetector() {
 
 	lowerColorBounds[BANANA_YELLOW]		= cv::Scalar(22, 120, 104);
-	lowerColorBounds[POTATO_BROWN]		= cv::Scalar(11,93,135);
-	lowerColorBounds[TOMATO_RED]		=cv::Scalar(0,46,124);
-	lowerColorBounds[ONION_ORANGE]		=cv::Scalar(10,110,107);
-	lowerColorBounds[BROCOLI_GREEN]		=cv::Scalar(37, 93, 132);
-	lowerColorBounds[PAPRIKA_GREEN]		=cv::Scalar(64,41,6);
-	lowerColorBounds[AVOCADO_GREEN]		=cv::Scalar(64,41,6);
-	//lowerColorBounds[LION_YELLOW]       =cv::Scalar(6,89,41);
-	lowerColorBounds[LEMON_YELLOW]       =cv::Scalar(20,217,150);			//TODO: For now take banana yellow
-	lowerColorBounds[PEPPER_RED]        =lowerColorBounds[TOMATO_RED];			//TODO: For now take tomato yellow
-	lowerColorBounds[PLATE_RED]			=lowerColorBounds[TOMATO_RED];
+				lowerColorBounds[POTATO_BROWN]		= cv::Scalar(17,93,135);
+				lowerColorBounds[TOMATO_RED]		=cv::Scalar(0,46,124);
+				lowerColorBounds[ONION_ORANGE]		=cv::Scalar(10,110,107);
+				lowerColorBounds[BROCOLI_GREEN]		=cv::Scalar(37, 93, 132);
+				lowerColorBounds[PAPRIKA_GREEN]		=cv::Scalar(64,41,6);
+				lowerColorBounds[AVOCADO_GREEN]		=cv::Scalar(64,41,6);
+				//lowerColorBounds[LION_YELLOW]       =cv::Scalar(6,89,41);
+				lowerColorBounds[LEMON_YELLOW]       =cv::Scalar(20,217,150);			//TODO: For now take banana yellow
+				lowerColorBounds[PEPPER_RED]        =lowerColorBounds[TOMATO_RED];			//TODO: For now take tomato yellow
+				lowerColorBounds[PLATE_RED]			=lowerColorBounds[TOMATO_RED];
 
 
-	lowerColorBounds[CARROT_ORANGE]		=cv::Scalar(10,74,155);
-	lowerColorBounds[CARROT_GREEN]		=cv::Scalar(38,94,83);
-	lowerColorBounds[CORN_YELLOW]		=cv::Scalar(22, 120, 104);
-	lowerColorBounds[PEAR_GREEN]		=cv::Scalar(33,103,132);
-	lowerColorBounds[ORANGE_ORANGE]		=cv::Scalar(18,95,107);
-	lowerColorBounds[MELON_GREEN]		=cv::Scalar(57,56,49);
-	lowerColorBounds[MELON_RED]			=cv::Scalar(0,68,70);
+				lowerColorBounds[CARROT_ORANGE]		=cv::Scalar(8,74,155);
+				lowerColorBounds[CARROT_GREEN]		=cv::Scalar(38,94,83);
+				lowerColorBounds[CORN_YELLOW]		=cv::Scalar(22, 120, 104);
+				lowerColorBounds[PEAR_GREEN]		=cv::Scalar(33,103,132);
+				lowerColorBounds[ORANGE_ORANGE]		=cv::Scalar(20,95,107);
+				lowerColorBounds[MELON_GREEN]		=cv::Scalar(62,56,49);
+				lowerColorBounds[MELON_RED]			=cv::Scalar(169,25,70);
 
-	upperColorBounds[BANANA_YELLOW]		= cv::Scalar(30,256,256);
-	upperColorBounds[POTATO_BROWN]		=cv::Scalar(27,195,206);
-	upperColorBounds[TOMATO_RED]		=cv::Scalar(13,236,256);
-	upperColorBounds[ONION_ORANGE]		=cv::Scalar(19,256,256);
-	upperColorBounds[BROCOLI_GREEN]		=cv::Scalar(59, 256, 256);
-	upperColorBounds[PAPRIKA_GREEN]		=cv::Scalar(114,245,227);
-	upperColorBounds[AVOCADO_GREEN]		=cv::Scalar(114,245,227);
+				upperColorBounds[BANANA_YELLOW]		= cv::Scalar(30,256,256);
+				upperColorBounds[POTATO_BROWN]		=cv::Scalar(22,195,256);
+				upperColorBounds[TOMATO_RED]		=cv::Scalar(6,236,256);
+				upperColorBounds[ONION_ORANGE]		=cv::Scalar(19,256,256);
+				upperColorBounds[BROCOLI_GREEN]		=cv::Scalar(59, 256, 256);
+				upperColorBounds[PAPRIKA_GREEN]		=cv::Scalar(114,245,227);
+				upperColorBounds[AVOCADO_GREEN]		=cv::Scalar(114,245,227);
 
-	upperColorBounds[CARROT_ORANGE]		=cv::Scalar(20,256,256);
-	upperColorBounds[CARROT_GREEN]		=cv::Scalar(67,256,256);
-	upperColorBounds[CORN_YELLOW]		=cv::Scalar(30, 256, 256);
-	upperColorBounds[PEAR_GREEN]		=cv::Scalar(44,248,256);
-	upperColorBounds[ORANGE_ORANGE]		=cv::Scalar(26,256,256);
-	upperColorBounds[MELON_GREEN]		=cv::Scalar(69,145,193);
-	upperColorBounds[MELON_RED]			=cv::Scalar(13,101,183);
-	//upperColorBounds[LION_YELLOW]		=cv::Scalar(31,254,217);
-	upperColorBounds[LEMON_YELLOW]       =cv::Scalar(30,256,256);			//TODO: For now take banana yellow
-	upperColorBounds[PEPPER_RED]       =upperColorBounds[TOMATO_RED];
-	upperColorBounds[PLATE_RED]			=cv::Scalar(11,217,256);
+				upperColorBounds[CARROT_ORANGE]		=cv::Scalar(13,256,256);
+				upperColorBounds[CARROT_GREEN]		=cv::Scalar(67,256,256);
+				upperColorBounds[CORN_YELLOW]		=cv::Scalar(30, 256, 256);
+				upperColorBounds[PEAR_GREEN]		=cv::Scalar(44,248,256);
+				upperColorBounds[ORANGE_ORANGE]		=cv::Scalar(26,256,256);
+				upperColorBounds[MELON_GREEN]		=cv::Scalar(74,145,193);
+				upperColorBounds[MELON_RED]			=cv::Scalar(180,256,183);
+				//upperColorBounds[LION_YELLOW]		=cv::Scalar(31,254,217);
+				upperColorBounds[LEMON_YELLOW]       =cv::Scalar(30,256,256);			//TODO: For now take banana yellow
+				upperColorBounds[PEPPER_RED]       =upperColorBounds[TOMATO_RED];
+				upperColorBounds[PLATE_RED]			=cv::Scalar(6,217,256);
 
 	reset();
 }
@@ -97,7 +97,7 @@ void ColorDetector::reset(){
 }
 
 bool ColorDetector::isCarrot(){
-	int isCarrotThreshold = 500;
+	int isCarrotThreshold = 200;
 	return nrOfGreenCarrotPx > isCarrotThreshold;
 }
 
@@ -117,6 +117,10 @@ void ColorDetector::updatePixelCount(Mat bgrImage){
 			nrOfGreenCarrotPx  += countPixels(lowerColorBounds[i],upperColorBounds[i],bgrImage);
 		}
 		else{
+			//debug output
+			if(static_cast<colors>(i) == MELON_RED){
+				cout << "NR OF MELON PIXELS: " << countPixels(lowerColorBounds[i],upperColorBounds[i],bgrImage)<<endl;
+			}
 			totalNrOfPixels[i] += countPixels(lowerColorBounds[i],upperColorBounds[i],bgrImage);
 		}
 	}
@@ -187,7 +191,7 @@ bool ColorDetector::objectPresent(Mat bgrImage,int &center_x,int &center_y){
 	double variance = 0.0;
 
 			double avgNrOfPixels;
-			double threshold = 4000; //in average there must be at least - threshold pixels - so that the object is pushed to vector
+			double threshold = 3500; //in average there must be at least - threshold pixels - so that the object is pushed to vector
 
 
 			//ELEPHANT + HIPPO
@@ -212,8 +216,8 @@ bool ColorDetector::objectPresent(Mat bgrImage,int &center_x,int &center_y){
 					 Mat imgWithCircle(bgrImage);
 					Point center((int)mean_x,(int)mean_y);
 					circle(imgWithCircle, center, 30, Scalar(0,0,255));
-					imshow("OBJECT POSITION",imgWithCircle);
-					waitKey(3);
+					//imshow("OBJECT POSITION",imgWithCircle);
+					//waitKey(3);
 
 					result.push_back(static_cast<colors>(i));
 					}

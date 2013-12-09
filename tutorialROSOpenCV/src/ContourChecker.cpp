@@ -64,18 +64,21 @@ void ContourChecker::updateComplexityEstimation(cv::Mat bgrImg){
 
 	//DISTINGUISH PAPRIKA + AVOCADO
 	double paprikaAvocadoThreshold = 4;
+	std::cout << "CONTOURS IS: " << contours.size() <<std::endl;
 	if (contours.size() > paprikaAvocadoThreshold) paprikaVotes++; else avocadoVotes++;
 	//
+
+
 
 	return;
 }
 
 int ContourChecker::getPaprikaVotes(){
-	return paprikaVotes;
+return paprikaVotes;
 }
 
-int ContourChecker::getAvocadoVotes(){
-	return paprikaVotes;
+int ContourChecker::getAvocadoVotes(){	
+return avocadoVotes;
 }
 
 

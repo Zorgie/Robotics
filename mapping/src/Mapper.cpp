@@ -40,6 +40,9 @@ Mapper::Mapper(bool gui) {
 	goneHome = false;
 	acceptNode = true;
 	discovering = false;
+	rotating = false;
+
+	begin = clock();
 
 	if(useGui)
 		cv::namedWindow(WINDOW);
@@ -89,6 +92,7 @@ void Mapper::poseCallback(const mapping::robot_pose& p){
 	currentPose.x = p.x;
 	currentPose.y = p.y;
 	currentPose.theta = p.theta;
+	cerr << currentPose.theta  << endl;
 	poseInit = true;
 }
 
@@ -123,36 +127,42 @@ mapping::robot_pose Mapper::calibratePos(irsensors::floatarray currentIR) {
 	if(goneHome)
 		return pose_diff;
 	Point2d curPos = Point2d(currentPose.x, currentPose.y);
-	if (validIR(currentIR.ch[5], currentIR.ch[6])) {
-		// Left sensors
-		// Adding one centimeter to reach the middle of the wall.
-		double dLF = currentIR.ch[6] + 0.095 + 0.01;
-		double dLB = currentIR.ch[5] + 0.095 + 0.01;
-		Point2d wallPosF = nav.pointConversion(curPos,Point2d(0.08,dLF),currentPose.theta);
-		Point2d wallPosB = nav.pointConversion(curPos,Point2d(-0.09,dLB),currentPose.theta);
-		nav.extendWall(wallPosF.x,wallPosF.y,horizontal);
-		nav.extendWall(wallPosB.x,wallPosB.y,horizontal);
-		// TODO Use?
-		Point2d adjustedPos;
-	}
-	if (validIR(currentIR.ch[0], currentIR.ch[1])) {
-		// Right sensors
-		// Adding one centimeter to reach the middle of the wall.
-		double dRF = currentIR.ch[0] + 0.10 + 0.01;
-		double dRB = currentIR.ch[1] + 0.10 + 0.01;
-		Point2d wallPosF = nav.pointConversion(curPos,Point2d(0.08,-dRF), currentPose.theta);
-		Point2d wallPosB = nav.pointConversion(curPos,Point2d(-0.07,-dRB), currentPose.theta);
-		nav.extendWall(wallPosF.x,wallPosF.y,horizontal);
-		nav.extendWall(wallPosB.x,wallPosB.y,horizontal);
-	}
-	if(validIR(currentIR.ch[2],currentIR.ch[7])){
-		// Adding one centimeter to reach the middle of the wall.
-		double dFR = currentIR.ch[2] + 0.11 + 0.01;
-		double dFL = currentIR.ch[7] + 0.11 + 0.01;
-		Point2d wallPosL = nav.pointConversion(curPos,Point2d(dFL,-0.07),currentPose.theta);
-		Point2d wallPosR = nav.pointConversion(curPos,Point2d(dFR,0.07),currentPose.theta);
-		nav.extendWall(wallPosL.x,wallPosL.y,!horizontal);
-		nav.extendWall(wallPosR.x,wallPosR.y,!horizontal);
+	if (!rotating) {
+		if (validIR(currentIR.ch[5], currentIR.ch[6])) {
+			// Left sensors
+			// Adding one centimeter to reach the middle of the wall.
+			double dLF = currentIR.ch[6] + 0.095 + 0.01;
+			double dLB = currentIR.ch[5] + 0.095 + 0.01;
+			Point2d wallPosF = nav.pointConversion(curPos, Point2d(0.08, dLF),
+					currentPose.theta);
+			Point2d wallPosB = nav.pointConversion(curPos, Point2d(-0.09, dLB),
+					currentPose.theta);
+			nav.extendWall(wallPosF.x, wallPosF.y, horizontal);
+			nav.extendWall(wallPosB.x, wallPosB.y, horizontal);
+		}
+		if (validIR(currentIR.ch[0], currentIR.ch[1])) {
+			// Right sensors
+			// Adding one centimeter to reach the middle of the wall.
+			double dRF = currentIR.ch[0] + 0.10 + 0.01;
+			double dRB = currentIR.ch[1] + 0.10 + 0.01;
+			Point2d wallPosF = nav.pointConversion(curPos, Point2d(0.08, -dRF),
+					currentPose.theta);
+			Point2d wallPosB = nav.pointConversion(curPos, Point2d(-0.07, -dRB),
+					currentPose.theta);
+			nav.extendWall(wallPosF.x, wallPosF.y, horizontal);
+			nav.extendWall(wallPosB.x, wallPosB.y, horizontal);
+		}
+		if (validIR(currentIR.ch[2], currentIR.ch[7])) {
+			// Adding one centimeter to reach the middle of the wall.
+			double dFR = currentIR.ch[2] + 0.11 + 0.01;
+			double dFL = currentIR.ch[7] + 0.11 + 0.01;
+			Point2d wallPosL = nav.pointConversion(curPos, Point2d(dFL, -0.07),
+					currentPose.theta);
+			Point2d wallPosR = nav.pointConversion(curPos, Point2d(dFR, 0.07),
+					currentPose.theta);
+			nav.extendWall(wallPosL.x, wallPosL.y, !horizontal);
+			nav.extendWall(wallPosR.x, wallPosR.y, !horizontal);
+		}
 	}
 
 	return pose_diff;
@@ -176,11 +186,13 @@ void Mapper::movementCommandCallback(const navigation::movement_state& state){
 	for (int i=0; i<2; i++){
 		if( action == rotate_actions[i]){
 			acceptNode = true;
+			rotating = true;
 		}
 	}
 	if(!acceptNode)
 		return;
 	for (int i = 0; i < 4; i++) {
+		rotating = false;
 		if (action == node_actions[i]) {
 			mapping::robot_pose old;
 			old.x=currentPose.x;
@@ -201,12 +213,26 @@ void Mapper::movementCommandCallback(const navigation::movement_state& state){
 				printf("Current: %.2f %.2f\n", currentPose.x,currentPose.y);
 			}
 			acceptNode = false;
-			if(nav.getNodeCount() == 3){
+			clock_t end = clock();
+			double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+
+			if (elapsed_secs > 40) {
+				std_msgs::String say_this;
+				say_this.data = "Going home.";
+				speakerPub.publish(say_this);
 				vector<Edge> path = nav.getPath(0);
 				pathResultCallback(path);
 				goneHome = true;
 				return;
 			}
+
+
+//			if(nav.getNodeCount() == 3){
+//				vector<Edge> path = nav.getPath(0);
+//				pathResultCallback(path);
+//				goneHome = true;
+//				return;
+//			}
 //			if(nav.getLastVisitedNode().index == 0 && nav.getNodeCount() > 1){
 //				cout << "Found the 0 node, creating a path. ";
 //				int targetNode = 3;//nav.getNodeCount() / 3;

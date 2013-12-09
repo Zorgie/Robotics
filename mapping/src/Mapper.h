@@ -8,6 +8,10 @@
 #ifndef MAPPER_H_
 #define MAPPER_H_
 
+// C stuff yeah
+#include <ctime>
+
+// ROS stuff
 #include <ros/ros.h>
 #include <pcl/point_cloud.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -46,8 +50,11 @@ private:
 
 	int findPath;
 
+	clock_t begin;
+
 	bool goneHome;
 	bool acceptNode;
+	bool rotating;
 
 	bool discovering;
 
