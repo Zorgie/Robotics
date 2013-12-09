@@ -23,7 +23,7 @@ int box_y = 48;
 /** @function main */
 int main( int argc, char** argv )
 {
-			Mat image = imread("giraffe.jpeg",1);
+			Mat image = imread("paprikaImage.jpg",1);
 
 			GaussianBlur(image,image,Size(3,3),0,0);
 

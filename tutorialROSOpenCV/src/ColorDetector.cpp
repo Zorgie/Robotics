@@ -93,6 +93,16 @@ void ColorDetector::reset(){
 		totalNrOfPixels[i] = 0;
 	}
 	nrOfTurns = 0;
+	nrOfGreenCarrotPx = 0;
+}
+
+bool ColorDetector::isCarrot(){
+	int isCarrotThreshold = 500;
+	return nrOfGreenCarrotPx > isCarrotThreshold;
+}
+
+bool ColorDetector::isPepper(){
+	return isCarrot();
 }
 
 void ColorDetector::updatePixelCount(Mat bgrImage){
@@ -104,8 +114,7 @@ void ColorDetector::updatePixelCount(Mat bgrImage){
 
 		//the carrot green counts as carrot orange
 		if(static_cast<colors>(i) == CARROT_GREEN){
-			//totalNrOfPixels[CARROT_ORANGE]  += countPixels(lowerColorBounds[i],upperColorBounds[i],bgrImage);
-			;
+			nrOfGreenCarrotPx  += countPixels(lowerColorBounds[i],upperColorBounds[i],bgrImage);
 		}
 		else{
 			totalNrOfPixels[i] += countPixels(lowerColorBounds[i],upperColorBounds[i],bgrImage);
@@ -113,6 +122,7 @@ void ColorDetector::updatePixelCount(Mat bgrImage){
 	}
 	nrOfTurns++;
 }
+
 
 int ColorDetector::getNumberOfIterations(){
 	return nrOfTurns;

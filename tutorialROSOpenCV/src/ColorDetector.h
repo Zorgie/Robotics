@@ -29,6 +29,8 @@ public:
 	bool objectPresent(Mat bgrImage,int &center_x,int &center_y);
 	void getColorCenter(Mat bgrImage,Scalar lower_bound,Scalar upper_bound,double &mean_x,double &mean_y,double &variance);
 
+	bool isCarrot();
+	bool isPepper();
 
 private:
 	int countPixels(Scalar lower_bound,Scalar upper_bound,Mat &bgrImage);
@@ -38,6 +40,8 @@ private:
 	cv::Scalar upperColorBounds[NR_OF_COLORS];
 	int totalNrOfPixels[NR_OF_COLORS];
 	int nrOfTurns;
+
+	int nrOfGreenCarrotPx;
 };
 
 #endif /* COLORDETECTOR_H_ */

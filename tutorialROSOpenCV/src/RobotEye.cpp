@@ -128,6 +128,9 @@ int main(int argc,char** argv)
 
 
     				if(result.size() == 1){
+
+    					//CHECK IF IT WAS THE GIRAFFE AND IF THERE ACTUALLY IS SOME GIRAFFE ORANGE IN THE IMAGE?
+
     					cout << "ONE OBJECT HAS BEEN FOUND: ";
     					detector.printObjectName(result[0]);
     					evidence_message.object_id = objectToString(result[0]);
@@ -136,6 +139,8 @@ int main(int argc,char** argv)
     				else if(result.size() == 2)
     				{
     					cout << "2 POSSIBLE OBJECTS:";detector.printObjectName(result[0]);detector.printObjectName(result[1]);
+
+    					//HANDLE SPECIAL CASE: BANANA + CORN
     					if((result[0] == BANANA || result[1] == BANANA) && (result[0] == CORN || result[1] == CORN)){
     						cout << "ITS EITHER THE BANANA OR THE CORN! " << endl;
     						cout << "IS CORN?: " << (detector.shapeChecker.getCornVotes() > detector.shapeChecker.getBananaVotes()) << endl;
@@ -144,8 +149,42 @@ int main(int argc,char** argv)
     							evidence_message.object_id = "CORN";
     						else
     							evidence_message.object_id = "BANANA";
-
-    					}else
+    					}
+    					//this case handles all the carrot combinations that sometimes occur (carrot + potato)
+    					else if(result[0] == CARROT || result[1] == CARROT)
+    					{
+    						//if there is a bit of green => Carrot otherwise other object
+    						if(detector.colorDetector.isCarrot()){
+    							evidence_message.object_id = "CARROT";
+    						}else{
+    							if(result[0] != CARROT)evidence_message.object_id = objectToString(result[0]);
+    							else evidence_message.object_id = objectToString(result[1]);
+    						}
+    					}
+    					else if(result[0] == PEPPER || result[1] == PEPPER){
+    						//if there is a bit of green => Pepper, otherwise other object
+							if (detector.colorDetector.isPepper()) {
+								evidence_message.object_id = "PEPPER";
+							} else {
+								if (result[0] != PEPPER)
+									evidence_message.object_id = objectToString(
+											result[0]);
+								else
+									evidence_message.object_id = objectToString(
+											result[1]);
+							}
+						}
+    				else if((result[0] == PAPRIKA || result[1] == PAPRIKA) && (result[0] == AVOCADO || result[1] == AVOCADO)){
+    						cout << "ITS EITHER PAPRIKA OR AVOCADO: " << endl;
+    						if(detector.contourChecker.getPaprikaVotes() > detector.contourChecker.getAvocadoVotes()){
+    							evidence_message.object_id = "PAPRIKA";
+    						}
+    						else
+    						{
+    							evidence_message.object_id = "AVOCADO";
+    						}
+    					}
+    					else
     					{
     						evidence_message.object_id = objectToString(result[0]) + ";" + objectToString(result[1]);
     						cout << "HM I CANT DISTINGUISH THESE 2 YET!" << endl;

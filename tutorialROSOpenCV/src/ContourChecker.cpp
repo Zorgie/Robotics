@@ -61,15 +61,34 @@ void ContourChecker::updateComplexityEstimation(cv::Mat bgrImg){
 
 	//count contours and store the value
 	complexityStorage.push_back(contours.size());
+
+	//DISTINGUISH PAPRIKA + AVOCADO
+	double paprikaAvocadoThreshold = 4;
+	if (contours.size() > paprikaAvocadoThreshold) paprikaVotes++; else avocadoVotes++;
+	//
+
 	return;
 }
+
+int ContourChecker::getPaprikaVotes(){
+	return paprikaVotes;
+}
+
+int ContourChecker::getAvocadoVotes(){
+	return paprikaVotes;
+}
+
 
 int ContourChecker::getCurrentNumberOfVotes(){
 	return complexityStorage.size();
 }
 
+
 void ContourChecker::reset(){
 	complexityStorage.clear();
+
+	paprikaVotes = 0;
+	avocadoVotes = 0;
 }
 
 
