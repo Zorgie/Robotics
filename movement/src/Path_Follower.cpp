@@ -491,14 +491,16 @@ void alternative_act() {
 	if (in_rotation) {
 		//wall_in_front=0.0;
 //		std::cout << "On Rotation" << std::endl;
-		std::cout << "\033[1;31mRotation\033[0m\n"; // Red
+//		std::cout << "\033[1;31mRotation\033[0m\n"; // Red
 		desired_speed = rotation.step(wheel_distance_traveled_global,estimated_pose);
-		std::cout << estimated_pose.theta << std::endl;
 		if (rotation.isFinished(estimated_pose)) {
 			std::cout << "Finished Rotation" << std::endl;
 			in_rotation = false;
 		}
+
+		std::cout << "In rotation: "<< estimated_pose.theta << std::endl;
 		desired_speed_pub.publish(desired_speed);
+		robot_pos_calibrated.publish(estimated_pose);
 		return;
 	}
 
@@ -606,7 +608,7 @@ void alternative_act() {
 //	std::cout << "Wall in front? : " << wall_in_front << std::endl;
 
 
-	std::cout << estimated_pose.theta << std::endl;
+	std::cout << "What I Publish: " << estimated_pose.theta << std::endl;
 	desired_speed_pub.publish(desired_speed);
 	robot_pos_calibrated.publish(estimated_pose);
 

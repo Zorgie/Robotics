@@ -127,7 +127,6 @@ mapping::robot_pose Mapper::calibratePos(irsensors::floatarray currentIR) {
 	if(goneHome)
 		return pose_diff;
 	Point2d curPos = Point2d(currentPose.x, currentPose.y);
-	if (!rotating) {
 		if (validIR(currentIR.ch[5], currentIR.ch[6])) {
 			// Left sensors
 			// Adding one centimeter to reach the middle of the wall.
@@ -163,7 +162,6 @@ mapping::robot_pose Mapper::calibratePos(irsensors::floatarray currentIR) {
 			nav.extendWall(wallPosL.x, wallPosL.y, !horizontal);
 			nav.extendWall(wallPosR.x, wallPosR.y, !horizontal);
 		}
-	}
 
 	return pose_diff;
 }
@@ -203,7 +201,7 @@ void Mapper::movementCommandCallback(const navigation::movement_state& state){
 			cout << "Address of old: " << &old << endl;
 			bool created = 	nav.addNode(currentPose.x, currentPose.y, action,old);
 
-			if(acceptNode && (old.x!=currentPose.x || old.y!=currentPose.y) ){
+			if((old.x!=currentPose.x || old.y!=currentPose.y) ){
 
 				posePub.publish(old);
 				cout << "publishing" << endl;
@@ -216,7 +214,7 @@ void Mapper::movementCommandCallback(const navigation::movement_state& state){
 			clock_t end = clock();
 			double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 
-			if (elapsed_secs > 40) {
+			if (elapsed_secs > 120) {
 				std_msgs::String say_this;
 				say_this.data = "Going home.";
 				speakerPub.publish(say_this);
