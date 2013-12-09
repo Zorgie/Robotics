@@ -12,7 +12,6 @@
 #include "movement/robot_pose.h"
 #include <differential_drive/Encoders.h>
 #include <irsensors/floatarray.h>
-#include "NavMap.h"
 
 class RobotPosition {
 private:
@@ -22,7 +21,6 @@ private:
 	double y;
 	double theta;
 	double wheel_diameter;
-	NavMap nav;
 public:
 	RobotPosition(){};
 	virtual ~RobotPosition(){};

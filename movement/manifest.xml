@@ -13,7 +13,6 @@
   <depend package="visualization_msgs"/>
   <depend package="std_msgs"/>
   <depend package="navigation"/>
-  <depend package="mapping" />
 
 </package>
 

@@ -23,15 +23,13 @@ bool NavMap::validNode(int n) {
 
 // TODO make this good.
 bool NavMap::addObject(double x, double y, int id, int direction){
-	if(find(objectsFound.begin(), objectsFound.end(), id) == objectsFound.end()){
-		return false;
-	}
-	if(addNode(x,y,-1)){
-		objectsFound.push_back(id);
-		lastVisitedNode.object = direction;
-		return true;
-	}
-	return false;
+//	if(find(objectsFound.begin(), objectsFound.end(), id) != objectsFound.end()){
+//		return false;
+//	}
+	addNode(x, y, -id);
+	objectsFound.push_back(id);
+	lastVisitedNode.object = direction;
+	return true;
 }
 
 bool NavMap::addNode(double x, double y, int type) {
@@ -40,16 +38,16 @@ bool NavMap::addNode(double x, double y, int type) {
 }
 
 bool NavMap::addNode(double x, double y, int type, mapping::robot_pose& calibratedPose) {
-	if (type == -1) { // Object
-		for (int i = 0; i < nodes.size(); i++) {
-			if(nodes[i].type != type)
-				continue;
-			double distance = sqrt(pow(x - nodes[i].x, 2) + pow(y - nodes[i].y, 2));
-			if (distance < 0.2) {
-				return false;
-			}
-		}
-	}
+//	if (type == -1) { // Object
+//		for (int i = 0; i < nodes.size(); i++) {
+//			if(nodes[i].type != type)
+//				continue;
+//			double distance = sqrt(pow(x - nodes[i].x, 2) + pow(y - nodes[i].y, 2));
+//			if (distance < 0.2) {
+//				return false;
+//			}
+//		}
+//	}
 
 	int newNodeId = nodes.size();
 	Node n = {newNodeId,x,y,type};
@@ -119,18 +117,12 @@ bool NavMap::nodeMatch(Node in, Node& res){
 		for(int j=0; j<4; j++){
 			if(n.walls[j] != in.walls[j]){
 				sameWalls = false;
-				if(in.index == 9){
-					printf("Not same walls, broke on #%d\n",i);
-				}
 			}
 		}
 		if(sameWalls){
 			minDist = dist;
 			res = n;
 		}
-	}
-	if(in.index == 9){
-		printf("Min Dist: %.3f\n", minDist);
 	}
 	if(minDist <= IDENTICAL_NODE_DIST){
 		return true;
@@ -145,7 +137,7 @@ void NavMap::nodeMerge(Node& to, Node& from){
 void NavMap::addEdge(int from, int to, int type) {
 	if(!validNode(from) || !validNode(to)){
 		cerr << "Trying to add edge between invalid nodes: " << from << ", " << to;
-		throw -1;
+		return;
 	}
 	bool edgeExists = false;
 	for (int i = 0; i < neighbours[to].size(); i++) {
@@ -440,7 +432,7 @@ void NavMap::draw(Mat& img) {
 	// Drawing nodes.
 	for (int i = 0; i < nodes.size(); i++) {
 		Node n = nodes[i];
-		if (n.type == -1) {
+		if (n.type < 0) {
 			putText(img, "X",
 					getVisualCoord(n.x,n.y),
 					FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255));
@@ -568,12 +560,12 @@ Point2d NavMap::pointConversion(Point2d origin, Point2d relativePos,
 }
 
 void NavMap::initObjectMap(){
-//	string objects = { "TIGER", "ZEBRA", "ELEPHANT", "HIPPO", "GIRAFFE", "LION",
-//			"POTATO", "TOMATO", "ONION", "BROCOLI", "PAPRIKA", "CARROT", "CORN",
-//			"AVOCADO", "PEPPER", "MELON", "PEAR", "BANANA", "ORANGE", "LEMON",
-//			"PLATE" };
-//	for(int i=0; i<21; i++){
-//		objectStrToId[objects[i]] = i;
-//		objectIdToStr[i] = objects[i];
-//	}
+	string objects[] = { "fulhack", "TIGER", "ZEBRA", "ELEPHANT", "HIPPO", "GIRAFFE", "LION",
+			"POTATO", "TOMATO", "ONION", "BROCOLI", "PAPRIKA", "CARROT", "CORN",
+			"AVOCADO", "PEPPER", "MELON", "PEAR", "BANANA", "ORANGE", "LEMON",
+			"PLATE" };
+	for(int i=0; i<21; i++){
+		objectStrToId[objects[i]] = i;
+		objectIdToStr[i] = objects[i];
+	}
 }
