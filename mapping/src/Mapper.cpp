@@ -112,7 +112,7 @@ mapping::robot_pose Mapper::calibratePos(irsensors::floatarray currentIR) {
 	}
 
 	int thetaSnap = round(currentPose.theta / (2 * M_PI) * 4);
-	thetaSnap = (thetaSnap + 4) % 4;
+	thetaSnap = (thetaSnap + 4000) % 4;
 
 	bool horizontal = (thetaSnap == 0 || thetaSnap == 2);
 
@@ -144,10 +144,10 @@ mapping::robot_pose Mapper::calibratePos(irsensors::floatarray currentIR) {
 		nav.extendWall(wallPosF.x,wallPosF.y,horizontal);
 		nav.extendWall(wallPosB.x,wallPosB.y,horizontal);
 	}
-	if(validIR(currentIR.ch[3],currentIR.ch[7])){
-		double dFR = currentIR.ch[3] + 0.11 + 0.01;
-		double dFL = currentIR.ch[7] + 0.11 + 0.01;
+	if(validIR(currentIR.ch[2],currentIR.ch[7])){
 		// Adding one centimeter to reach the middle of the wall.
+		double dFR = currentIR.ch[2] + 0.11 + 0.01;
+		double dFL = currentIR.ch[7] + 0.11 + 0.01;
 		Point2d wallPosL = nav.pointConversion(curPos,Point2d(dFL,-0.07),currentPose.theta);
 		Point2d wallPosR = nav.pointConversion(curPos,Point2d(dFR,0.07),currentPose.theta);
 		nav.extendWall(wallPosL.x,wallPosL.y,!horizontal);
@@ -177,6 +177,8 @@ void Mapper::movementCommandCallback(const navigation::movement_state& state){
 			acceptNode = true;
 		}
 	}
+	if(!acceptNode)
+		return;
 	for (int i = 0; i < 4; i++) {
 		if (action == node_actions[i]) {
 			mapping::robot_pose old;
@@ -198,6 +200,12 @@ void Mapper::movementCommandCallback(const navigation::movement_state& state){
 				printf("Current: %.2f %.2f\n", currentPose.x,currentPose.y);
 			}
 			acceptNode = false;
+			if(nav.getNodeCount() == 3){
+				vector<Edge> path = nav.getPath(0);
+				pathResultCallback(path);
+				goneHome = true;
+				return;
+			}
 //			if(nav.getLastVisitedNode().index == 0 && nav.getNodeCount() > 1){
 //				cout << "Found the 0 node, creating a path. ";
 //				int targetNode = 3;//nav.getNodeCount() / 3;
@@ -240,12 +248,19 @@ void Mapper::objectDetectedCallback(const tutorialROSOpenCV::evidence &msg){
 //	if(!msg.object_id.empty()){
 //		speaker.publish(say_this);
 //
-	if(nav.objectStrToId.find(msg.object_id) == nav.objectStrToId.end()){
+	vector<string> objs = split(msg.object_id,';');
+	string o = objs[0];
+	if(nav.objectStrToId.find(o) == nav.objectStrToId.end()){
 		// Not found
+		cout << "Didn't find " << o << endl;
 	}else{
 		// Found
-		int id = nav.objectStrToId[msg.object_id];
-		nav.addNode(currentPose.x, currentPose.y, -id);
+		int id = nav.objectStrToId[o];
+		int direction = round(currentPose.theta / (2*M_PI) * 4);
+		direction = (direction + 400000) % 4;
+		bool res = nav.addObject(currentPose.x,currentPose.y,id,direction);
+		cout << "addObj: " << res << endl;
+
 	}
 	speakerPub.publish(say_this);
 	if(evidence_string.compare("CARROT") == 0){
@@ -254,4 +269,20 @@ void Mapper::objectDetectedCallback(const tutorialROSOpenCV::evidence &msg){
 	}
 	else
 		cout << "SOMETHING ELSE RECEIVED" << endl;
+}
+
+vector<string> &Mapper::split(const string &s, char delim, vector<string> &elems) {
+    stringstream ss(s);
+    string item;
+    while (getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+    return elems;
+}
+
+
+vector<string> Mapper::split(const string &s, char delim) {
+    vector<string> elems;
+    split(s, delim, elems);
+    return elems;
 }

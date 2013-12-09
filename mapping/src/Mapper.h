@@ -67,6 +67,9 @@ public:
 
 	void pathResultCallback(vector<Edge> path);
 	void objectDetectedCallback(const tutorialROSOpenCV::evidence &msg);
+
+	vector<string> split(const string &s, char delim);
+	vector<string> &split(const string &s, char delim, vector<string> &elems);
 };
 
 #endif /* MAPPER_H_ */

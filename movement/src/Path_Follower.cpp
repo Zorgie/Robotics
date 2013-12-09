@@ -202,10 +202,10 @@ void path_following_act() {
 
 	static int need_to_rotate = 0;
 
-//	std::cout << "\n\nBeautiful Desired angle: "
-//			<< desired_angle_multiple_of_90 * 90 << std::endl;
-//	std::cout << "Beautiful Current Perfect angle: "
-//			<< estimated_angle_multiple_of_90 * 90 << std::endl;
+	std::cout << "\n\nBeautiful Desired angle: "
+			<< desired_angle_multiple_of_90 * 90 << std::endl;
+	std::cout << "Beautiful Current Perfect angle: "
+			<< estimated_angle_multiple_of_90 * 90 << std::endl;
 
 	if (desired_angle_multiple_of_90 > estimated_angle_multiple_of_90) {
 		need_to_rotate = desired_angle_multiple_of_90
@@ -218,17 +218,18 @@ void path_following_act() {
 	}
 	// New stuff end
 
-	while (need_to_rotate > 2) {
+
+		while (need_to_rotate > 2) {
 		need_to_rotate = -(4 - need_to_rotate);
 	}
-	while(need_to_rotate < -2){
+	while (need_to_rotate < -2) {
 		need_to_rotate = 4 + need_to_rotate;
 	}
 	if (desired_angle_multiple_of_90 == estimated_angle_multiple_of_90) {
 		need_to_rotate = 0;
 	}
 
-//	std::cout << "Need to rotate: " << need_to_rotate * 90 << std::endl;
+	std::cout << "Need to rotate: " << need_to_rotate * 90 << std::endl;
 
 	// If we need to rotate, let us rotate
 	if (need_to_rotate != 0) {
@@ -237,6 +238,7 @@ void path_following_act() {
 		std::cout << "Initiate Rotation of : " << need_to_rotate * 90
 				<< std::endl;
 		rotation.initiate_rotation(need_to_rotate * 90, estimated_pose);
+		estimated_pose.theta+=need_to_rotate*90*(M_PI/180.0);
 		desired_speed.W1 = 0.0;
 		desired_speed.W2 = 0.0;
 		desired_speed_pub.publish(desired_speed);
@@ -250,7 +252,9 @@ void path_following_act() {
 		wall_in_front=0.0;
 //		std::cout << "On Rotation" << std::endl;
 		std::cout << "\033[1;31mRotation\033[0m\n"; // Red
+		double old_estimated_pose_theta=estimated_pose.theta;
 		desired_speed = rotation.step(wheel_distance_traveled_global,estimated_pose);
+		estimated_pose.theta=old_estimated_pose_theta;
 		if (rotation.isFinished(estimated_pose)) {
 			std::cout << "Finished Rotation" << std::endl;
 			in_rotation = false;

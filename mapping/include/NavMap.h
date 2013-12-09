@@ -61,10 +61,12 @@ public:
 	map<string, int> objectStrToId;
 	/* ----------- Constructors, destructors. -----------*/
 	NavMap(){
-		drawOffset = Point(300,300);
-		drawScaling = Point2d(100,100);
+		drawOffset = Point(300, 300);
+		drawScaling = Point2d(100, 100);
+		initObjectMap();
 	}
 	virtual ~NavMap(){}
+	void init();
 	void initObjectMap();
 	/* ----------- Basic getters / setters. -------------*/
 	void setRobotPos(Point2d p){robotPos = p;}
@@ -99,6 +101,8 @@ public:
 	//bool getCalibratedPos(Point2d approximatePos, Point2d relativeWallPos, Point2d& calibratedPos);
 	bool getCalibratedPos(Point2d approximatePos, int dir, double dist, Point2d& calibratedPos);
 	Point2d pointConversion(Point2d origin, Point2d relativePos, double angle);
+
+
 };
 
 #endif /* NAVMAP_H_ */

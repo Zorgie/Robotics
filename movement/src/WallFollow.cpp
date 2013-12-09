@@ -31,7 +31,7 @@ void WallFollow::init() {
 movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 		int side, movement::robot_pose &pose_estimate) {
 
-	std::cout << "\n\n\n" << std::endl;
+//	std::cout << "\n\n\n" << std::endl;
 
 	float sensor_one = ir_readings.ch[SENSORS[2 * side]];
 	float sensor_two = ir_readings.ch[SENSORS[2 * side + 1]];
@@ -48,9 +48,9 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 		error_distance = distance - desired_distance_to_wall;
 		error_distance *= -1;
 
-		std::cout << "Distance: " << distance << std::endl;
-		std::cout << "Desired distance: " << desired_distance_to_wall << std::endl;
-		std::cout << "Error distance: " << error_distance << std::endl;
+//		std::cout << "Distance: " << distance << std::endl;
+//		std::cout << "Desired distance: " << desired_distance_to_wall << std::endl;
+//		std::cout << "Error distance: " << error_distance << std::endl;
 
 //		std::cout << "\033[1;31mError angle...\033[0m\n";
 //		std::cout << error_theta << std::endl;
@@ -74,7 +74,7 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 		distance = 0.5 * (sensor_one + sensor_two);
 		error_distance = distance - desired_distance_to_wall;
 
-		std::cout << "Error distance: " << error_distance << std::endl;
+//		std::cout << "Error distance: " << error_distance << std::endl;
 
 //		std::cout << "\033[1;31mError angle...\033[0m\n";
 //		std::cout << error_theta << std::endl;
@@ -94,7 +94,7 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 //		}
 	}
 
-	std::cout << "Error distance: " << error_distance << std::endl;
+//	std::cout << "Error distance: " << error_distance << std::endl;
 
 
 	if (fabs(error_theta) < 0.15) {
@@ -137,9 +137,9 @@ movement::wheel_speed WallFollow::step(irsensors::floatarray ir_readings,
 					* ((-angle_gain * error_theta)
 							- (distance_gain * error_distance)); // Left
 
-	std::cout << "Angle correction: " << angle_gain * error_theta << std::endl;
-	std::cout << "\Distance correction: " << distance_gain * error_distance << std::endl;
-	std::cout << "Difference: " << desired_wheel_speed.W1-desired_wheel_speed.W2 << std::endl;
+//	std::cout << "Angle correction: " << angle_gain * error_theta << std::endl;
+//	std::cout << "\Distance correction: " << distance_gain * error_distance << std::endl;
+//	std::cout << "Difference: " << desired_wheel_speed.W1-desired_wheel_speed.W2 << std::endl;
 
 //	printf("Angle difference: %f \n", angle_gain * error_theta);
 //	printf("Distance difference: %f \n", distance_gain * error_distance);
