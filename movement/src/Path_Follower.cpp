@@ -450,7 +450,10 @@ void alternative_act() {
 	if (wall_in_front==1.0) {
 		wall_in_front=0.0;
 		double need_to_rotate=0.0;
-		if(left_avg<right_avg){
+		double min_left=std::min(ir_readings_processed_global.ch[5],ir_readings_processed_global.ch[6]);
+		double min_right=std::min(ir_readings_processed_global.ch[0],ir_readings_processed_global.ch[1]);
+
+		if(left_avg<right_avg || min_left<min_right){
 			// Right -90
 			need_to_rotate=-1.0;
 			prev_state=3;
@@ -837,8 +840,8 @@ int main(int argc, char **argv) {
 
 	bool pathing_activated = false;
 
-	go_straight.initiate_go_straight(10.0,1); // Initialize walking forward as starting state.
-
+	go_straight.initiate_go_straight(1000.0,1); // Initialize walking forward as starting state.
+	wall_follow.init();
 
 //	string evidence_string = msg.object_id;
 //		std_msgs::String say_this;

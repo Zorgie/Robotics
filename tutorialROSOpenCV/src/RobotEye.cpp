@@ -141,9 +141,9 @@ int main(int argc,char** argv)
     						cout << "IS CORN?: " << (detector.shapeChecker.getCornVotes() > detector.shapeChecker.getBananaVotes()) << endl;
     						cout << detector.shapeChecker.getCornVotes() << "   BANANA:  " << detector.shapeChecker.getBananaVotes() << endl;
     						if(detector.shapeChecker.getCornVotes() > detector.shapeChecker.getBananaVotes())
-    							evidence_message.object_id = "BANANA";
-    						else
     							evidence_message.object_id = "CORN";
+    						else
+    							evidence_message.object_id = "BANANA";
 
     					}else
     					{

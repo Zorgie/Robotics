@@ -53,7 +53,7 @@ ColorDetector::ColorDetector() {
 	lowerColorBounds[PLATE_RED]			=lowerColorBounds[TOMATO_RED];
 
 
-	lowerColorBounds[CARROT_ORANGE]		=cv::Scalar(5,50,155);
+	lowerColorBounds[CARROT_ORANGE]		=cv::Scalar(10,74,155);
 	lowerColorBounds[CARROT_GREEN]		=cv::Scalar(38,94,83);
 	lowerColorBounds[CORN_YELLOW]		=cv::Scalar(22, 120, 104);
 	lowerColorBounds[PEAR_GREEN]		=cv::Scalar(33,103,132);
