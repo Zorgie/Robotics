@@ -49,8 +49,9 @@ private:
 	bool goneHome;
 	bool acceptNode;
 
-	char* WINDOW;
+	bool discovering;
 
+	char* WINDOW;
 	bool useGui;
 
 	bool validIR(double r1, double r2);

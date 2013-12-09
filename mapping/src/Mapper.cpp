@@ -38,7 +38,8 @@ Mapper::Mapper(bool gui) {
 
 	findPath = -1;
 	goneHome = false;
-	acceptNode = false;
+	acceptNode = true;
+	discovering = false;
 
 	if(useGui)
 		cv::namedWindow(WINDOW);

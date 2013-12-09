@@ -33,11 +33,23 @@ typedef struct Wall{
 typedef struct Edge{
 	int from, to, type;
 };
+typedef struct GraphNode{
+	Node n;
+	double dist;
+};
+struct GraphNodeCmp
+{
+  bool operator()(const GraphNode& lhs, const GraphNode& rhs)
+  {
+	  return lhs.dist > rhs.dist;
+  }
+};
+
 
 class NavMap {
 private:
 	map<int, vector<Edge> > neighbours;
-	vector<int> objectsFound;
+	map<int, int> objectsFound;
 	vector<Wall> walls;
 	vector<Node> nodes;
 	vector<Edge> lastPath;
@@ -61,8 +73,8 @@ public:
 	map<string, int> objectStrToId;
 	/* ----------- Constructors, destructors. -----------*/
 	NavMap(){
-		drawOffset = Point(300, 300);
-		drawScaling = Point2d(100, 100);
+		drawOffset = Point(100, 100);
+		drawScaling = Point2d(50, 50);
 		initObjectMap();
 	}
 	virtual ~NavMap(){}
@@ -93,6 +105,9 @@ public:
 	vector<Edge> getNeighbours(int nodeId);
 	vector<Edge> getPath(int to);
 	vector<Edge> getPath(int from, int to);
+	double getPath(int to, vector<Edge>& path);
+	double getPath(int from, int to, vector<Edge>& path);
+	vector<Edge> visitAllObjects();
 	int getClosestReachableNode(double x, double y);
 	double getDistanceToNode(int nodeId);
 	void updateNode(Node& n);

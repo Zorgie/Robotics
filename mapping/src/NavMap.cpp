@@ -21,13 +21,12 @@ bool NavMap::validNode(int n) {
 	return true;
 }
 
-// TODO make this good.
 bool NavMap::addObject(double x, double y, int id, int direction){
-//	if(find(objectsFound.begin(), objectsFound.end(), id) != objectsFound.end()){
-//		return false;
-//	}
+	if(objectsFound.find(id) != objectsFound.end()){
+		return false;
+	}
 	addNode(x, y, -id);
-	objectsFound.push_back(id);
+	objectsFound[id] = lastVisitedNode.index;
 	lastVisitedNode.object = direction;
 	return true;
 }
@@ -37,7 +36,7 @@ bool NavMap::addNode(double x, double y, int type) {
 	return addNode(x,y,type,dummy);
 }
 
-bool NavMap::addNode(double x, double y, int type, mapping::robot_pose& calibratedPose) {
+bool NavMap::addNode(double x, double y, int type, mapping::robot_pose& calibratedPose){
 //	if (type == -1) { // Object
 //		for (int i = 0; i < nodes.size(); i++) {
 //			if(nodes[i].type != type)
@@ -166,19 +165,35 @@ vector<Edge> NavMap::getNeighbours(int nodeId) {
 }
 
 vector<Edge> NavMap::getPath(int to){
-	return getPath(lastVisitedNode.index, to);
+	vector<Edge> path;
+	getPath(lastVisitedNode.index, to, path);
+	return path;
+}
+
+double NavMap::getPath(int to, vector<Edge>& path){
+	return getPath(lastVisitedNode.index, to, path);
 }
 
 vector<Edge> NavMap::getPath(int from, int to){
 	vector<Edge> path;
+	getPath(from,to,path);
+	return path;
+}
+
+double NavMap::getPath(int from, int to, vector<Edge>& path){
 	queue<int> q;
+	priority_queue<GraphNode, vector<GraphNode>, GraphNodeCmp> pq;
+	vector<double> dists = vector<double>(nodes.size(), 100000);
+	dists[from] = 0;
 	map<int, Edge> visited;
 	q.push(from);
+	pq.push({nodes[from], 0});
 	while(!q.empty()){
-		int id = q.front();
-		q.pop();
 		visited[from] = {-1,-1,-1};
-		Node n = nodes[id];
+		GraphNode gn = pq.top();
+		pq.pop();
+		int id = gn.n.index;
+		double dist = gn.dist;
 		if(id == to){
 			while(id != from){
 				path.insert(path.begin(), visited[id]);
@@ -186,17 +201,23 @@ vector<Edge> NavMap::getPath(int from, int to){
 			}
 			if(path.size() > 0)
 				lastPath = path;
-			return path;
+			return dists[to];
 		}
-		for(int i=0; i<neighbours[n.index].size(); i++){
-			Edge e = neighbours[n.index][i];
-			if(!visited.count(e.to)){// Confirms that the node is unvisited.
-				q.push(e.to);
+		for(int i=0; i<neighbours[gn.n.index].size(); i++){
+			Edge e = neighbours[gn.n.index][i];
+			double edgeDist = dist + max(fabs(nodes[e.to].x - nodes[id].x),fabs(nodes[e.to].y - nodes[id].y));
+			if(edgeDist < dists[e.to]){
 				visited[e.to] = e;
+				dists[e.to] = edgeDist;
+				pq.push({nodes[e.to],edgeDist});
 			}
+//			if(!visited.count(e.to)){// Confirms that the node is unvisited.
+//				q.push(e.to);
+//				visited[e.to] = e;
+//			}
 		}
 	}
-	return path;
+	return -1;
 }
 
 void NavMap::addWall(double x1, double y1, double x2, double y2) {
@@ -467,11 +488,52 @@ void NavMap::draw(Mat& img) {
 		Node from = nodes[lastPath[i].from];
 		Node to = nodes[lastPath[i].to];
 		line(img, getVisualCoord(from.x, from.y), getVisualCoord(to.x, to.y),
-				Scalar(0, 255, 0), 2, 8);
+				Scalar(0, 255, 0), 2+3*i, 8);
 	}
 	// Drawing robot.
 	circle(img, getVisualCoord(robotPos.x, robotPos.y),3,Scalar(0,0,0),3,8);
 
+}
+
+
+vector<Edge> NavMap::visitAllObjects(){
+	vector<Edge> bigPath;
+	vector<int> toVisit;
+	for(map<int,int>::iterator it = objectsFound.begin(); it != objectsFound.end(); it++){
+		toVisit.push_back(it->first);
+	}
+	int current = 0;
+	while(!toVisit.empty()){
+		vector<Edge> bestPath;
+		double bestDist = 100000;
+		int bestObject = -1;
+		for(int i=0; i<toVisit.size(); i++){
+			int oid = toVisit[i];
+			vector<Edge> path;
+			double dist = getPath(current,objectsFound[oid],path);
+			if(dist < bestDist){
+				bestDist = dist;
+				bestObject = oid;
+				bestPath = path;
+			}
+		}
+		if(bestObject != -1){
+			current = objectsFound[bestObject];
+			for(int i=0; i<bestPath.size(); i++){
+				bigPath.push_back(bestPath[i]);
+			}
+			toVisit.erase(find(toVisit.begin(), toVisit.end(), bestObject));
+			cerr << "Adding path to" << objectsFound[bestObject] << " by " << bestObject << endl;
+		}else{
+			cerr << "No path found from " << current << endl;
+		}
+	}
+	vector<Edge> path = getPath(current,0);
+	for(int i=0; i<path.size(); i++){
+		bigPath.push_back(path[i]);
+	}
+	lastPath = bigPath;
+	return bigPath;
 }
 
 double NavMap::getDistanceToWall(Point2d origin, int direction){
