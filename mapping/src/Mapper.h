@@ -44,6 +44,7 @@ private:
 	ros::Publisher posePub;
 	ros::Publisher pathResultPub;
 	ros::Publisher speakerPub;
+	ros::Publisher tspPub;
 
 	mapping::robot_pose currentPose;
 	bool poseInit;
@@ -74,6 +75,7 @@ public:
 	mapping::robot_pose calibratePos(irsensors::floatarray currentIR);
 
 	void pathResultCallback(vector<Edge> path);
+	void pathResultCallback(vector<Edge> path, bool tsp);
 	void objectDetectedCallback(const tutorialROSOpenCV::evidence &msg);
 
 	vector<string> split(const string &s, char delim);

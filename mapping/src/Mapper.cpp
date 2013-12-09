@@ -35,6 +35,7 @@ Mapper::Mapper(bool gui) {
 	posePub = nh.advertise<mapping::robot_pose>("/robot_pose_map_update", 1);
 	pathResultPub = nh.advertise<navigation::path_result>("/path/result", 1000);
 	speakerPub = nh.advertise<std_msgs::String>("/robot/talk", 1);
+	tspPub = nh.advertise<navigation::path_result>("/path/result_tsp",100);
 
 	findPath = -1;
 	goneHome = false;
@@ -48,6 +49,8 @@ Mapper::Mapper(bool gui) {
 		cv::namedWindow(WINDOW);
 
 	poseInit = false;
+
+	nav.addNode(0,0,GO_STRAIGHT_X);
 }
 
 Mapper::~Mapper() {
@@ -214,51 +217,41 @@ void Mapper::movementCommandCallback(const navigation::movement_state& state){
 			clock_t end = clock();
 			double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 
-			if (elapsed_secs > 120) {
+			if (elapsed_secs > 30) {
 				std_msgs::String say_this;
 				say_this.data = "Going home.";
 				speakerPub.publish(say_this);
 				vector<Edge> path = nav.getPath(0);
 				pathResultCallback(path);
 				goneHome = true;
+				path = nav.visitAllObjects();
+				pathResultCallback(path, true);
 				return;
 			}
-
-
-//			if(nav.getNodeCount() == 3){
-//				vector<Edge> path = nav.getPath(0);
-//				pathResultCallback(path);
-//				goneHome = true;
-//				return;
-//			}
-//			if(nav.getLastVisitedNode().index == 0 && nav.getNodeCount() > 1){
-//				cout << "Found the 0 node, creating a path. ";
-//				int targetNode = 3;//nav.getNodeCount() / 3;
-//				vector<Edge> path = nav.getPath(0,targetNode);
-//				cout << "Size " << path.size();
-//				pathResultCallback(path);
-//				path = nav.getPath(targetNode,0);
-//				cout << " and " << path.size() << endl;
-//				pathResultCallback(path);
-//				goneHome = true;
-//				break;
-//			}
 		}
 	}
 }
 
-
 void Mapper::pathResultCallback(vector<Edge> path){
+	pathResultCallback(path, false);
+}
+
+void Mapper::pathResultCallback(vector<Edge> path, bool tsp){
 	for(int i=0; i<path.size(); i++){
 		navigation::path_result res;
-		res.edge_type = path[i].type;
 		Node from = nav.getNode(path[i].from);
 		Node to = nav.getNode(path[i].to);
 		res.x1 = from.x;
 		res.y1 = from.y;
 		res.x2 = to.x;
 		res.y2 = to.y;
-		pathResultPub.publish(res);
+		double edgeDir = atan2(to.y - from.y, to.x - from.x);
+		int edgeDirInt = ((int)(round(4*edgeDir/(2*M_PI))+4000))%4;
+		res.edge_type = path[i].type + 100;
+		if(tsp)
+			tspPub.publish(res);
+		else
+			pathResultPub.publish(res);
 	}
 }
 

@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <queue>
+#include <string>
 
 //enumerations
 #include <navigation/movement_state.h>
@@ -47,7 +48,7 @@ static ros::Subscriber ir_sub;
 static ros::Subscriber nav_sub;
 static ros::Subscriber wheel_distance_sub;
 static ros::Subscriber robot_pos;
-static ros::Subscriber path_pub;
+static ros::Subscriber path_sub_movement;
 static ros::Subscriber pose_map_sub;
 
 //Publishing:
@@ -77,8 +78,6 @@ static movement::robot_pose poseCache;
 //movement::robot_pose *estimated_pose;
 movement::robot_pose estimated_pose;
 
-static bool global_received_path = false;
-
 // Vector to store the path (as a sum of short paths)
 //std::vector<navigation::path_result> global_path;
 std::queue<navigation::path_result> global_path;
@@ -87,6 +86,7 @@ std::queue<navigation::path_result> global_path;
 std::vector<movement::robot_pose> pose_hist;
 
 bool global_path_following = false;
+bool tsp = false;
 
 void ir_readings_update(const irsensors::floatarray &msg) {
 	ir_readings_processed_global = msg;
@@ -153,6 +153,9 @@ void path_following_act() {
 	navigation::path_result current_path;
 	current_path = global_path.front();//global_path[global_path.size() - 1];
 
+	bool break_upon_wall = current_path.edge_type/100;
+	current_path.edge_type = current_path.edge_type%100;
+
 	go_straight.initiate_go_straight(5.0, true); // Infinity equals five meters.
 	// This line stops the robot from going faster, consider remove it.
 
@@ -160,8 +163,8 @@ void path_following_act() {
 	double distance = sqrt(
 			pow(current_path.x2 - estimated_pose.x, 2)*pow(cos(estimated_pose.theta),2)
 					+ pow(current_path.y2 - estimated_pose.y, 2)*pow(sin(estimated_pose.theta),2) );
-	std::cout << "\nAt a distance of [m] to from point: " << distance
-			<< std::endl;
+//	std::cout << "\nAt a distance of [m] to from point: " << distance
+//			<< std::endl;
 //
 //	std::cout << "From point: " << current_path.x1 << " , " << current_path.y1
 //			<< std::endl;
@@ -202,10 +205,10 @@ void path_following_act() {
 
 	static int need_to_rotate = 0;
 
-	std::cout << "\n\nBeautiful Desired angle: "
-			<< desired_angle_multiple_of_90 * 90 << std::endl;
-	std::cout << "Beautiful Current Perfect angle: "
-			<< estimated_angle_multiple_of_90 * 90 << std::endl;
+//	std::cout << "\n\nBeautiful Desired angle: "
+//			<< desired_angle_multiple_of_90 * 90 << std::endl;
+//	std::cout << "Beautiful Current Perfect angle: "
+//			<< estimated_angle_multiple_of_90 * 90 << std::endl;
 
 	if (desired_angle_multiple_of_90 > estimated_angle_multiple_of_90) {
 		need_to_rotate = desired_angle_multiple_of_90
@@ -218,8 +221,7 @@ void path_following_act() {
 	}
 	// New stuff end
 
-
-		while (need_to_rotate > 2) {
+	while (need_to_rotate > 2) {
 		need_to_rotate = -(4 - need_to_rotate);
 	}
 	while (need_to_rotate < -2) {
@@ -229,14 +231,14 @@ void path_following_act() {
 		need_to_rotate = 0;
 	}
 
-	std::cout << "Need to rotate: " << need_to_rotate * 90 << std::endl;
+//	std::cout << "Need to rotate: " << need_to_rotate * 90 << std::endl;
 
 	// If we need to rotate, let us rotate
 	if (need_to_rotate != 0) {
 		wall_in_front=0.0;
-		std::cout << "\033[1;31mRotation\033[0m\n"; // Red
-		std::cout << "Initiate Rotation of : " << need_to_rotate * 90
-				<< std::endl;
+//		std::cout << "\033[1;31mRotation\033[0m\n"; // Red
+//		std::cout << "Initiate Rotation of : " << need_to_rotate * 90
+//				<< std::endl;
 		rotation.initiate_rotation(need_to_rotate * 90, estimated_pose);
 		estimated_pose.theta+=need_to_rotate*90*(M_PI/180.0);
 		desired_speed.W1 = 0.0;
@@ -251,12 +253,12 @@ void path_following_act() {
 	if (in_rotation) {
 		wall_in_front=0.0;
 //		std::cout << "On Rotation" << std::endl;
-		std::cout << "\033[1;31mRotation\033[0m\n"; // Red
+//		std::cout << "\033[1;31mRotation\033[0m\n"; // Red
 		double old_estimated_pose_theta=estimated_pose.theta;
 		desired_speed = rotation.step(wheel_distance_traveled_global,estimated_pose);
 		estimated_pose.theta=old_estimated_pose_theta;
 		if (rotation.isFinished(estimated_pose)) {
-			std::cout << "Finished Rotation" << std::endl;
+//			std::cout << "Finished Rotation" << std::endl;
 			in_rotation = false;
 		}
 		desired_speed_pub.publish(desired_speed);
@@ -356,9 +358,8 @@ void path_following_act() {
 //	std::cout << "Frontal right: "<< frontal_right << std::endl;
 //	std::cout << "Wall in front? : " << wall_in_front << std::endl;
 
-	wall_in_front=0.0;
 
-	if (fabs(distance) < 0.01 || wall_in_front == 1.0) {
+	if ((fabs(distance) < 0.01 && !break_upon_wall) || wall_in_front == 1.0) {
 
 		wall_in_front = 0.0;
 
@@ -369,8 +370,8 @@ void path_following_act() {
 		estimated_pose.x = current_path.x2;
 		estimated_pose.y = current_path.y2;
 		global_path.pop(); //pop_back();
-//		std::cerr << "Press a key to continue!" << std::endl;
-//		std::cin.ignore();
+		//		std::cerr << "Press a key to continue!" << std::endl;
+		//		std::cin.ignore();
 
 	}
 
@@ -608,7 +609,7 @@ void alternative_act() {
 //	std::cout << "Wall in front? : " << wall_in_front << std::endl;
 
 
-	std::cout << "What I Publish: " << estimated_pose.theta << std::endl;
+//	std::cout << "What I Publish: " << estimated_pose.theta << std::endl;
 	desired_speed_pub.publish(desired_speed);
 	robot_pos_calibrated.publish(estimated_pose);
 
@@ -711,9 +712,15 @@ void act() {
 
 }
 
-void path_receiver(const navigation::path_result &path_part) {
+void tsp_receiver(const navigation::path_result &path_part){
+	std::cout << "EVerzthing is bad." << std::endl;
+	global_path.push(path_part);
+}
 
+void path_receiver(const navigation::path_result &path_part) {
+	std::cout << "received path" << std::endl;
 	// Need to check the order in which I insert/pop
+	std::cout <<  "X1: " <<path_part.x1 <<  "Y1: " <<path_part.y1 << std::endl;
 	global_path.push(path_part);
 }
 
@@ -808,6 +815,18 @@ int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "Movement");
 	ros::NodeHandle n;
+	if(argc >= 2){
+		if(strcmp("tsp",argv[1])==0){
+			std::cout << "TSP mode." << std::endl;
+			tsp = true;
+		}else{
+			std::cout << "Not TPS mode. Mode: ";
+			std::cout << argv[1] << std::endl;
+		}
+	}else{
+		std::cout << "Args: " << argc << std::endl;
+	}
+	std::cout << "after args" << std::endl;
 
 	//subscribe to nodes
 	ir_sub = n.subscribe("/sensors/transformed/ADC", 1, ir_readings_update);
@@ -816,8 +835,60 @@ int main(int argc, char **argv) {
 //	nav_sub = n.subscribe("/navigation/movement_state", 1,
 //			movement_state_update);   RUI
 	robot_pos = n.subscribe("/robot_pose", 1, robotPoseUpdate);
-	path_pub = n.subscribe("/path/result", 1000, path_receiver);
+//	if(!tsp)
+//		path_pub = n.subscribe("/path/result", 1000, path_receiver);
+//	else{
+//		std::cout << "FML" << std::endl;
+//		path_sub = n.subscribe("/path/result_tsp", 1000, tsp_receiver);
+//	}
+	path_sub_movement = n.subscribe("/path/result", 100, path_receiver);
 	pose_map_sub = n.subscribe("/robot_pose_map_update", 1, pose_map_update);
+
+	if(tsp){
+		//TSPSTUFF
+		using namespace std;
+		string input;
+		int counter = 0;
+		navigation::path_result path;
+		while(cin){
+			getline(cin, input);
+			if(input[0] == '-')
+				continue;
+			string val;
+			bool copy = false;
+			for(int i=0; i<input.length(); i++){
+				if(copy){
+					val = val + input[i];
+					continue;
+				}
+				if(input[i] == ' '){
+					copy = true;
+				}
+			}
+
+			switch(counter){
+			case 0:
+				path.x1 = atof(val.c_str());
+				break;
+			case 1:
+				path.y1 = atof(val.c_str());
+				break;
+			case 2:
+				path.x2 = atof(val.c_str());
+				break;
+			case 3:
+				path.y2 = atof(val.c_str());
+				break;
+			case 4:
+				path.edge_type = atoi(val.c_str());
+				break;
+			case 5:
+				global_path.push(path);
+				break;
+			}
+			counter = (counter +1)% 6;
+		}
+	}
 
 	ros::Rate loop_rate(UPDATE_RATE);
 
@@ -864,13 +935,15 @@ int main(int argc, char **argv) {
 		loop_rate.sleep();
 
 		if (!global_path.empty()) {
-			std::cout << "Path following!" << std::endl;
+//			std::cout << "Path following!" << std::endl;
 			path_following_act();
 			pathing_activated = true;
-		} else if(!pathing_activated) {
+		} else if(!pathing_activated && !tsp) {
 //			act();
 			alternative_act();
+//			std::cout << "Wandering" << std::endl;
 		}else{
+//			std::cout << "Stoping" << std::endl;
 			movement::wheel_speed desired_speed;
 			desired_speed.W1 = 0.0;
 			desired_speed.W2 = 0.0;

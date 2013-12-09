@@ -30,7 +30,6 @@ bool NavMap::addObject(double x, double y, int id, int direction){
 	lastVisitedNode.object = direction;
 	return true;
 }
-
 bool NavMap::addNode(double x, double y, int type) {
 	mapping::robot_pose dummy;
 	return addNode(x,y,type,dummy);
@@ -104,9 +103,13 @@ bool NavMap::addNode(double x, double y, int type, mapping::robot_pose& calibrat
 
 
 bool NavMap::nodeMatch(Node in, Node& res){
+	if(in.type < 0)
+		return false;
 	double minDist = IDENTICAL_NODE_DIST+1;
 	for(int i=0; i<nodes.size(); i++){
 		Node n = nodes[i];
+		if(n.type < 0)
+			continue;
 		Point2d inP = Point2d(in.x,in.y);
 		Point2d nP = Point2d(n.x,n.y);
 		double dist = norm(inP-nP);
@@ -292,10 +295,6 @@ double NavMap::getPath(int from, int to, vector<Edge>& path){
 				dists[e.to] = edgeDist;
 				pq.push({nodes[e.to],edgeDist});
 			}
-//			if(!visited.count(e.to)){// Confirms that the node is unvisited.
-//				q.push(e.to);
-//				visited[e.to] = e;
-//			}
 		}
 	}
 	return -1;
