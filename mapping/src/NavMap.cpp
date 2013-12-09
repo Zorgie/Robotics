@@ -568,12 +568,12 @@ Point2d NavMap::pointConversion(Point2d origin, Point2d relativePos,
 }
 
 void NavMap::initObjectMap(){
-	string objects = { "TIGER", "ZEBRA", "ELEPHANT", "HIPPO", "GIRAFFE", "LION",
-			"POTATO", "TOMATO", "ONION", "BROCOLI", "PAPRIKA", "CARROT", "CORN",
-			"AVOCADO", "PEPPER", "MELON", "PEAR", "BANANA", "ORANGE", "LEMON",
-			"PLATE" };
-	for(int i=0; i<21; i++){
-		objectStrToId[objects[i]] = i;
-		objectIdToStr[i] = objects[i];
-	}
+//	string objects = { "TIGER", "ZEBRA", "ELEPHANT", "HIPPO", "GIRAFFE", "LION",
+//			"POTATO", "TOMATO", "ONION", "BROCOLI", "PAPRIKA", "CARROT", "CORN",
+//			"AVOCADO", "PEPPER", "MELON", "PEAR", "BANANA", "ORANGE", "LEMON",
+//			"PLATE" };
+//	for(int i=0; i<21; i++){
+//		objectStrToId[objects[i]] = i;
+//		objectIdToStr[i] = objects[i];
+//	}
 }

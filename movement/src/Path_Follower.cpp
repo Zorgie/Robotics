@@ -57,6 +57,7 @@ static ros::Publisher desired_speed_pub;
 static ros::Publisher requested_action_performed_pub;
 static ros::Publisher robot_pos_calibrated;
 static ros::Publisher pathRequestPub;
+static ros::Publisher movement_state_pub;
 
 //store last received ir and wheel distance values
 static irsensors::floatarray ir_readings_processed_global;
@@ -374,6 +375,238 @@ void path_following_act() {
 
 }
 
+
+
+void alternative_act() {
+
+//	enum robot_action{
+//		GO_STRAIGHT_INF, //0
+//	    GO_STRAIGHT_X,
+//
+//	    TURN_LEFT_90, //2
+//	    TURN_RIGHT_90,
+//
+//	    FOLLOW_LEFT_WALL, //4
+//	    FOLLOW_RIGHT_WALL,
+//
+//	    IDLE_STATE, //6
+//	    WAIT_X
+//	};
+
+	movement::wheel_speed desired_speed;
+
+	desired_speed.W1 = 0.0;
+	desired_speed.W2 = 0.0;
+
+	static bool in_rotation = false;
+	static double wall_in_front = 0.0;
+	static int prev_state=-10;
+
+//	navigation::movement_state state_msg;
+//	state_msg.movement_state = action_to_perform;
+//	movement_state_pub.publish(state_msg);
+
+	std::vector<movement::robot_pose>::iterator it;
+
+	pose_hist.pop_back(); // Remove oldest element (last in list)
+	it = pose_hist.begin();
+	pose_hist.insert(it, poseCache); // Insert newest element (at beginning of list)
+
+	double delta_x = pose_hist[0].x - pose_hist[1].x;
+	double delta_y = pose_hist[0].y - pose_hist[1].y;
+	double delta_theta = pose_hist[0].theta - pose_hist[1].theta;
+
+	double lin_dist = sqrt((delta_x * delta_x) + (delta_y * delta_y));
+
+	estimated_pose.x = estimated_pose.x + lin_dist * cos(estimated_pose.theta);
+	estimated_pose.y = estimated_pose.y + lin_dist * sin(estimated_pose.theta);
+
+//	std::cout << "\nEstimated X: " << estimated_pose.x << std::endl;
+//	std::cout << "Estimated Y: " << estimated_pose.y << std::endl;
+//	std::cout << "Estimated theta (in degrees): "
+//			<< estimated_pose.theta * (180.0 / M_PI) << std::endl;
+
+//	go_straight.initiate_go_straight(5.0, true); // Infinity equals five meters.
+	// This line stops the robot from going faster, consider remove it.
+
+	// Check if I am close to from point (sanity check)
+//
+//	std::cout << "From point: " << current_path.x1 << " , " << current_path.y1
+//			<< std::endl;
+//	std::cout << "To point: " << current_path.x2 << " , " << current_path.y2
+//			<< std::endl;
+
+//	std::cout << "\n\nBeautiful Desired angle: "
+//			<< desired_angle_multiple_of_90 * 90 << std::endl;
+//	std::cout << "Beautiful Current Perfect angle: "
+//			<< estimated_angle_multiple_of_90 * 90 << std::endl;
+
+//	std::cout << "Need to rotate: " << need_to_rotate * 90 << std::endl;
+
+	double left_avg=(ir_readings_processed_global.ch[5]+ir_readings_processed_global.ch[6])/2.0;
+	double right_avg=(ir_readings_processed_global.ch[0]+ir_readings_processed_global.ch[1])/2.0;
+
+	// If we need to rotate, let us rotate
+	if (wall_in_front==1.0) {
+		wall_in_front=0.0;
+		double need_to_rotate=0.0;
+		if(left_avg<right_avg){
+			// Right -90
+			need_to_rotate=-1.0;
+			prev_state=3;
+			navigation::movement_state state_msg;
+			state_msg.movement_state = prev_state;
+			movement_state_pub.publish(state_msg);
+			std::cout << "Saying:   TURN_RIGHT_90" << std::endl;
+
+		}else{
+			// Left 90
+			prev_state=2;
+			navigation::movement_state state_msg;
+			state_msg.movement_state = prev_state;
+			movement_state_pub.publish(state_msg);
+			need_to_rotate=1.0;
+			std::cout << "Saying:   TURN_LEFT_90" << std::endl;
+		}
+		std::cout << "\033[1;31mRotation\033[0m\n"; // Red
+		std::cout << "Initiate Rotation of : " << need_to_rotate * 90
+				<< std::endl;
+		rotation.initiate_rotation(need_to_rotate * 90, estimated_pose);
+		desired_speed.W1 = 0.0;
+		desired_speed.W2 = 0.0;
+		desired_speed_pub.publish(desired_speed);
+		in_rotation = true;
+//				std::cerr << "Press a key to continue!" << std::endl;
+//				std::cin.ignore();
+		return;
+	}
+
+	if (in_rotation) {
+		//wall_in_front=0.0;
+//		std::cout << "On Rotation" << std::endl;
+//		std::cout << "\033[1;31mRotation\033[0m\n"; // Red
+		desired_speed = rotation.step(wheel_distance_traveled_global,estimated_pose);
+		if (rotation.isFinished(estimated_pose)) {
+			std::cout << "Finished Rotation" << std::endl;
+			in_rotation = false;
+		}
+		desired_speed_pub.publish(desired_speed);
+		return;
+	}
+
+	// So we are in the right orientation, lets walk!
+	// Possible edge types:
+	//	GO_STRAIGHT_INF - 1
+	//	GO_STRAIGHT_X - 2
+	//	FOLLOW_LEFT_WALL - 4
+	//	FOLLOW_RIGHT_WALL - 5
+	// Sensor mapping
+	//	FRONT_RIGHT = 0, BACK_RIGHT = 1
+	//	BACK_LEFT = 5, FRONT_LEFT = 6
+	//	FRONTAL_LEFT = 2, FRONTAL_RIGHT = 7
+
+	int current_state=-10;
+	//		GO_STRAIGHT_INF, //0
+	//	    GO_STRAIGHT_X,
+	//
+	//	    TURN_LEFT_90, //2
+	//	    TURN_RIGHT_90,
+	//
+	//	    FOLLOW_LEFT_WALL, //4
+	//	    FOLLOW_RIGHT_WALL,
+
+	if (left_avg <= right_avg) {
+		if (left_avg < 0.20) {
+			// Do wall following left
+			current_state=4;
+//			std::cout << "\033[1;34mFollow left\033[0m\n"; // blue
+			desired_speed = wall_follow.step(ir_readings_processed_global, 1,
+					estimated_pose);
+		} else {
+			// Go straight, what else can I do?
+			current_state=0;
+//			std::cout << "\033[1;32mStraight\033[0m\n"; // green
+			desired_speed = go_straight.step(wheel_distance_traveled_global);
+		}
+	} else {
+		if (right_avg < 0.20) {
+			// Do wall following right
+			current_state=5;
+//			std::cout << "\033[1;33mFollow right\033[0m\n"; // Yellow
+			desired_speed = wall_follow.step(ir_readings_processed_global, 0,
+					estimated_pose);
+		} else {
+			// Go straight, what else can I do?
+			current_state=0;
+//			std::cout << "\033[1;32mStraight\033[0m\n"; // green
+			desired_speed = go_straight.step(wheel_distance_traveled_global);
+		}
+	}
+
+	if (current_state != prev_state) {
+		if (current_state == 0) {
+			std::cout << "Saying: GO_STRAIGHT_INF" << std::endl;
+		} else {
+			if (current_state == 4) {
+				std::cout << "Saying: FOLLOW_LEFT_WALL" << std::endl;
+			} else {
+				if (current_state == 5) {
+					std::cout << "Saying: FOLLOW_RIGHT_WALL" << std::endl;
+				} else {
+					std::cout << "Saying: SOMETHING ELSE" << std::endl;
+				}
+			}
+		}
+		if(prev_state==2 || prev_state==3){
+			prev_state=current_state;
+		}
+		navigation::movement_state state_msg;
+		state_msg.movement_state = prev_state;
+		movement_state_pub.publish(state_msg);
+	}
+	prev_state=current_state;
+
+
+	double frontal_left = ir_readings_processed_global.ch[2];
+	double frontal_right = ir_readings_processed_global.ch[7];
+
+
+
+	if(frontal_left!=0.0 && frontal_right!=0.0){// Have to watch out for invalid readings.
+		if ((0.5*(frontal_left+frontal_right))<0.10) {
+			wall_in_front +=(1.0/3.0);
+		}else{
+			if(frontal_left<0.10 || frontal_right<0.10){
+				wall_in_front +=(1.0/3.0);
+			}else{
+				wall_in_front -=(1.0/3.0);
+			}
+		}
+
+		if(wall_in_front>1.0){
+			wall_in_front=1.0;
+		}
+		if(wall_in_front<0.0){
+			wall_in_front=0.0;
+		}
+	}else{
+		wall_in_front=0.0;
+	}
+
+//	std::cout << "Frontal left: "<< frontal_left << std::endl;
+//	std::cout << "Frontal right: "<< frontal_right << std::endl;
+//	std::cout << "Wall in front? : " << wall_in_front << std::endl;
+
+
+
+	desired_speed_pub.publish(desired_speed);
+	robot_pos_calibrated.publish(estimated_pose);
+
+}
+
+
+
+
 //get desired wheel speed according to current robot action
 void act() {
 
@@ -504,6 +737,7 @@ void movement_state_update(const navigation::movement_state &mvs) {
 
 	case TURN_LEFT_90:
 		printf("TURN_LEFT_90\n");
+		std::cout << "Initiating rotation Left 90" << std::endl;
 //		std::cout << "\033[1;32mWant to rotate\033[0m\n"; // green
 //		std::cout << "90.0" << std::endl;
 		target_rot = M_PI / 2 + poseCache.theta;
@@ -523,6 +757,7 @@ void movement_state_update(const navigation::movement_state &mvs) {
 
 	case TURN_RIGHT_90:
 		printf("TURN_RIGHT_90\n");
+		std::cout << "Initiating rotation right 90" << std::endl;
 //		std::cout << "\033[1;32mWant to rotate\033[0m\n"; // green
 //		std::cout << "-90.0" << std::endl;
 		target_rot = -M_PI / 2 + poseCache.theta;
@@ -568,8 +803,8 @@ int main(int argc, char **argv) {
 	ir_sub = n.subscribe("/sensors/transformed/ADC", 1, ir_readings_update);
 	wheel_distance_sub = n.subscribe("/wheel_distance", 1,
 			wheel_distance_update);
-	nav_sub = n.subscribe("/navigation/movement_state", 1,
-			movement_state_update);
+//	nav_sub = n.subscribe("/navigation/movement_state", 1,
+//			movement_state_update);   RUI
 	robot_pos = n.subscribe("/robot_pose", 1, robotPoseUpdate);
 	path_pub = n.subscribe("/path/result", 1000, path_receiver);
 	pose_map_sub = n.subscribe("/robot_pose_map_update", 1, pose_map_update);
@@ -589,6 +824,8 @@ int main(int argc, char **argv) {
 	robot_pos_calibrated = n.advertise<movement::robot_pose>(
 			"/robot_pose_aligned_NEW", 1);
 	pathRequestPub = n.advertise<navigation::path_request>("/path/request", 1);
+	movement_state_pub = n.advertise<navigation::movement_state>("navigation/movement_state", 1);
+
 
 	// Initialize pose historic
 	movement::robot_pose initial_pose;
@@ -617,10 +854,12 @@ int main(int argc, char **argv) {
 		loop_rate.sleep();
 
 		if (!global_path.empty()) {
+			std::cout << "Path following!" << std::endl;
 			path_following_act();
 			pathing_activated = true;
 		} else if(!pathing_activated) {
-			act();
+//			act();
+			alternative_act();
 		}else{
 			movement::wheel_speed desired_speed;
 			desired_speed.W1 = 0.0;
