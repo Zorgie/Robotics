@@ -151,18 +151,20 @@ void path_following_act() {
 	// Following the next path available
 	// Always following the path that is last on the vector.
 	navigation::path_result current_path;
-	current_path = global_path.front();//global_path[global_path.size() - 1];
+	current_path = global_path.front(); //global_path[global_path.size() - 1];
 
-	bool break_upon_wall = current_path.edge_type/100;
-	current_path.edge_type = current_path.edge_type%100;
+	bool break_upon_wall = current_path.edge_type / 100;
+	current_path.edge_type = current_path.edge_type % 100;
 
 //	go_straight.initiate_go_straight(5.0, true); // Infinity equals five meters.
 	// This line stops the robot from going faster, consider remove it.
 
 	// Check if I am close to from point (sanity check)
 	double distance = sqrt(
-			pow(current_path.x2 - estimated_pose.x, 2)*pow(cos(estimated_pose.theta),2)
-					+ pow(current_path.y2 - estimated_pose.y, 2)*pow(sin(estimated_pose.theta),2) );
+			pow(current_path.x2 - estimated_pose.x, 2)
+					* pow(cos(estimated_pose.theta), 2)
+					+ pow(current_path.y2 - estimated_pose.y, 2)
+							* pow(sin(estimated_pose.theta), 2));
 //	std::cout << "\nAt a distance of [m] to from point: " << distance
 //			<< std::endl;
 //
@@ -190,7 +192,7 @@ void path_following_act() {
 
 	int estimated_angle_multiple_of_90 = round(
 			estimated_pose.theta / (M_PI / 2));
-			//poseCache.theta/ (M_PI / 2));
+	//poseCache.theta/ (M_PI / 2));
 	estimated_angle_multiple_of_90 = remainder(estimated_angle_multiple_of_90,
 			4);
 	if (estimated_angle_multiple_of_90 < 0) {
@@ -216,8 +218,8 @@ void path_following_act() {
 	}
 	// New stuff begin
 	if (desired_angle_multiple_of_90 < estimated_angle_multiple_of_90) {
-			need_to_rotate = desired_angle_multiple_of_90
-					- estimated_angle_multiple_of_90;
+		need_to_rotate = desired_angle_multiple_of_90
+				- estimated_angle_multiple_of_90;
 	}
 	// New stuff end
 
@@ -235,12 +237,12 @@ void path_following_act() {
 
 	// If we need to rotate, let us rotate
 	if (need_to_rotate != 0) {
-		wall_in_front=0.0;
+		wall_in_front = 0.0;
 //		std::cout << "\033[1;31mRotation\033[0m\n"; // Red
 //		std::cout << "Initiate Rotation of : " << need_to_rotate * 90
 //				<< std::endl;
 		rotation.initiate_rotation(need_to_rotate * 90, estimated_pose);
-		estimated_pose.theta+=need_to_rotate*90*(M_PI/180.0);
+		estimated_pose.theta += need_to_rotate * 90 * (M_PI / 180.0);
 		desired_speed.W1 = 0.0;
 		desired_speed.W2 = 0.0;
 		desired_speed_pub.publish(desired_speed);
@@ -251,12 +253,13 @@ void path_following_act() {
 	}
 
 	if (in_rotation) {
-		wall_in_front=0.0;
+		wall_in_front = 0.0;
 //		std::cout << "On Rotation" << std::endl;
 //		std::cout << "\033[1;31mRotation\033[0m\n"; // Red
-		double old_estimated_pose_theta=estimated_pose.theta;
-		desired_speed = rotation.step(wheel_distance_traveled_global,estimated_pose);
-		estimated_pose.theta=old_estimated_pose_theta;
+		double old_estimated_pose_theta = estimated_pose.theta;
+		desired_speed = rotation.step(wheel_distance_traveled_global,
+				estimated_pose);
+		estimated_pose.theta = old_estimated_pose_theta;
 		if (rotation.isFinished(estimated_pose)) {
 //			std::cout << "Finished Rotation" << std::endl;
 			in_rotation = false;
@@ -305,10 +308,18 @@ void path_following_act() {
 				desired_speed = wall_follow.step(ir_readings_processed_global,
 						1, estimated_pose);
 			} else {
-				// Go straight, what else can I do?
-//				std::cout << "\033[1;32mStraight\033[0m\n"; // green
-				desired_speed = go_straight.step(
-						wheel_distance_traveled_global);
+				if (ir_readings_processed_global.ch[0] < 0.17
+						&& ir_readings_processed_global.ch[1] < 0.17) {
+					// Do wall following right
+					//				std::cout << "\033[1;33mFollow right\033[0m\n"; // Yellow
+					desired_speed = wall_follow.step(
+							ir_readings_processed_global, 0, estimated_pose);
+				} else {
+					// Go straight, what else can I do?
+					//				std::cout << "\033[1;32mStraight\033[0m\n"; // green
+					desired_speed = go_straight.step(
+							wheel_distance_traveled_global);
+				}
 			}
 		}
 		if (current_path.edge_type == 5) { // Should follow the right wall
@@ -319,10 +330,18 @@ void path_following_act() {
 				desired_speed = wall_follow.step(ir_readings_processed_global,
 						0, estimated_pose);
 			} else {
-				// Go straight, what else can I do?
-//				std::cout << "\033[1;32mStraight\033[0m\n"; // green
-				desired_speed = go_straight.step(
-						wheel_distance_traveled_global);
+				if (ir_readings_processed_global.ch[5] < 0.17
+						&& ir_readings_processed_global.ch[6] < 0.17) {
+					// Do wall following right
+					//				std::cout << "\033[1;33mFollow right\033[0m\n"; // Yellow
+					desired_speed = wall_follow.step(
+							ir_readings_processed_global, 1, estimated_pose);
+				} else {
+					// Go straight, what else can I do?
+					//				std::cout << "\033[1;32mStraight\033[0m\n"; // green
+					desired_speed = go_straight.step(
+							wheel_distance_traveled_global);
+				}
 			}
 		}
 
@@ -331,33 +350,30 @@ void path_following_act() {
 	double frontal_left = ir_readings_processed_global.ch[2];
 	double frontal_right = ir_readings_processed_global.ch[7];
 
-
-
-	if(frontal_left!=0.0 && frontal_right!=0.0){// Have to watch out for invalid readings.
-		if ((0.5*(frontal_left+frontal_right))<0.10) {
-			wall_in_front +=(1.0/3.0);
-		}else{
-			if(frontal_left<0.10 || frontal_right<0.10){
-				wall_in_front +=(1.0/3.0);
-			}else{
-				wall_in_front -=(1.0/3.0);
+	if (frontal_left != 0.0 && frontal_right != 0.0) { // Have to watch out for invalid readings.
+		if ((0.5 * (frontal_left + frontal_right)) < 0.10) {
+			wall_in_front += (1.0 / 3.0);
+		} else {
+			if (frontal_left < 0.10 || frontal_right < 0.10) {
+				wall_in_front += (1.0 / 3.0);
+			} else {
+				wall_in_front -= (1.0 / 3.0);
 			}
 		}
 
-		if(wall_in_front>1.0){
-			wall_in_front=1.0;
+		if (wall_in_front > 1.0) {
+			wall_in_front = 1.0;
 		}
-		if(wall_in_front<0.0){
-			wall_in_front=0.0;
+		if (wall_in_front < 0.0) {
+			wall_in_front = 0.0;
 		}
-	}else{
-		wall_in_front=0.0;
+	} else {
+		wall_in_front = 0.0;
 	}
 
 //	std::cout << "Frontal left: "<< frontal_left << std::endl;
 //	std::cout << "Frontal right: "<< frontal_right << std::endl;
 //	std::cout << "Wall in front? : " << wall_in_front << std::endl;
-
 
 	if ((fabs(distance) < 0.01 && !break_upon_wall) || wall_in_front == 1.0) {
 
@@ -379,8 +395,6 @@ void path_following_act() {
 	robot_pos_calibrated.publish(estimated_pose);
 
 }
-
-
 
 void alternative_act() {
 
@@ -405,7 +419,7 @@ void alternative_act() {
 
 	static bool in_rotation = false;
 	static double wall_in_front = 0.0;
-	static int prev_state=-10;
+	static int prev_state = -10;
 
 //	navigation::movement_state state_msg;
 //	state_msg.movement_state = action_to_perform;
@@ -448,32 +462,36 @@ void alternative_act() {
 
 //	std::cout << "Need to rotate: " << need_to_rotate * 90 << std::endl;
 
-	double left_avg=(ir_readings_processed_global.ch[5]+ir_readings_processed_global.ch[6])/2.0;
-	double right_avg=(ir_readings_processed_global.ch[0]+ir_readings_processed_global.ch[1])/2.0;
+	double left_avg = (ir_readings_processed_global.ch[5]
+			+ ir_readings_processed_global.ch[6]) / 2.0;
+	double right_avg = (ir_readings_processed_global.ch[0]
+			+ ir_readings_processed_global.ch[1]) / 2.0;
 
 	// If we need to rotate, let us rotate
-	if (wall_in_front==1.0) {
-		wall_in_front=0.0;
-		double need_to_rotate=0.0;
-		double min_left=std::min(ir_readings_processed_global.ch[5],ir_readings_processed_global.ch[6]);
-		double min_right=std::min(ir_readings_processed_global.ch[0],ir_readings_processed_global.ch[1]);
+	if (wall_in_front == 1.0) {
+		wall_in_front = 0.0;
+		double need_to_rotate = 0.0;
+		double min_left = std::min(ir_readings_processed_global.ch[5],
+				ir_readings_processed_global.ch[6]);
+		double min_right = std::min(ir_readings_processed_global.ch[0],
+				ir_readings_processed_global.ch[1]);
 
-		if(left_avg<right_avg || min_left<min_right){
+		if (left_avg < right_avg || min_left < min_right) {
 			// Right -90
-			need_to_rotate=-1.0;
-			prev_state=3;
+			need_to_rotate = -1.0;
+			prev_state = 3;
 			navigation::movement_state state_msg;
 			state_msg.movement_state = prev_state;
 			movement_state_pub.publish(state_msg);
 			std::cout << "Saying:   TURN_RIGHT_90" << std::endl;
 
-		}else{
+		} else {
 			// Left 90
-			prev_state=2;
+			prev_state = 2;
 			navigation::movement_state state_msg;
 			state_msg.movement_state = prev_state;
 			movement_state_pub.publish(state_msg);
-			need_to_rotate=1.0;
+			need_to_rotate = 1.0;
 			std::cout << "Saying:   TURN_LEFT_90" << std::endl;
 		}
 		std::cout << "\033[1;31mrotation\033[0m\n"; // red
@@ -493,13 +511,14 @@ void alternative_act() {
 		//wall_in_front=0.0;
 //		std::cout << "On Rotation" << std::endl;
 //		std::cout << "\033[1;31mRotation\033[0m\n"; // Red
-		desired_speed = rotation.step(wheel_distance_traveled_global,estimated_pose);
+		desired_speed = rotation.step(wheel_distance_traveled_global,
+				estimated_pose);
 		if (rotation.isFinished(estimated_pose)) {
 			std::cout << "Finished Rotation" << std::endl;
 			in_rotation = false;
 		}
 
-		std::cout << "In rotation: "<< estimated_pose.theta << std::endl;
+		std::cout << "In rotation: " << estimated_pose.theta << std::endl;
 		desired_speed_pub.publish(desired_speed);
 		robot_pos_calibrated.publish(estimated_pose);
 		return;
@@ -516,7 +535,7 @@ void alternative_act() {
 	//	BACK_LEFT = 5, FRONT_LEFT = 6
 	//	FRONTAL_LEFT = 2, FRONTAL_RIGHT = 7
 
-	int current_state=-10;
+	int current_state = -10;
 	//		GO_STRAIGHT_INF, //0
 	//	    GO_STRAIGHT_X,
 	//
@@ -529,17 +548,34 @@ void alternative_act() {
 	if (left_avg <= right_avg) {
 		if (left_avg < 0.25) {
 			// Do wall following left
-			current_state = 4;
-//			std::cout << "\033[1;34mFollow left\033[0m\n"; // blue
-			desired_speed = wall_follow.step(ir_readings_processed_global, 1,
-					estimated_pose);
+			if (fabs(
+					ir_readings_processed_global.ch[5]
+							- ir_readings_processed_global.ch[6]) < 0.15) {
+				current_state = 4;
+				desired_speed = wall_follow.step(ir_readings_processed_global,
+						1, estimated_pose);
+			}
+
+			else {
+				current_state = 0;
+				desired_speed = go_straight.step(
+						wheel_distance_traveled_global);
+			}
 		} else {
 			if (right_avg < 0.25) {
 				// Do wall following right
-				current_state = 5;
-				//			std::cout << "\033[1;33mFollow right\033[0m\n"; // Yellow
-				desired_speed = wall_follow.step(ir_readings_processed_global,
-						0, estimated_pose);
+				if (fabs(
+						ir_readings_processed_global.ch[0]
+								- ir_readings_processed_global.ch[1]) < 0.15) {
+					current_state = 5;
+					//			std::cout << "\033[1;33mFollow right\033[0m\n"; // Yellow
+					desired_speed = wall_follow.step(
+							ir_readings_processed_global, 0, estimated_pose);
+				} else {
+					current_state = 0;
+					desired_speed = go_straight.step(
+							wheel_distance_traveled_global);
+				}
 			} else {
 				// Go straight, what else can I do?
 				current_state = 0;
@@ -551,17 +587,37 @@ void alternative_act() {
 	} else {
 		if (right_avg < 0.25) {
 			// Do wall following right
-			current_state = 5;
-//			std::cout << "\033[1;33mFollow right\033[0m\n"; // Yellow
-			desired_speed = wall_follow.step(ir_readings_processed_global, 0,
-					estimated_pose);
+			if (fabs(
+					ir_readings_processed_global.ch[0]
+							- ir_readings_processed_global.ch[1]) < 0.15) {
+				current_state = 5;
+				//			std::cout << "\033[1;33mFollow right\033[0m\n"; // Yellow
+				desired_speed = wall_follow.step(ir_readings_processed_global,
+						0, estimated_pose);
+			} else {
+				current_state = 0;
+				desired_speed = go_straight.step(
+						wheel_distance_traveled_global);
+			}
 		} else {
 			if (left_avg < 0.25) {
 				// Do wall following left
-				current_state = 4;
+
 				//			std::cout << "\033[1;34mFollow left\033[0m\n"; // blue
-				desired_speed = wall_follow.step(ir_readings_processed_global,
-						1, estimated_pose);
+
+				if (fabs(
+						ir_readings_processed_global.ch[5]
+								- ir_readings_processed_global.ch[6]) < 0.15) {
+					current_state = 4;
+					desired_speed = wall_follow.step(
+							ir_readings_processed_global, 1, estimated_pose);
+				}
+
+				else {
+					current_state = 0;
+					desired_speed = go_straight.step(
+							wheel_distance_traveled_global);
+				}
 			} else {
 				// Go straight, what else can I do?
 				current_state = 0;
@@ -571,6 +627,9 @@ void alternative_act() {
 			}
 		}
 	}
+
+//	double left_avg=(ir_readings_processed_global.ch[5]+ir_readings_processed_global.ch[6])/2.0;
+//		double right_avg=(ir_readings_processed_global.ch[0]+ir_readings_processed_global.ch[1])/2.0;
 
 	if (current_state != prev_state) {
 		if (current_state == 0) {
@@ -586,55 +645,48 @@ void alternative_act() {
 				}
 			}
 		}
-		if(prev_state==2 || prev_state==3){
-			prev_state=current_state;
+		if (prev_state == 2 || prev_state == 3) {
+			prev_state = current_state;
 		}
 		navigation::movement_state state_msg;
 		state_msg.movement_state = prev_state;
 		movement_state_pub.publish(state_msg);
 	}
-	prev_state=current_state;
-
+	prev_state = current_state;
 
 	double frontal_left = ir_readings_processed_global.ch[2];
 	double frontal_right = ir_readings_processed_global.ch[7];
 
-
-
-	if(frontal_left!=0.0 && frontal_right!=0.0){// Have to watch out for invalid readings.
-		if ((0.5*(frontal_left+frontal_right))<0.10) {
-			wall_in_front +=(1.0/3.0);
-		}else{
-			if(frontal_left<0.10 || frontal_right<0.10){
-				wall_in_front +=(1.0/3.0);
-			}else{
-				wall_in_front -=(1.0/3.0);
+	if (frontal_left != 0.0 && frontal_right != 0.0) { // Have to watch out for invalid readings.
+		if ((0.5 * (frontal_left + frontal_right)) < 0.10) {
+			wall_in_front += (1.0 / 3.0);
+		} else {
+			if (frontal_left < 0.10 || frontal_right < 0.10) {
+				wall_in_front += (1.0 / 3.0);
+			} else {
+				wall_in_front -= (1.0 / 3.0);
 			}
 		}
 
-		if(wall_in_front>1.0){
-			wall_in_front=1.0;
+		if (wall_in_front > 1.0) {
+			wall_in_front = 1.0;
 		}
-		if(wall_in_front<0.0){
-			wall_in_front=0.0;
+		if (wall_in_front < 0.0) {
+			wall_in_front = 0.0;
 		}
-	}else{
-		wall_in_front=0.0;
+	} else {
+		wall_in_front = 0.0;
 	}
 
 //	std::cout << "Frontal left: "<< frontal_left << std::endl;
 //	std::cout << "Frontal right: "<< frontal_right << std::endl;
 //	std::cout << "Wall in front? : " << wall_in_front << std::endl;
 
-
 //	std::cout << "What I Publish: " << estimated_pose.theta << std::endl;
 	desired_speed_pub.publish(desired_speed);
 	robot_pos_calibrated.publish(estimated_pose);
 
 }
-
-
-
 
 //get desired wheel speed according to current robot action
 void act() {
@@ -689,14 +741,16 @@ void act() {
 		}
 		break;
 	case TURN_LEFT_90:
-		desired_speed = rotation.step(wheel_distance_traveled_global,estimated_pose);
+		desired_speed = rotation.step(wheel_distance_traveled_global,
+				estimated_pose);
 		if (rotation.isFinished(estimated_pose)) {
 			printf("TURN LEFT 90 INTERRUPT SENT\n");
 			send_inturrupt(TURN_LEFT_90);
 		}
 		break;
 	case TURN_RIGHT_90:
-		desired_speed = rotation.step(wheel_distance_traveled_global,estimated_pose);
+		desired_speed = rotation.step(wheel_distance_traveled_global,
+				estimated_pose);
 		if (rotation.isFinished(estimated_pose)) {
 			send_inturrupt(TURN_RIGHT_90);
 		}
@@ -730,7 +784,7 @@ void act() {
 
 }
 
-void tsp_receiver(const navigation::path_result &path_part){
+void tsp_receiver(const navigation::path_result &path_part) {
 	std::cout << "EVerzthing is bad." << std::endl;
 	global_path.push(path_part);
 }
@@ -738,11 +792,11 @@ void tsp_receiver(const navigation::path_result &path_part){
 void path_receiver(const navigation::path_result &path_part) {
 	std::cout << "received path" << std::endl;
 	// Need to check the order in which I insert/pop
-	std::cout <<  "X1: " <<path_part.x1 <<  "Y1: " <<path_part.y1 << std::endl;
+	std::cout << "X1: " << path_part.x1 << "Y1: " << path_part.y1 << std::endl;
 	global_path.push(path_part);
 }
 
-void pose_map_update(const movement::robot_pose &map_pose){
+void pose_map_update(const movement::robot_pose &map_pose) {
 
 	estimated_pose.x = map_pose.x;
 	estimated_pose.y = map_pose.y;
@@ -752,7 +806,7 @@ void pose_map_update(const movement::robot_pose &map_pose){
 
 //update the robot state and initialize a new object calculating wheel speeds
 void movement_state_update(const navigation::movement_state &mvs) {
-	if(!global_path.empty()){
+	if (!global_path.empty()) {
 		return;
 	}
 
@@ -782,8 +836,10 @@ void movement_state_update(const navigation::movement_state &mvs) {
 //		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI,
 //				estimated_pose);
 		std::cout << "target_rot: " << target_rot << std::endl;
-		std::cout << "estimated_pose.theta: " << estimated_pose.theta << std::endl;
-		rotation.initiate_rotation(	(target_rot - estimated_pose.theta) * 180 / M_PI,
+		std::cout << "estimated_pose.theta: " << estimated_pose.theta
+				<< std::endl;
+		rotation.initiate_rotation(
+				(target_rot - estimated_pose.theta) * 180 / M_PI,
 				estimated_pose);
 //		std::cout << "\033[1;33mWill rotate\033[0m\n"; // yellow
 //		std::cout << (target_rot - poseCache.theta) * 180 / M_PI << std::endl;
@@ -802,10 +858,11 @@ void movement_state_update(const navigation::movement_state &mvs) {
 //		rotation.initiate_rotation((target_rot - poseCache.theta) * 180 / M_PI,
 //				estimated_pose);
 		std::cout << "target_rot: " << target_rot << std::endl;
-		std::cout << "estimated_pose.theta: " << estimated_pose.theta << std::endl;
+		std::cout << "estimated_pose.theta: " << estimated_pose.theta
+				<< std::endl;
 
-
-		rotation.initiate_rotation((target_rot - estimated_pose.theta) * 180 / M_PI,
+		rotation.initiate_rotation(
+				(target_rot - estimated_pose.theta) * 180 / M_PI,
 				estimated_pose);
 //		std::cout << "\033[1;33mWill rotate\033[0m\n"; // yellow
 //		std::cout << (target_rot - poseCache.theta) * 180 / M_PI << std::endl;
@@ -833,15 +890,15 @@ int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "Movement");
 	ros::NodeHandle n;
-	if(argc >= 2){
-		if(strcmp("tsp",argv[1])==0){
+	if (argc >= 2) {
+		if (strcmp("tsp", argv[1]) == 0) {
 			std::cout << "TSP mode." << std::endl;
 			tsp = true;
-		}else{
+		} else {
 			std::cout << "Not TPS mode. Mode: ";
 			std::cout << argv[1] << std::endl;
 		}
-	}else{
+	} else {
 		std::cout << "Args: " << argc << std::endl;
 	}
 	std::cout << "after args" << std::endl;
@@ -862,29 +919,29 @@ int main(int argc, char **argv) {
 	path_sub_movement = n.subscribe("/path/result", 100, path_receiver);
 	pose_map_sub = n.subscribe("/robot_pose_map_update", 1, pose_map_update);
 
-	if(tsp){
+	if (tsp) {
 		//TSPSTUFF
 		using namespace std;
 		string input;
 		int counter = 0;
 		navigation::path_result path;
-		while(cin){
+		while (cin) {
 			getline(cin, input);
-			if(input[0] == '-')
+			if (input[0] == '-')
 				continue;
 			string val;
 			bool copy = false;
-			for(int i=0; i<input.length(); i++){
-				if(copy){
+			for (int i = 0; i < input.length(); i++) {
+				if (copy) {
 					val = val + input[i];
 					continue;
 				}
-				if(input[i] == ' '){
+				if (input[i] == ' ') {
 					copy = true;
 				}
 			}
 
-			switch(counter){
+			switch (counter) {
 			case 0:
 				path.x1 = atof(val.c_str());
 				break;
@@ -904,7 +961,7 @@ int main(int argc, char **argv) {
 				global_path.push(path);
 				break;
 			}
-			counter = (counter +1)% 6;
+			counter = (counter + 1) % 6;
 		}
 	}
 
@@ -923,8 +980,8 @@ int main(int argc, char **argv) {
 	robot_pos_calibrated = n.advertise<movement::robot_pose>(
 			"/robot_pose_aligned_NEW", 1);
 	pathRequestPub = n.advertise<navigation::path_request>("/path/request", 1);
-	movement_state_pub = n.advertise<navigation::movement_state>("navigation/movement_state", 1);
-
+	movement_state_pub = n.advertise<navigation::movement_state>(
+			"navigation/movement_state", 1);
 
 	// Initialize pose historic
 	movement::robot_pose initial_pose;
@@ -936,7 +993,7 @@ int main(int argc, char **argv) {
 
 	bool pathing_activated = false;
 
-	go_straight.initiate_go_straight(1000.0,1); // Initialize walking forward as starting state.
+	go_straight.initiate_go_straight(1000.0, 1); // Initialize walking forward as starting state.
 	wall_follow.init();
 
 //	string evidence_string = msg.object_id;
@@ -956,11 +1013,11 @@ int main(int argc, char **argv) {
 //			std::cout << "Path following!" << std::endl;
 			path_following_act();
 			pathing_activated = true;
-		} else if(!pathing_activated && !tsp) {
+		} else if (!pathing_activated && !tsp) {
 //			act();
 			alternative_act();
 //			std::cout << "Wandering" << std::endl;
-		}else{
+		} else {
 //			std::cout << "Stoping" << std::endl;
 			movement::wheel_speed desired_speed;
 			desired_speed.W1 = 0.0;

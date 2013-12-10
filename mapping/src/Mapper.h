@@ -45,6 +45,7 @@ private:
 	ros::Publisher pathResultPub;
 	ros::Publisher speakerPub;
 	ros::Publisher tspPub;
+	ros::Publisher evidencePub;
 
 	mapping::robot_pose currentPose;
 	bool poseInit;

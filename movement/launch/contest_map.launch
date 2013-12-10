@@ -1,0 +1,6 @@
+<launch>
+  <node name="serial_node" pkg="rosserial_python" type="serial_node.py" args="/dev/ttyACM0" />
+  <node name="IrReadings" pkg="irsensors" type="IrReadings"/>
+  <node name="open_loop_control" pkg="movement" type="open_loop_control"/>
+  <node name="robot_talk" pkg="robot_talk" type="robot_talk"/>
+</launch>
