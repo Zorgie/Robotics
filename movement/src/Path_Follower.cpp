@@ -156,7 +156,7 @@ void path_following_act() {
 	bool break_upon_wall = current_path.edge_type/100;
 	current_path.edge_type = current_path.edge_type%100;
 
-	go_straight.initiate_go_straight(5.0, true); // Infinity equals five meters.
+//	go_straight.initiate_go_straight(5.0, true); // Infinity equals five meters.
 	// This line stops the robot from going faster, consider remove it.
 
 	// Check if I am close to from point (sanity check)
@@ -527,30 +527,48 @@ void alternative_act() {
 	//	    FOLLOW_RIGHT_WALL,
 
 	if (left_avg <= right_avg) {
-		if (left_avg < 0.20) {
+		if (left_avg < 0.25) {
 			// Do wall following left
-			current_state=4;
+			current_state = 4;
 //			std::cout << "\033[1;34mFollow left\033[0m\n"; // blue
 			desired_speed = wall_follow.step(ir_readings_processed_global, 1,
 					estimated_pose);
 		} else {
-			// Go straight, what else can I do?
-			current_state=0;
+			if (right_avg < 0.25) {
+				// Do wall following right
+				current_state = 5;
+				//			std::cout << "\033[1;33mFollow right\033[0m\n"; // Yellow
+				desired_speed = wall_follow.step(ir_readings_processed_global,
+						0, estimated_pose);
+			} else {
+				// Go straight, what else can I do?
+				current_state = 0;
 //			std::cout << "\033[1;32mStraight\033[0m\n"; // green
-			desired_speed = go_straight.step(wheel_distance_traveled_global);
+				desired_speed = go_straight.step(
+						wheel_distance_traveled_global);
+			}
 		}
 	} else {
-		if (right_avg < 0.20) {
+		if (right_avg < 0.25) {
 			// Do wall following right
-			current_state=5;
+			current_state = 5;
 //			std::cout << "\033[1;33mFollow right\033[0m\n"; // Yellow
 			desired_speed = wall_follow.step(ir_readings_processed_global, 0,
 					estimated_pose);
 		} else {
-			// Go straight, what else can I do?
-			current_state=0;
+			if (left_avg < 0.25) {
+				// Do wall following left
+				current_state = 4;
+				//			std::cout << "\033[1;34mFollow left\033[0m\n"; // blue
+				desired_speed = wall_follow.step(ir_readings_processed_global,
+						1, estimated_pose);
+			} else {
+				// Go straight, what else can I do?
+				current_state = 0;
 //			std::cout << "\033[1;32mStraight\033[0m\n"; // green
-			desired_speed = go_straight.step(wheel_distance_traveled_global);
+				desired_speed = go_straight.step(
+						wheel_distance_traveled_global);
+			}
 		}
 	}
 
