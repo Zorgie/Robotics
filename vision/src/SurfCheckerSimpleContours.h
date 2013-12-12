@@ -3,6 +3,8 @@
  *
  *  Created on: 27.11.2013
  *      Author: paul
+ * This module was just to test if we can also surf the lion/elephant
+ * Turns out it is not a good idea to do that, too few features!
  */
 
 #ifndef SURFCHECKERSIMPLECONTOURS_H_

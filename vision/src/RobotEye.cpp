@@ -10,8 +10,6 @@
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 
-
-
 using namespace cv;
 using namespace std;
 
@@ -27,7 +25,8 @@ bool detectObject = true;
 
 //receive new kinect image and convert it to cv::Mat (BGR)
 void imgCallback(const sensor_msgs::ImageConstPtr &msg){
-	currentEvidence.image_evidence = *msg;
+	//fill the evidence message for the contest and the global rgb image
+    currentEvidence.image_evidence = *msg;
 	currentEvidence.stamp = ros::Time::now();
 	currentEvidence.group_number = 9;
 
@@ -49,6 +48,7 @@ int main(int argc,char** argv)
 
 	ros::Publisher  objectInScreenPub = nh_.advertise<vision::evidence>("robot_eye/object_detected_info",1);
 
+    //these 2 detectors are used to detect if there is an object present in the image
 	ColorDetector cDetect;
 	ContourChecker contourChecker;
 
@@ -113,26 +113,7 @@ int main(int argc,char** argv)
     				//OBJECT DETECTED!!!
 
 
-//    				cv_bridge::CvImage out_msg;
-//    				out_msg=kinectInputImage;
-//    				out_msg.header   = kinectInputImage->header; // Same timestamp and tf frame as input image
-//    				out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1; // Or whatever
-//    				out_msg.image    = kinectInputImage; // Your cv::Mat
-
-    				//evidence_message.image_evidence = kinectInputImage;
-
-
-    				/*const cv_bridge::CvImagePtr xyz = ic.getImage(pointerToImage);
-    				Mat myMat = xyz->image.clone();
-    				imshow("MyMat",myMat);*/
-
-
-    				//evidence_message.stamp = ros::Time::now();
-
-
     				if(result.size() == 1){
-
-    					//CHECK IF IT WAS THE GIRAFFE AND IF THERE ACTUALLY IS SOME GIRAFFE ORANGE IN THE IMAGE?
 
     					cout << "ONE OBJECT HAS BEEN FOUND: ";
     					detector.printObjectName(result[0]);

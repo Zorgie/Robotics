@@ -11,8 +11,6 @@
 #include <iostream>
 using namespace std;
 
-//TODO: ADD LION TO SURF MODULE TOGETHER WITH ELEPHANT;HIPPO
-//1 CHECK LION SEPARATION
 
 
 enum object{

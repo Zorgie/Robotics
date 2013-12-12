@@ -30,7 +30,7 @@ public:
 	int getBananaVotes();
 	int getCornVotes();
 
-//private:
+
 	int totalNrOfCircles;
 	int totalNrOfEllipses;
 	int nrOfVotes;

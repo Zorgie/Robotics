@@ -28,6 +28,8 @@
 using namespace cv;
 using namespace std;
 
+//module used to find hue saturation value values
+
 
 int lowerH=0;
 int lowerS=0;
