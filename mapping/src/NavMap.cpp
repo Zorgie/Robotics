@@ -8,11 +8,18 @@
 #include "../include/NavMap.h"
 static bool DEBUG = FALSE;
 
+/**
+ * Takes a (x,y) value in robot language and translates it into a coordinate
+ * that will display on the GUI map.
+ */
 Point NavMap::getVisualCoord(double x, double y){
 	return Point((int)(drawOffset.x - drawScaling.x * (x)), (int) (drawOffset.y + drawScaling.y * (y)));
 }
 
-
+/**
+ * Tests a node for validity.
+ * @return True if the node number exists.
+ */
 bool NavMap::validNode(int n) {
 	if (n < 0)
 		return false;
@@ -21,6 +28,14 @@ bool NavMap::validNode(int n) {
 	return true;
 }
 
+/**
+ * Adds an object to the map.
+ * @param x X-position.
+ * @param y Y-position.
+ * @param id ID of the object.
+ * @param direction The direction the robot should watch to see the
+ * object at specified position.
+ */
 bool NavMap::addObject(double x, double y, int id, int direction){
 	if(objectsFound.find(id) != objectsFound.end()){
 		return false;
@@ -30,23 +45,27 @@ bool NavMap::addObject(double x, double y, int id, int direction){
 	lastVisitedNode.object = direction;
 	return true;
 }
+
+/**
+ * Adds a node.
+ * @param x X-position of the node.
+ * @param y Y-position of the node.
+ * @param type The type ID of the node, specified by RobotActions.h
+ */
 bool NavMap::addNode(double x, double y, int type) {
 	mapping::robot_pose dummy;
 	return addNode(x,y,type,dummy);
 }
 
+/**
+ * Adds a node.
+ * @param x X-position of the node.
+ * @param y Y-position of the node.
+ * @param type The type ID of the node, specified by RobotActions.h
+ * @calibratedPose The new position of the robot, after synchronizing with the map
+ * and the sensors. This variable will be modified to the correct value.
+ */
 bool NavMap::addNode(double x, double y, int type, mapping::robot_pose& calibratedPose){
-//	if (type == -1) { // Object
-//		for (int i = 0; i < nodes.size(); i++) {
-//			if(nodes[i].type != type)
-//				continue;
-//			double distance = sqrt(pow(x - nodes[i].x, 2) + pow(y - nodes[i].y, 2));
-//			if (distance < 0.2) {
-//				return false;
-//			}
-//		}
-//	}
-
 	int newNodeId = nodes.size();
 	Node n = {newNodeId,x,y,type};
 
@@ -101,7 +120,12 @@ bool NavMap::addNode(double x, double y, int type, mapping::robot_pose& calibrat
 	return newCreated;
 }
 
-
+/**
+ * Checks if a too similar node already exists.
+ * @param in The node to check for similarity.
+ * @param res The matching node (if matched).
+ * @return True if the node matched.
+ */
 bool NavMap::nodeMatch(Node in, Node& res){
 	if(in.type < 0)
 		return false;
@@ -133,10 +157,9 @@ bool NavMap::nodeMatch(Node in, Node& res){
 	return false;
 }
 
-void NavMap::nodeMerge(Node& to, Node& from){
-
-}
-
+/**
+ * Adds an edge between two nodes (in both directions).
+ */
 void NavMap::addEdge(int from, int to, int type) {
 	if(!validNode(from) || !validNode(to)){
 		cerr << "Trying to add edge between invalid nodes: " << from << ", " << to;
@@ -164,10 +187,16 @@ void NavMap::addEdge(int from, int to, int type) {
 	}
 }
 
+/**
+ * Retrieves neighbours to a specified node.
+ */
 vector<Edge> NavMap::getNeighbours(int nodeId) {
 	return getNeighbours(nodeId, false);
 }
 
+/**
+ * Retrieves neighbours to a specified node.
+ */
 vector<Edge> NavMap::getNeighbours(int nodeId, bool cache) {
 	if(cache){
 		//return neighbours[nodeId];
@@ -247,22 +276,41 @@ vector<Edge> NavMap::getNeighbours(int nodeId, bool cache) {
 	return neighbours[nodeId];
 }
 
+/**
+ * Retrieves the shortest path from the last visited node to specified node.
+ */
 vector<Edge> NavMap::getPath(int to){
 	vector<Edge> path;
 	getPath(lastVisitedNode.index, to, path);
 	return path;
 }
 
+/**
+ * Retrieves the shortest path from the last visited node to specified node.
+ * @param to Node that shall be travelled to.
+ * @param path The resulting path.
+ * @return The distance in meters along the path (shortest possible).
+ */
 double NavMap::getPath(int to, vector<Edge>& path){
 	return getPath(lastVisitedNode.index, to, path);
 }
 
+/**
+ * Retrieves the shortest path from node "from" to node "to".
+ */
 vector<Edge> NavMap::getPath(int from, int to){
 	vector<Edge> path;
 	getPath(from,to,path);
 	return path;
 }
 
+/**
+ * Retrieves the shortest path between two nodes.
+ * @param from Node that shall be travelled from.
+ * @param to Node that shall be travelled to.
+ * @param path The resulting path.
+ * @return The distance in meters along the path (shortest possible).
+ */
 double NavMap::getPath(int from, int to, vector<Edge>& path){
 	queue<int> q;
 	priority_queue<GraphNode, vector<GraphNode>, GraphNodeCmp> pq;
@@ -300,6 +348,9 @@ double NavMap::getPath(int from, int to, vector<Edge>& path){
 	return -1;
 }
 
+/**
+ * Adds a wall. Between specified coordinates.
+ */
 void NavMap::addWall(double x1, double y1, double x2, double y2) {
 	double snapped;
 	if (fabs(x2 - x1) > fabs(y2 - y1)) {
@@ -313,6 +364,9 @@ void NavMap::addWall(double x1, double y1, double x2, double y2) {
 	}
 }
 
+/**
+ * Attempts to extend a wall to specified position.
+ */
 void NavMap::extendWall(double x, double y, bool horizontal) {
 	double closest = INF_ISH;
 	int index = -1;
@@ -400,16 +454,6 @@ bool NavMap::intersectsWithWall(double x1, double y1, double x2, double y2,
 	return false;
 }
 
-int NavMap::getClosestReachableNode(double x, double y) {
-	//TODO implement.
-	return -1;
-}
-
-double NavMap::getDistanceToNode(int nodeId) {
-	//TODO implement.
-	return -1;
-}
-
 void NavMap::updateNode(Node& n){
 	double d = NODE_WALL_CHECK / CALIBRATE_MULTIPLIER;
 	Point2d origin = Point2d(n.x,n.y);
@@ -420,44 +464,6 @@ void NavMap::updateNode(Node& n){
 		n.walls[i] = collision;
 		wallCount += collision;
 	}
-//	if(wallCount == 2){ // Might be a corner
-//		Point2d pt1, pt2;
-//		Point2d cal1, cal2;
-//		if(n.walls[0] && n.walls[1]){ // Upper right corner.
-//			getCalibratedPos(origin,0,NODE_DIST_FROM_CORNER,pt1);
-//			getCalibratedPos(origin,1,NODE_DIST_FROM_CORNER,pt2);
-//			if(abs(n.y < pt1.x) < 0.2 && abs(n.x-pt2.y) < 0.2){
-//				n.x = pt1.x;
-//				n.y = pt2.y;
-//				printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
-//			}
-//		}else if(n.walls[1] && n.walls[2]){ // Upper left corner.
-//			getCalibratedPos(origin,1,NODE_DIST_FROM_CORNER,pt1);
-//			getCalibratedPos(origin,2,NODE_DIST_FROM_CORNER,pt2);
-//			if(abs(n.y < pt1.y) < 0.2 && abs(n.x-pt2.x) < 0.2){
-//				n.y = pt1.y;
-//				n.x = pt2.x;
-//				printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
-//			}
-//		}else if(n.walls[2] && n.walls[3]){ // Bottom left corner.
-//			getCalibratedPos(origin,2,NODE_DIST_FROM_CORNER,pt1);
-//			getCalibratedPos(origin,3,NODE_DIST_FROM_CORNER,pt2);
-//			if(abs(n.y < pt1.x) < 0.2 && abs(n.x-pt2.y) < 0.2){
-//				n.x = pt1.x;
-//				n.y = pt2.y;
-//				printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
-//			}
-//		}else if(n.walls[3] && n.walls[0]){ // Bottom right corner.
-//			getCalibratedPos(origin,3,NODE_DIST_FROM_CORNER,pt1);
-//			getCalibratedPos(origin,0,NODE_DIST_FROM_CORNER,pt2);
-//			if(abs(n.y < pt1.y) < 0.2 && abs(n.x-pt2.x) < 0.2){
-//				n.y = pt1.y;
-//				n.x = pt2.x;
-//				printf("Updating pos from %.2f, %.2f to %.2f, %.2f.\n",n.x,n.y,pt1.x,pt2.y);
-//			}
-//		}
-//
-//	}
 }
 
 
@@ -557,15 +563,6 @@ void NavMap::draw(Mat& img) {
 			}
 		}
 	}
-	// Drawing edges
-//	for(int i=0; i<neighbours.size(); i++){
-//		// Edges for a certain node.
-//		for(int j=0; j<neighbours[i].size(); j++){
-//			Node from = nodes[neighbours[i][j].from];
-//			Node to = nodes[neighbours[i][j].to];
-//			line(img, getVisualCoord(from.x,from.y),getVisualCoord(to.x,to.y),Scalar(100,100,100),1,8);
-//		}
-//	}
 	for(int i=0; i<nodes.size(); i++){
 			// Edges for a certain node.
 		vector<Edge> edges = getNeighbours(nodes[i].index, true);

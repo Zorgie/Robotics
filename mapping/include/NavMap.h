@@ -102,7 +102,6 @@ public:
 	bool addNode(double x, double y, int type, mapping::robot_pose& calibratedPose);
 	bool addNode(double x, double y, int type);
 	bool nodeMatch(Node in, Node& res);
-	void nodeMerge(Node& to, Node& from);
 	void addEdge(int from, int to, int type);
 	vector<Edge> getNeighbours(int nodeId);
 	vector<Edge> getNeighbours(int nodeId, bool cache);
@@ -111,12 +110,9 @@ public:
 	double getPath(int to, vector<Edge>& path);
 	double getPath(int from, int to, vector<Edge>& path);
 	vector<Edge> visitAllObjects();
-	int getClosestReachableNode(double x, double y);
-	double getDistanceToNode(int nodeId);
 	void updateNode(Node& n);
 	/* ----------  Misc functionality ---------------------*/
 	void draw(Mat& img);
-	//bool getCalibratedPos(Point2d approximatePos, Point2d relativeWallPos, Point2d& calibratedPos);
 	bool getCalibratedPos(Point2d approximatePos, int dir, double dist, Point2d& calibratedPos);
 	Point2d pointConversion(Point2d origin, Point2d relativePos, double angle);
 

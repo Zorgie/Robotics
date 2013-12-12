@@ -19,6 +19,10 @@ bool Mapper::validIR(double r1, double r2) {
 	return true;
 }
 
+/**
+ * Creates an instance of the mapper class.
+ * @param gui True to show a graphical representation of the created map.
+ */
 Mapper::Mapper(bool gui) {
 	useGui = gui;
 	WINDOW = "Map visualization";
@@ -65,6 +69,11 @@ Mapper::~Mapper() {
 		cv::destroyWindow(WINDOW);
 }
 
+/**
+ * Callback function for the IR sensors. This method will be
+ * called (if initialized by a subscription) whenever the IR-sensor node puts out
+ * data.
+ */
 void Mapper::irCallback(const irsensors::floatarray& msg) {
 	irsensors::floatarray currentIR;
 	for (int i = 0; i < 8; i++) {
@@ -80,6 +89,9 @@ void Mapper::irCallback(const irsensors::floatarray& msg) {
 	}
 }
 
+/**
+ * Adds an object (such as a banana or a carrot) at specified position.
+ */
 void Mapper::addObject(double x, double y) {
 	std::cerr << "Found an object" << std::endl;
 
@@ -94,10 +106,9 @@ void Mapper::addObject(double x, double y) {
 	nav.addNode(targetConv.x, targetConv.y, -1);
 }
 
-void Mapper::depthCallback(const sensor_msgs::PointCloud2& pcloud) {
-
-}
-
+/**
+ * Callback for the positioning (movement) node.
+ */
 void Mapper::poseCallback(const mapping::robot_pose& p) {
 	currentPose.x = p.x;
 	currentPose.y = p.y;
@@ -106,6 +117,10 @@ void Mapper::poseCallback(const mapping::robot_pose& p) {
 	poseInit = true;
 }
 
+/**
+ * Callback for the path request. This is the code that will execute whenever
+ * another node requests a path somewhere.
+ */
 void Mapper::pathRequestCallback(const navigation::path_request& p) {
 	printf("Received path request callback.\n");
 	switch (p.path_type) {
@@ -117,6 +132,12 @@ void Mapper::pathRequestCallback(const navigation::path_request& p) {
 	}
 }
 
+/**
+ * Returs a calibrated position, in regards to current position, IR-sensors
+ * and mapping data. For instance, if the robot is standing 10 cm from a wall,
+ * we can calibrate in that direction by reading expected distance from the map
+ * and combine it with the measured distance from the IR-sensor.
+ */
 mapping::robot_pose Mapper::calibratePos(irsensors::floatarray currentIR) {
 	mapping::robot_pose pose_diff;
 	pose_diff.x = 0;
@@ -176,6 +197,11 @@ mapping::robot_pose Mapper::calibratePos(irsensors::floatarray currentIR) {
 	return pose_diff;
 }
 
+/**
+ * Callback for the movement state update.
+ * Here most nodes in the map are created, since movement state updates trigger
+ * node creation upon certain conditions.
+ */
 void Mapper::movementCommandCallback(const navigation::movement_state& state) {
 	if (goneHome)
 		return;
@@ -231,10 +257,16 @@ void Mapper::movementCommandCallback(const navigation::movement_state& state) {
 	}
 }
 
+/**
+ * Callback used for publishing a path.
+ */
 void Mapper::pathResultCallback(vector<Edge> path) {
 	pathResultCallback(path, false);
 }
 
+/**
+ * Callback used for publishing a path.
+ */
 void Mapper::pathResultCallback(vector<Edge> path, bool tsp) {
 	for (int i = 0; i < path.size(); i++) {
 		navigation::path_result res;
@@ -254,6 +286,9 @@ void Mapper::pathResultCallback(vector<Edge> path, bool tsp) {
 	}
 }
 
+/**
+ * Callback for detected objects, received from the vision node.
+ */
 void Mapper::objectDetectedCallback(const vision::evidence &msg) {
 	cout << "EVIDENCE RECEIVED!" << endl;
 	cout << "ID: " << msg.object_id << endl;
@@ -322,6 +357,10 @@ void Mapper::objectDetectedCallback(const vision::evidence &msg) {
 
 }
 
+/**
+ * Splits a string in regards to a certain delimitor.
+ * Returns a vector of strings.
+ */
 vector<string> &Mapper::split(const string &s, char delim,
 		vector<string> &elems) {
 	stringstream ss(s);
@@ -332,6 +371,9 @@ vector<string> &Mapper::split(const string &s, char delim,
 	return elems;
 }
 
+/**
+ * Splits a string in regards to a certain delimitor.
+ */
 vector<string> Mapper::split(const string &s, char delim) {
 	vector<string> elems;
 	split(s, delim, elems);

@@ -13,8 +13,6 @@
 
 // ROS stuff
 #include <ros/ros.h>
-#include <pcl/point_cloud.h>
-#include <sensor_msgs/PointCloud2.h>
 #include <highgui.h>
 #include <cv.h>
 #include <irsensors/floatarray.h>
@@ -68,7 +66,6 @@ public:
 	Mapper(bool gui);
 	virtual ~Mapper();
 	void irCallback(const irsensors::floatarray& msg);
-	void depthCallback(const sensor_msgs::PointCloud2& pcloud);
 	void poseCallback(const mapping::robot_pose& p);
 	void pathRequestCallback(const navigation::path_request& p);
 	void addObject(double x, double y);
