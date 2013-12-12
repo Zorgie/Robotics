@@ -1,27 +1,24 @@
 <package>
-  <description brief="mapping">
+  <description brief="vision">
 
-     mapping
+     tutorialROSOpenCV
 
   </description>
   <author>robo</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/mapping</url>
+  <url>http://ros.org/wiki/tutorialROSOpenCV</url>
   <depend package="image_transport"/>
   <depend package="roscpp"/>
   <depend package="std_msgs"/>
   <depend package="opencv2"/>
   <depend package="cv_bridge"/>
   <depend package="sensor_msgs"/>
+  <depend package="image_transport"/>
   <depend package="pcl"/>
   <depend package="pcl_ros"/> 
-  <depend package="irsensors"/>
-  <depend package="navigation" />
-  <depend package="vision" />
-  <export>
-  	<cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib"/>
-</export>
+
+
 </package>
 
 

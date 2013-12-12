@@ -26,7 +26,7 @@
 #include <navigation/path_request.h>
 #include <navigation/path_result.h>
 #include <navigation/RobotActions.h>
-#include "tutorialROSOpenCV/evidence.h"
+#include "vision/evidence.h"
 #include "std_msgs/String.h"
 
 
@@ -77,7 +77,7 @@ public:
 
 	void pathResultCallback(vector<Edge> path);
 	void pathResultCallback(vector<Edge> path, bool tsp);
-	void objectDetectedCallback(const tutorialROSOpenCV::evidence &msg);
+	void objectDetectedCallback(const vision::evidence &msg);
 
 	vector<string> split(const string &s, char delim);
 	vector<string> &split(const string &s, char delim, vector<string> &elems);

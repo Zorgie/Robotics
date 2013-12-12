@@ -41,7 +41,7 @@ Mapper::Mapper(bool gui) {
 	pathResultPub = nh.advertise<navigation::path_result>("/path/result", 1000);
 	speakerPub = nh.advertise<std_msgs::String>("/robot/talk", 1);
 	tspPub = nh.advertise<navigation::path_result>("/path/result_tsp", 100);
-	evidencePub = nh.advertise<tutorialROSOpenCV::evidence>("/contest_evidence",
+	evidencePub = nh.advertise<vision::evidence>("/contest_evidence",
 			100);
 
 	findPath = -1;
@@ -254,7 +254,7 @@ void Mapper::pathResultCallback(vector<Edge> path, bool tsp) {
 	}
 }
 
-void Mapper::objectDetectedCallback(const tutorialROSOpenCV::evidence &msg) {
+void Mapper::objectDetectedCallback(const vision::evidence &msg) {
 	cout << "EVIDENCE RECEIVED!" << endl;
 	cout << "ID: " << msg.object_id << endl;
 	cout << "1" << endl;
@@ -292,7 +292,7 @@ void Mapper::objectDetectedCallback(const tutorialROSOpenCV::evidence &msg) {
 			if (res) {
 //			Positive
 				std::cout << "A" << std::endl;
-				tutorialROSOpenCV::evidence true_positive;
+				vision::evidence true_positive;
 				true_positive = msg;
 //			publish me.
 				std::string announce;
